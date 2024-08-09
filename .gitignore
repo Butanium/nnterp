@@ -1,0 +1,10 @@
+build/
+dist/
+public/
+*.egg-info/
+.installed.cfg
+.vscode
+__pycache__/
+.DS_STORE
+config.yaml
+.nfs*
