@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 [project]
 dynamic = ["version"]
 name = "nnterp"
-version = "0.1.0"
 authors = [
   { name="Clément Dumas", email="butanium.contact@gmail.com" },
 ]
