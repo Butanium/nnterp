@@ -5,9 +5,48 @@ import torch as th
 from torch.utils.data import DataLoader
 from typing import Union, Callable
 from contextlib import nullcontext
+from transformers import AutoTokenizer
 
 NNLanguageModel = Union[UnifiedTransformer, LanguageModel]
 GetModuleOutput = Callable[[NNLanguageModel, int], LanguageModelProxy]
+
+
+def load_model(
+    model_name: str,
+    trust_remote_code=False,
+    use_tl=False,
+    no_space_on_bos=False,
+    **kwargs_,
+):
+    """
+    Load a model into nnsight. If use_tl is True, a TransformerLens model is loaded.
+    Default device is "auto" and default torch_dtype is th.float16.
+
+    Args:
+        no_space_on_bos: If True, add_prefix_space is set to False in the tokenizer. It is useful if you want to use the tokenizer to get the first token of a word when it's not after a space.
+    """
+    kwargs = dict(torch_dtype=th.float16, trust_remote_code=trust_remote_code)
+    if use_tl:
+        kwargs["device"] = "cuda" if th.cuda.is_available() else "cpu"
+        kwargs["processing"] = False
+        if no_space_on_bos:
+            tokenizer_kwargs = kwargs_.pop("tokenizer_kwargs", {})
+            tokenizer_kwargs.update(
+                dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
+            )
+            tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_kwargs)
+            kwargs["tokenizer"] = tokenizer
+        kwargs.update(kwargs_)
+        return UnifiedTransformer(model_name, **kwargs)
+    else:
+        kwargs["device_map"] = "auto"
+        tokenizer_kwargs = kwargs_.pop("tokenizer_kwargs", {})
+        if no_space_on_bos:
+            tokenizer_kwargs.update(
+                dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
+            )
+        kwargs.update(kwargs_)
+        return LanguageModel(model_name, tokenizer_kwargs=tokenizer_kwargs, **kwargs)
 
 
 def get_num_layers(nn_model: NNLanguageModel):
@@ -110,6 +149,34 @@ def get_logits(nn_model: NNLanguageModel) -> LanguageModelProxy:
         return nn_model.unembed.output
     else:
         return nn_model.lm_head.output
+
+
+def get_unembed_norm(nn_model: NNLanguageModel) -> Envoy:
+    """
+    Get the last layer norm of the model
+    Args:
+        nn_model: The NNSight model
+    Returns:
+        The Envoy for the last layer norm of the model
+    """
+    if isinstance(nn_model, UnifiedTransformer):
+        return nn_model.ln_final
+    else:
+        return nn_model.model.norm
+
+
+def get_unembed(nn_model: NNLanguageModel) -> Envoy:
+    """
+    Get the unembed module of the model
+    Args:
+        nn_model: The NNSight model
+    Returns:
+        The Envoy for the unembed module of the model
+    """
+    if isinstance(nn_model, UnifiedTransformer):
+        return nn_model.unembed
+    else:
+        return nn_model.lm_head
 
 
 def project_on_vocab(
@@ -240,3 +307,21 @@ def collect_activations_batched(
         )
         acts.append(acts_batch)
     return th.cat(acts, dim=1)
+
+
+def next_token_probs(
+    nn_model: NNLanguageModel, prompt: str | list[str], remote=False
+) -> th.Tensor:
+    """
+    Get the probabilities of the next token for the prompt
+    Args:
+        nn_model: The NNSight model
+        prompt: The prompt to get the probabilities for
+        remote: Whether to run the model on the remote device
+    Returns:
+        The probabilities of the next token for the prompt
+    """
+    out = nn_model.trace(prompt, trace=False, remote=remote)
+    if not isinstance(nn_model, UnifiedTransformer):
+        out = out.logits
+    return out[:, -1].softmax(-1).cpu()
