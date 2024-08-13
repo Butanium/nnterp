@@ -6,6 +6,7 @@ from tqdm.auto import tqdm
 from .nnsight_utils import NNLanguageModel, next_token_probs
 from dataclasses import dataclass
 
+
 def process_tokens_with_tokenization(
     words: str | list[str], tokenizer, i_am_hacky=False
 ):
@@ -69,8 +70,8 @@ class Prompt:
         if isinstance(target_strings, str) or isinstance(target_strings, list):
             target_strings = {"target": target_strings}
         target_tokens = {
-            lang: process_tokens_with_tokenization(words, tokenizer)
-            for lang, words in target_strings.items()
+            target: process_tokens_with_tokenization(words, tokenizer)
+            for target, words in target_strings.items()
         }
         return cls(
             target_tokens=target_tokens,
@@ -84,20 +85,20 @@ class Prompt:
             ignore_targets = [ignore_targets]
         if ignore_targets is None:
             ignore_targets = []
-        for lang, lang_tokens in self.target_tokens.items():
-            if lang in ignore_targets:
+        for target, target_tokens in self.target_tokens.items():
+            if target in ignore_targets:
                 continue
-            tokens += lang_tokens
+            tokens += target_tokens
         return len(tokens) == len(set(tokens))
 
     def get_target_probs(self, probs, layer=None):
         target_probs = {
-            lang: probs[:, :, tokens].sum(dim=2).cpu()
-            for lang, tokens in self.target_tokens.items()
+            target: probs[:, :, tokens].sum(dim=2).cpu()
+            for target, tokens in self.target_tokens.items()
         }
         if layer is not None:
             target_probs = {
-                lang: probs_[:, layer] for lang, probs_ in target_probs.items()
+                target: probs_[:, layer] for target, probs_ in target_probs.items()
             }
         return target_probs
 
@@ -160,11 +161,13 @@ def run_prompts(
         )
         scan = False  # Not sure if this is a good idea
     probs = th.cat(probs)
-    target_probs = {lang: [] for lang in prompts[0].target_tokens.keys()}
+    target_probs = {target: [] for target in prompts[0].target_tokens.keys()}
     for i, prompt in enumerate(prompts):
-        for lang, tokens in prompt.target_tokens.items():
-            target_probs[lang].append(probs[i, :, tokens].sum(dim=1))
-    target_probs = {lang: th.stack(probs).cpu() for lang, probs in target_probs.items()}
+        for target, tokens in prompt.target_tokens.items():
+            target_probs[target].append(probs[i, :, tokens].sum(dim=1))
+    target_probs = {
+        target: th.stack(probs).cpu() for target, probs in target_probs.items()
+    }
     return target_probs
 
 
