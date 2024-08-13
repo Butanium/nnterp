@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import torch as th
 from torch.utils.data import DataLoader
 from warnings import warn
-from nnsight_utils import (
+from .nnsight_utils import (
     get_layer,
     get_layer_output,
     get_layer_input,

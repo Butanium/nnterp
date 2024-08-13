@@ -18,7 +18,8 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "nnsight"
+    "nnsight",
+    "pandas",
     ]
 [project.urls]
 "Homepage" = "https://github.com/butanium/nnterp"
