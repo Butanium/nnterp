@@ -321,7 +321,9 @@ def next_token_probs(
     Returns:
         The probabilities of the next token for the prompt
     """
-    out = nn_model.trace(prompt, trace=False, remote=remote)
-    if not isinstance(nn_model, UnifiedTransformer):
-        out = out.logits
-    return out[:, -1].softmax(-1).cpu()
+    with nn_model.trace(prompt, remote=remote):
+        out = nn_model.output
+        if not isinstance(nn_model, UnifiedTransformer):
+            out = out.logits
+        out = out[:, -1].softmax(-1).cpu().save()
+    return out.value

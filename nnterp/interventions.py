@@ -422,6 +422,15 @@ class LatentPromptBatch:
                         tokens[i] = replacements.pop(0)
         return self
 
+    def replace_spot_tokens(self, replacements: list[int] | int):
+        for tokens, lp in zip(self.inputs.input_ids, self.latent_prompts):
+            for spot in lp.latent_spots:
+                if isinstance(replacements, int):
+                    tokens[spot] = replacements
+                else:
+                    tokens[spot] = replacements.pop(0)
+        return self
+
 
 def run_latent_prompt(
     nn_model: NNLanguageModel,
@@ -525,6 +534,7 @@ def latent_prompt_lens(
     collect_from_single_layer: bool = True,
     patch_from_layer: int | None = 0,
     patch_until_layer: int | None = None,
+    layers=None,
     remote=False,
     scan=True,
     batch_size=32,
@@ -548,7 +558,9 @@ def latent_prompt_lens(
         )
 
     probs = []
-    for layer in range(get_num_layers(nn_model)):
+    if layers is None:
+        layers = list(range(get_num_layers(nn_model)))
+    for layer in layers:
         if collect_from_single_layer:
             latents_ = latents[layer].unsqueeze(0)
             if patch_until_layer is None:
