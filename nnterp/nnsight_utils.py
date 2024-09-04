@@ -27,6 +27,8 @@ def load_model(
     """
     kwargs = dict(torch_dtype=th.float16, trust_remote_code=trust_remote_code)
     if use_tl:
+        if "device" not in kwargs_:
+            kwargs["n_devices"] = th.cuda.device_count() if th.cuda.is_available() else 1
         kwargs["device"] = "cuda" if th.cuda.is_available() else "cpu"
         kwargs["processing"] = False
         if no_space_on_bos:
