@@ -512,16 +512,20 @@ def run_latent_prompt(
                 latents[layer].extend(act)
 
     with nn_model.trace(inputs, scan=scan, remote=remote):
-        h_index = 0
+        batch_indices = []
+        spot_indices = []
         for i, lp in enumerate(latent_prompts):
-            for spot in lp.latent_spots:
-                for layer in range(patch_from_layer, patch_until_layer + 1):
-                    get_layer_output(nn_model, layer)[i, spot] = (
-                        latents[layer][h_index]
-                        if not collect_from_single_layer
-                        else latents[0][h_index]
-                    )
-                h_index += 1
+            batch_indices.extend([i] * len(lp.latent_spots))
+            spot_indices.extend(lp.latent_spots)
+        batch_indices = th.tensor(batch_indices, device=latents.device)
+        spot_indices = th.tensor(spot_indices, device=latents.device)
+
+        for layer in range(patch_from_layer, patch_until_layer + 1):
+            latent_source = latents[0] if collect_from_single_layer else latents[layer]
+            get_layer_output(nn_model, layer)[
+                batch_indices, spot_indices
+            ] = latent_source
+
         probs = get_next_token_probs(nn_model).cpu().save()
     return probs.value
 
