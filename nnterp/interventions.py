@@ -457,7 +457,7 @@ def run_latent_prompt(
         patch_from_layer: The layer to start patching from
         patch_until_layer: The layer to patch until. If None, all layers from patch_from_layer to the last layer are patched.
         remote: Whether to run the model on the remote device.
-        scan: Whether to use nnsight's scan when tracing the model.
+        scan: Added for compatibility but not used in this function.
 
     Returns:
         The probabilities of the next token for each latent prompt of shape (num_latent_prompts, vocab_size)
@@ -510,16 +510,14 @@ def run_latent_prompt(
             )  # [layer, batch, d]
             for layer, act in enumerate(acts):
                 latents[layer].extend(act)
-
-    with nn_model.trace(inputs, scan=scan, remote=remote):
-        batch_indices = []
-        spot_indices = []
-        for i, lp in enumerate(latent_prompts):
-            batch_indices.extend([i] * len(lp.latent_spots))
-            spot_indices.extend(lp.latent_spots)
-        batch_indices = th.tensor(batch_indices, device=latents.device)
-        spot_indices = th.tensor(spot_indices, device=latents.device)
-
+    batch_indices = []
+    spot_indices = []
+    for i, lp in enumerate(latent_prompts):
+        batch_indices.extend([i] * len(lp.latent_spots))
+        spot_indices.extend(lp.latent_spots)
+    batch_indices = th.tensor(batch_indices, device=latents.device)
+    spot_indices = th.tensor(spot_indices, device=latents.device)
+    with nn_model.trace(inputs, remote=remote):
         for layer in range(patch_from_layer, patch_until_layer + 1):
             latent_source = latents[0] if collect_from_single_layer else latents[layer]
             get_layer_output(nn_model, layer)[
