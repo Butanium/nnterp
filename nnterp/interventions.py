@@ -437,7 +437,7 @@ def run_latent_prompt(
     latent_prompts: list[LatentPrompt] | LatentPrompt | LatentPromptBatch,
     prompts: list[str] | str | None = None,
     latents: list[th.Tensor] | th.Tensor | None = None,
-    collect_from_single_layer: int | bool = False,  # todo doc and ifs
+    collect_from_single_layer: int | bool = False,
     patch_from_layer: int = 0,
     patch_until_layer: int | None = None,
     remote=False,
