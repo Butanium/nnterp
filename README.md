@@ -9,6 +9,6 @@ This might become a real package at some point, for now it's just a package in w
 - `pip install nnterp`
 
 # Contributing
-- Create a git tag with the version number
+- Create a git tag with the version number `git tag vx.y.z; git push origin vx.y.z`
 - Build with `python -m build`
 - Publish with e.g. `twine upload dist/*x.y.z*`
