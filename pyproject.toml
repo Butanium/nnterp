@@ -21,6 +21,8 @@ dependencies = [
     "nnsight",
     "pandas",
     ]
+[project.optional-dependencies]
+display = ["plotly"]
 [project.urls]
 "Homepage" = "https://github.com/butanium/nnterp"
 

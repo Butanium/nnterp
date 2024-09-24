@@ -1,5 +1,9 @@
 # nnterp
 
+## Installation
+- `pip install nnterp`
+- `pip install nnterp[display]` if you want to use the `display` module for visualizations
+
 ## Usage
 ### 1. Loading a Model
 
@@ -71,6 +75,21 @@ patchscope_probs = patchscope_lens(nn_model, source_prompts=[source_prompt], tar
 print(f"Patchscope Lens Probabilities: {patchscope_probs}")
 ```
 
+### 4. Using the Display Module
+from nnterp.display import plot_topk_tokens
+
+```python
+# Plot Patchscope Lens Probabilities and save the figure to test.png and test.html
+fig = plot_topk_tokens(
+    patchscope_probs,
+    tokenizer,
+    k=5,
+    title="Patchscope Lens Probabilities",
+    file="test.png",
+    save_html=True,  # Default is True
+)
+fig.show()
+
 ### Full Example
 
 Here is a full example combining all the above functionalities:
@@ -115,9 +134,6 @@ print(f"Patchscope Lens Probabilities: {patchscope_probs}")
 - `nnsight_utils.py` basically allows you to deal with TL and HF models in a similar way.
 - `interventions.py` is a module that contains tools like logit lens, patchscope lens and other interventions.
 - `prompt_utils.py` contains utils to create prompts for which you want to track specific tokens in the next token distribution and run interventions on them and collect the probabilities of the tokens you're interested in.
-
-## Installation
-- `pip install nnterp`
 
 # Contributing
 - Create a git tag with the version number `git tag vx.y.z; git push origin vx.y.z`
