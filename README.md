@@ -5,7 +5,7 @@
 - `pip install nnterp[display]` if you want to use the `display` module for visualizations
 
 ## Usage
-### 1. Loading a Model
+### Loading a Model
 
 First, let's load a model in `nnsight` using `nnterp`'s `load_model` function.
 
@@ -18,7 +18,58 @@ nn_model = load_model(model_name)
 tokenizer = nn_model.tokenizer
 ```
 
-### 2. Creating and Running Prompts
+### Collecting activations
+
+To collect activations from a model using `nnterp`, you can use the `collect_activations` function. This function takes the following parameters:
+
+- `nn_model`: The NNSight model.
+- `prompts`: The prompts for which you want to collect activations.
+- `layers`: The layers for which you want to collect activations. If not specified, activations will be collected for all layers.
+- `get_activations`: A function to get the activations. By default, it will collect the layer output, but you can also collect other things like attention input/output
+- `remote`: Whether to run the model on the remote device.
+- `idx`: The index of the token to collect activations for.
+- `open_context`: Whether to open a context for the model trace. You can set to false if you want to collect activations in an already opened nnsight tracing context.
+
+Here's an example usage of `collect_activations`:
+
+```python
+# Load the model
+nn_model = load_model(model_name)
+
+# Create a prompt
+prompt = "The quick brown fox jumps over the lazy dog"
+
+# Collect activations for all layers
+activations = collect_activations(nn_model, [prompt])
+
+# Print the activations
+for layer, activation in enumerate(activations):
+    print(f"Layer {layer}: {activation.shape}")
+```
+
+### Collecting activations in batches
+
+If you have a large number of prompts and want to collect activations in batches to optimize memory usage, you can use the `collect_activations_batched` function. This function has similar parameters to `collect_activations`, but also takes a `batch_size` parameter to specify the batch size for collecting activations.
+
+Here's an example usage of `collect_activations_batched`:
+
+```python
+# Load the model
+nn_model = load_model(model_name)
+
+# Create a list of prompts
+prompts = ["The quick brown fox", "jumps over the lazy dog"]
+
+# Collect activations in batches
+batch_size = 2
+activations = collect_activations_batched(nn_model, prompts, batch_size)
+
+# Print the activations
+for layer, activation in enumerate(activations):
+    print(f"Layer {layer}: {activation}")
+```
+
+### Creating and Running Prompts
 
 Next, we create some toy prompts and run them through the model to get the next token probabilities.
 
@@ -40,7 +91,7 @@ for prompt, probs in zip(prompts, target_probs["target"]):
     print(f"Target Probabilities: {probs}")
 ```
 
-### 3. Using Interventions
+### Using Interventions
 
 Now, let's use some interventions like `logit_lens`
 
@@ -75,7 +126,7 @@ patchscope_probs = patchscope_lens(nn_model, source_prompts=[source_prompt], tar
 print(f"Patchscope Lens Probabilities: {patchscope_probs}")
 ```
 
-### 4. Using the Display Module
+### Using the Display Module
 from nnterp.display import plot_topk_tokens
 
 ```python
