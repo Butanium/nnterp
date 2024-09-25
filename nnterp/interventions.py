@@ -50,7 +50,7 @@ def logit_lens(
         A tensor of shape (num_prompts, num_layers, vocab_size) containing the probabilities
         of the next token for each prompt at each layer. Tensor is on the CPU.
     """
-    with nn_model.trace(prompts, scan=scan, remote=remote) as tracer:
+    with nn_model.trace(prompts, remote=remote) as tracer:
         hiddens_l = collect_activations(nn_model, prompts, open_context=False)
         probs_l = []
         for hiddens in hiddens_l:
@@ -211,7 +211,6 @@ def patchscope_lens(
     for layer in layers:
         with nn_model.trace(
             target_patch_prompts.prompts,
-            scan=layer == 0,
             remote=remote,
         ):
             get_layer_output(nn_model, layer)[
@@ -264,7 +263,6 @@ def patchscope_generate(
                 layer = layer.item()
                 with tracer.invoke(
                     [target_patch_prompt.prompt] * len(prompts),
-                    scan=layer == 0,
                 ):
                     get_layer_output(nn_model, layer)[
                         :, target_patch_prompt.index_to_patch
@@ -355,7 +353,7 @@ def patch_object_attn_lens(
         get_activations=get_act,
     )
     for layer in range(num_layers):
-        with nn_model.trace(target_prompts, scan=layer == 0 and scan):
+        with nn_model.trace(target_prompts):
             for next_layer in range(layer, min(num_layers, layer + num_patches)):
                 get_attention(nn_model, next_layer).input[1]["hidden_states"][
                     :, attn_idx_patch
@@ -585,7 +583,6 @@ def latent_prompt_lens(
                 patch_from_layer=patch_from_layer_,
                 patch_until_layer=patch_until_layer_,
                 remote=remote,
-                scan=scan and layer == 0,
             )
         )
     return th.stack(probs).transpose(0, 1)
