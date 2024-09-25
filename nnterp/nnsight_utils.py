@@ -2,7 +2,6 @@ from nnsight.models.UnifiedTransformer import UnifiedTransformer
 from nnsight.models.LanguageModel import LanguageModelProxy, LanguageModel
 from nnsight.envoy import Envoy
 import torch as th
-from torch.utils.data import DataLoader
 from typing import Union, Callable
 from contextlib import nullcontext
 from transformers import AutoTokenizer
@@ -28,7 +27,9 @@ def load_model(
     kwargs = dict(torch_dtype=th.float16, trust_remote_code=trust_remote_code)
     if use_tl:
         if "device" not in kwargs_:
-            kwargs["n_devices"] = th.cuda.device_count() if th.cuda.is_available() else 1
+            kwargs["n_devices"] = (
+                th.cuda.device_count() if th.cuda.is_available() else 1
+            )
         kwargs["device"] = "cuda" if th.cuda.is_available() else "cpu"
         kwargs["processing"] = False
         if no_space_on_bos:
@@ -283,6 +284,7 @@ def collect_activations_batched(
     remote=False,
     idx=None,
     tqdm=None,
+    use_session=False,
 ):
     """
     Collect the hidden states of the last token of each prompt at each layer in batches
@@ -299,11 +301,13 @@ def collect_activations_batched(
     Returns:
         The hidden states of the last token of each prompt at each layer, moved to cpu. Dimensions are (num_layers, num_prompts, hidden_size)
     """
-    dataloader = DataLoader(prompts, batch_size=batch_size)
-    if tqdm is not None:
-        dataloader = tqdm(dataloader)
+    num_prompts = len(prompts)
     acts = []
-    for batch in dataloader:
+    it = range(0, num_prompts, batch_size)
+    if tqdm is not None:
+        it = tqdm(it)
+    for i in it:
+        batch = prompts[i : min(i + batch_size, num_prompts)]
         acts_batch = collect_activations(
             nn_model, batch, layers, get_activations, remote, idx
         )

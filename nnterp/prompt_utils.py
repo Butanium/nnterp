@@ -1,7 +1,6 @@
 from typing import Callable
 import torch as th
 import pandas as pd
-from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from .nnsight_utils import NNLanguageModel, next_token_probs
 from dataclasses import dataclass
@@ -143,18 +142,19 @@ def run_prompts(
         A target_probs tensor of shape (num_prompts, num_layers)
     """
     str_prompts = [prompt.prompt for prompt in prompts]
-    dataloader = DataLoader(str_prompts, batch_size=batch_size)
     probs = []
     if get_probs_func is None:
         get_probs_func = next_token_probs_unsqueeze
     if func_kwargs is None:
         func_kwargs = {}
-    if tqdm is None:
-        tqdm = lambda x, **kwargs: x
-    for prompt_batch in tqdm(dataloader, total=len(dataloader), desc="Running prompts"):
-        probs.append(
-            get_probs_func(nn_model, prompt_batch, remote=remote, **func_kwargs)
-        )
+
+    for i in tqdm(
+        range(0, len(str_prompts), batch_size),
+        total=len(str_prompts) // batch_size + 1,
+        desc="Running prompts",
+    ):
+        batch = str_prompts[i : i + batch_size]
+        probs.append(get_probs_func(nn_model, batch, remote=remote, **func_kwargs))
     probs = th.cat(probs)
     target_probs = {target: [] for target in prompts[0].target_tokens.keys()}
     for i, prompt in enumerate(prompts):

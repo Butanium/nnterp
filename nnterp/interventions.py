@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import torch as th
-from torch.utils.data import DataLoader
 from warnings import warn
 from .nnsight_utils import (
     get_layer,
@@ -35,9 +34,7 @@ __all__ = [
 
 
 @th.no_grad
-def logit_lens(
-    nn_model: NNLanguageModel, prompts: list[str] | str, remote=False
-):
+def logit_lens(nn_model: NNLanguageModel, prompts: list[str] | str, remote=False):
     """
     Same as logit_lens but for Llama models directly instead of Transformer_lens models.
     Get the probabilities of the next token for the last token of each prompt at each layer using the logit lens.
@@ -256,11 +253,13 @@ def patchscope_generate(
     hiddens = collect_activations(nn_model, prompts, remote=remote, layers=layers)
     generations = {}
     gen_kwargs = dict(remote=remote, max_new_tokens=max_length)
-    layer_loader = DataLoader(layers, batch_size=max(max_batch_size // len(prompts), 1))
-    for layer_batch in layer_loader:
+    if layers is None:
+        layers = list(range(get_num_layers(nn_model)))
+    layer_batch_size = max(max_batch_size // len(prompts), 1)
+    for i in range(0, len(layers), layer_batch_size):
+        layer_batch = layers[i : i + layer_batch_size]
         with nn_model.generate(**gen_kwargs) as tracer:
             for layer in layer_batch:
-                layer = layer.item()
                 with tracer.invoke(
                     [target_patch_prompt.prompt] * len(prompts),
                 ):
@@ -490,9 +489,9 @@ def run_latent_prompt(
             f"Number of latent spots does not match number of prompts/latents: got {num_spots} spots and {n_patches} prompts/latents"
         )
     if latents is None:
-        prompt_loader = DataLoader(prompts, batch_size=batch_size)
         latents = [[] for _ in range(patch_until_layer + 1)]
-        for prompt_batch in prompt_loader:
+        for i in range(0, len(prompts), batch_size):
+            prompt_batch = prompts[i : i + batch_size]
             acts = collect_activations(
                 nn_model,
                 prompt_batch,
@@ -510,8 +509,8 @@ def run_latent_prompt(
     for i, lp in enumerate(latent_prompts):
         batch_indices.extend([i] * len(lp.latent_spots))
         spot_indices.extend(lp.latent_spots)
-    batch_indices = th.tensor(batch_indices, device=latents.device)
-    spot_indices = th.tensor(spot_indices, device=latents.device)
+    batch_indices = th.tensor(batch_indices)
+    spot_indices = th.tensor(spot_indices)
     with nn_model.trace(inputs, remote=remote):
         for layer in range(patch_from_layer, patch_until_layer + 1):
             latent_source = latents[0] if collect_from_single_layer else latents[layer]
