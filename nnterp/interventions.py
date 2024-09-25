@@ -36,7 +36,7 @@ __all__ = [
 
 @th.no_grad
 def logit_lens(
-    nn_model: NNLanguageModel, prompts: list[str] | str, scan=True, remote=False
+    nn_model: NNLanguageModel, prompts: list[str] | str, remote=False
 ):
     """
     Same as logit_lens but for Llama models directly instead of Transformer_lens models.
@@ -321,7 +321,6 @@ def patch_object_attn_lens(
     target_prompts: list[str] | str,
     attn_idx_patch: int,
     num_patches: int = 5,
-    scan=True,
 ):
     """
     A complex lens that makes the model attend to the hidden states of the last token of the source prompts instead of the attn_idx_patch token of the target prompts at last token prediction. For each layer, this intervention is performed for num_patches layers.
@@ -439,7 +438,6 @@ def run_latent_prompt(
     patch_from_layer: int = 0,
     patch_until_layer: int | None = None,
     remote=False,
-    scan=True,
     batch_size=32,
 ):
     """
@@ -455,7 +453,6 @@ def run_latent_prompt(
         patch_from_layer: The layer to start patching from
         patch_until_layer: The layer to patch until. If None, all layers from patch_from_layer to the last layer are patched.
         remote: Whether to run the model on the remote device.
-        scan: Added for compatibility but not used in this function.
 
     Returns:
         The probabilities of the next token for each latent prompt of shape (num_latent_prompts, vocab_size)
@@ -536,7 +533,6 @@ def latent_prompt_lens(
     patch_until_layer: int | None = None,
     layers=None,
     remote=False,
-    scan=True,
     batch_size=32,
 ):
     if not collect_from_single_layer and patch_until_layer is not None:
