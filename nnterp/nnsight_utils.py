@@ -17,7 +17,7 @@ def load_model(
     model_name: str,
     trust_remote_code=False,
     use_tl=False,
-    use_model_patching=True,
+    use_module_renaming=True,
     no_space_on_bos=False,
     **kwargs_,
 ):
@@ -57,7 +57,7 @@ def load_model(
             )
         kwargs.update(kwargs_)
         model = LanguageModel(model_name, tokenizer_kwargs=tokenizer_kwargs, **kwargs)
-        if use_model_patching:
+        if use_module_renaming:
             rename_model_modules(model)
         return model
 

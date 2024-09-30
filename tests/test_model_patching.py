@@ -5,8 +5,8 @@ from nnterp.nnsight_utils import load_model, get_num_layers
 @pytest.mark.parametrize("model_name", ["gpt2"])
 def test_model_patching_activations(model_name):
     # Load models with and without patching
-    model_patched = load_model(model_name, use_model_patching=True)
-    model_unpatched = load_model(model_name, use_model_patching=False)
+    model_patched = load_model(model_name, use_module_renaming=True)
+    model_unpatched = load_model(model_name, use_module_renaming=False)
 
     # Set up test input
     prompt = "Hello, world!"
