@@ -7,6 +7,7 @@ import nnsight as nns
 from typing import Union, Callable
 from contextlib import nullcontext
 from transformers import AutoTokenizer
+from .model_patching import rename_model_modules
 
 NNLanguageModel = Union[UnifiedTransformer, LanguageModel]
 GetModuleOutput = Callable[[NNLanguageModel, int], LanguageModelProxy]
@@ -16,6 +17,7 @@ def load_model(
     model_name: str,
     trust_remote_code=False,
     use_tl=False,
+    use_model_patching=True,
     no_space_on_bos=False,
     **kwargs_,
 ):
@@ -54,7 +56,10 @@ def load_model(
                 dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
             )
         kwargs.update(kwargs_)
-        return LanguageModel(model_name, tokenizer_kwargs=tokenizer_kwargs, **kwargs)
+        model = LanguageModel(model_name, tokenizer_kwargs=tokenizer_kwargs, **kwargs)
+        if use_model_patching:
+            rename_model_modules(model)
+        return model
 
 
 def get_num_layers(nn_model: NNLanguageModel):
