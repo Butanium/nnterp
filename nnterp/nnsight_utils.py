@@ -2,6 +2,8 @@ from nnsight.models.UnifiedTransformer import UnifiedTransformer
 from nnsight.models.LanguageModel import LanguageModelProxy, LanguageModel
 from nnsight.envoy import Envoy
 import torch as th
+from torch.utils.data import DataLoader
+import nnsight as nns
 from typing import Union, Callable
 from contextlib import nullcontext
 from transformers import AutoTokenizer
@@ -266,13 +268,70 @@ def collect_activations(
         acts = [
             wrap(
                 get_activations(nn_model, layer)[
-                    th.arange(len(tok_prompts.input_ids)),
+                    th.arange(tok_prompts.input_ids.shape[0]),
                     idx,
                 ]
             )
             for layer in layers
         ]
     return th.stack(acts)
+
+
+@th.no_grad
+def collect_activations_session(
+    nn_model,
+    prompts,
+    batch_size,
+    layers=None,
+    get_activations=None,
+    remote=False,
+    idx=None,
+):
+    """
+    Collect the hidden states of the specified token of each prompt at each layer in batches using a nnsight session.
+
+    Args:
+        nn_model: The NNSight model
+        prompts: The prompts to collect activations for
+        batch_size: The batch size to use
+        layers: The layers to collect activations for, default to all layers
+        get_activations: The function to get the activations, default to layer output
+        remote: Whether to run the model on the remote device
+        idx: The index of the token to collect activations for. Default is -1 (last token).
+
+    Returns:
+        The hidden states of the specified token of each prompt at each layer, moved to cpu.
+        Dimensions are (num_layers, num_prompts, hidden_size)
+    """
+    if layers is None:
+        layers = list(range(get_num_layers(nn_model)))
+    if get_activations is None:
+        get_activations = get_layer_output
+    if idx is None:
+        idx = -1
+    if idx < 0 and nn_model.tokenizer.padding_side != "left":
+        raise ValueError("negative index is currently only supported with left padding")
+    if idx > 0 and nn_model.tokenizer.padding_side != "right":
+        raise ValueError(
+            "positive index is currently only supported with right padding"
+        )
+    with nn_model.session(remote=remote) as session:
+        all_acts = nns.list().save()
+        dl = DataLoader(prompts, batch_size=batch_size)
+        with session.iter(dl) as batch:
+            with nn_model.trace(batch):
+                acts = [
+                    get_activations(nn_model, layer)[
+                        :,
+                        idx,
+                    ]
+                    .cpu()
+                    .save()
+                    for layer in layers
+                ]
+            all_acts.append(th.stack(acts).save())
+        all_acts = nns.apply(th.cat, all_acts, dim=1).save()
+    return all_acts.value
 
 
 def collect_activations_batched(
@@ -284,7 +343,7 @@ def collect_activations_batched(
     remote=False,
     idx=None,
     tqdm=None,
-    use_session=False,
+    use_session=True,
 ):
     """
     Collect the hidden states of the last token of each prompt at each layer in batches
@@ -296,11 +355,18 @@ def collect_activations_batched(
         layers: The layers to collect activations for, default to all layers
         get_activations: The function to get the activations, default to layer output
         remote: Whether to run the model on the remote device
-        idx: The index of the token to collect activations for
+        idx: The index of the token to collect activations for. Default is -1 (last token).
+        tqdm: Whether to use tqdm to show progress, default to None (no progress bar)
+        use_session: Whether to use a nnsight session to collect activations. Not sure why you'd want turn that off but who knows
 
     Returns:
-        The hidden states of the last token of each prompt at each layer, moved to cpu. Dimensions are (num_layers, num_prompts, hidden_size)
+        The hidden states of the specified token of each prompt at each layer, moved to cpu.
+        Dimensions are (num_layers, num_prompts, hidden_size)
     """
+    if use_session:
+        return collect_activations_session(
+            nn_model, prompts, batch_size, layers, get_activations, remote, idx
+        )
     num_prompts = len(prompts)
     acts = []
     it = range(0, num_prompts, batch_size)
