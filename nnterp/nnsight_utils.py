@@ -34,14 +34,17 @@ def load_model(
             )
         kwargs["device"] = "cuda" if th.cuda.is_available() else "cpu"
         kwargs["processing"] = False
+        kwargs["default_padding_side"] = kwargs_.pop("padding_side", "left")
+        tokenizer_kwargs = kwargs_.pop("tokenizer_kwargs", {})
+        tokenizer_kwargs["trust_remote_code"] = trust_remote_code
+        tokenizer_kwargs["padding_side"] = tokenizer_kwargs.get("padding_side", "left")
         if no_space_on_bos:
-            tokenizer_kwargs = kwargs_.pop("tokenizer_kwargs", {})
-            tokenizer_kwargs.update(
-                dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
-            )
-            tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_kwargs)
-            kwargs["tokenizer"] = tokenizer
+            tokenizer_kwargs.update(dict(add_prefix_space=False))
+        tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_kwargs)
+        kwargs["tokenizer"] = tokenizer
         kwargs.update(kwargs_)
+        print(tokenizer_kwargs)
+        print(tokenizer.padding_side)
         return UnifiedTransformer(model_name, **kwargs)
     else:
         kwargs["device_map"] = "auto"
