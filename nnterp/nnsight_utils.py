@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from nnsight.models.UnifiedTransformer import UnifiedTransformer
 from nnsight.models.LanguageModel import LanguageModelProxy, LanguageModel
 from nnsight.envoy import Envoy

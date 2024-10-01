@@ -17,7 +17,6 @@ from .nnsight_utils import (
     GetModuleOutput,
     project_on_vocab,
 )
-from typing import Optional
 
 __all__ = [
     "logit_lens",
