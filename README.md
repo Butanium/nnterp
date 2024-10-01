@@ -31,9 +31,9 @@ To collect activations from a model using `nnterp`, you can use the `collect_act
 - `idx`: The index of the token to collect activations for.
 - `open_context`: Whether to open a context for the model trace. You can set to false if you want to collect activations in an already opened nnsight tracing context.
 
-Here's an example usage of `collect_activations`:
-
 ```python
+from nnterp import collect_activations
+
 # Load the model
 nn_model = load_model(model_name)
 
@@ -52,9 +52,8 @@ for layer, activation in enumerate(activations):
 
 If you have a large number of prompts and want to collect activations in batches to optimize memory usage, you can use the `collect_activations_batched` function. This function has similar parameters to `collect_activations`, but also takes a `batch_size` parameter to specify the batch size for collecting activations.
 
-Here's an example usage of `collect_activations_batched`:
-
 ```python
+from nnterp import collect_activations_batched
 # Load the model
 nn_model = load_model(model_name)
 
@@ -67,7 +66,7 @@ activations = collect_activations_batched(nn_model, prompts, batch_size)
 
 # Print the activations
 for layer, activation in enumerate(activations):
-    print(f"Layer {layer}: {activation}")
+    print(f"Layer {layer}: {activation.shape}")
 ```
 
 ### Creating and Running Prompts
@@ -75,7 +74,7 @@ for layer, activation in enumerate(activations):
 Next, we create some toy prompts and run them through the model to get the next token probabilities.
 
 ```python
-from nnterp.prompt_utils import Prompt, run_prompts
+from nnterp import Prompt, run_prompts
 
 # Create toy prompts
 prompts = [
@@ -83,7 +82,7 @@ prompts = [
     Prompt.from_strings("Hello, how are you", {"target": "doing"}, tokenizer)
 ]
 
-# Run prompts through the model
+# Run prompts through the model and get the next token probabilities
 target_probs = run_prompts(nn_model, prompts, batch_size=2)
 
 # Print the results
@@ -99,7 +98,7 @@ Now, let's use some interventions like `logit_lens`
 #### Logit Lens
 
 ```python
-from nnterp.interventions import logit_lens
+from nnterp import logit_lens
 
 # Create a toy prompt
 prompt = "The quick brown fox jumps over the lazy dog"
@@ -108,13 +107,13 @@ prompt = "The quick brown fox jumps over the lazy dog"
 logit_probs = logit_lens(nn_model, prompt)
 
 # Print the results
-print(f"Logit Lens Probabilities: {logit_probs}")
+print(f"Logit Lens Probabilities: {logit_probs.shape}")
 ```
 
 #### Patchscope Lens
 
 ```python
-from nnterp.interventions import patchscope_lens, TargetPrompt
+from nnterp import patchscope_lens, TargetPrompt
 
 # Create source and target prompts
 source_prompt = "The quick brown fox"
@@ -128,9 +127,10 @@ print(f"Patchscope Lens Probabilities: {patchscope_probs}")
 ```
 
 ### Using the Display Module
-from nnterp.display import plot_topk_tokens
 
 ```python
+from nnterp import plot_topk_tokens
+
 # Plot Patchscope Lens Probabilities and save the figure to test.png and test.html
 fig = plot_topk_tokens(
     patchscope_probs,
@@ -141,6 +141,7 @@ fig = plot_topk_tokens(
     save_html=True,  # Default is True
 )
 fig.show()
+```
 
 ### Full Example
 
