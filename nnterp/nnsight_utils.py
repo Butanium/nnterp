@@ -7,7 +7,7 @@ import nnsight as nns
 from typing import Union, Callable
 from contextlib import nullcontext
 from transformers import AutoTokenizer
-from .model_patching import rename_model_modules
+from .model_renaming import rename_model_modules
 
 NNLanguageModel = Union[UnifiedTransformer, LanguageModel]
 GetModuleOutput = Callable[[NNLanguageModel, int], LanguageModelProxy]
