@@ -4,6 +4,7 @@ import torch as th
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import math
+from pathlib import Path
 
 
 def plot_topk_tokens(
@@ -98,9 +99,13 @@ def plot_topk_tokens(
     )
 
     if file:
-        if not file.endswith(".html"):
+        if isinstance(file, str):
+            file = Path(file)
+        if file.suffix != "html":
             fig.write_image(file, scale=3)
-        if save_html or file.endswith(".html"):
-            fig.write_html(file.split(".")[0] + ".html")
-
+        if save_html or file.suffix == "html":
+            fig.write_html(
+                file if file.suffix == ".html" else file.with_suffix(".html")
+            )
+    fig.show()
     return fig
