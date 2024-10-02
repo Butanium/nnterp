@@ -43,8 +43,6 @@ def load_model(
         tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_kwargs)
         kwargs["tokenizer"] = tokenizer
         kwargs.update(kwargs_)
-        print(tokenizer_kwargs)
-        print(tokenizer.padding_side)
         return UnifiedTransformer(model_name, **kwargs)
     else:
         kwargs["device_map"] = "auto"
