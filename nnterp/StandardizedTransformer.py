@@ -5,8 +5,26 @@ from transformers import AutoTokenizer
 from nnsight.models.UnifiedTransformer import UnifiedTransformer
 from nnsight.models.LanguageModel import LanguageModel, LanguageModelProxy
 from nnsight.envoy import Envoy
-from model_renaming import rename_model_modules
 
+
+# Names to rename in the model
+attention_names = ["attn", "self_attention", "attention"]
+model_names = ["transformer", "gpt_neox"]
+layer_names = ["h"]
+ln_names = ["final_layer_norm", "ln_f"]
+lm_head_names = ["embed_out"]
+
+
+llm_rename_dict = {}
+for name in attention_names:
+    llm_rename_dict[name] = "self_attn"
+for name in model_names:
+    llm_rename_dict[name] = "model"
+for name in layer_names:
+    llm_rename_dict[name] = "layers"
+for name in ln_names:
+    llm_rename_dict[name] = "ln_final"
+    
 
 class StandardizedTransformer:
     """
@@ -14,34 +32,23 @@ class StandardizedTransformer:
     regardless of the underlying implementation (TransformerLens or Hugging Face).
     """
 
-    @classmethod
-    def load(
-        cls,
+    def __init__(
+        self,
         model_name: str,
         use_tl: bool = False,
         no_space_on_bos: bool = False,
         trust_remote_code: bool = False,
         **kwargs,
-    ) -> StandardizedTransformer:
+    ):
         """
-        Load a transformer model with the specified configuration.
-
-        Args:
-            model_name (str): The name or path of the model to load.
-            use_tl (bool): If True, load a TransformerLens model; otherwise, load a Hugging Face model.
-            no_space_on_bos (bool): If True, configure the tokenizer to not add a space before the beginning of sentence token.
-            trust_remote_code (bool): If True, allow loading of remote code for the model and tokenizer.
-            **kwargs: Additional keyword arguments to pass to the model loader.
-
-        Returns:
-            StandardizedTransformer: An instance of the appropriate StandardizedTransformer subclass.
+        Initialize a transformer model with the specified configuration.
         """
         if use_tl:
-            return StandardizedTransformerTL.load(
+            self.model = StandardizedTransformerTL(
                 model_name, no_space_on_bos, trust_remote_code, **kwargs
             )
         else:
-            return StandardizedTransformerHF.load(
+            self.model = StandardizedTransformerHF(
                 model_name, no_space_on_bos, trust_remote_code, **kwargs
             )
 
@@ -93,30 +100,13 @@ class StandardizedTransformer:
 class StandardizedTransformerTL(UnifiedTransformer, StandardizedTransformer):
     """StandardizedTransformer implementation for TransformerLens models."""
 
-    @classmethod
-    def load(
-        cls,
+    def __init__(
+        self,
         model_name: str,
         no_space_on_bos: bool = False,
         trust_remote_code: bool = False,
         **kwargs,
-    ) -> StandardizedTransformerTL:
-        """
-        Load a TransformerLens model with the specified configuration.
-
-        Args:
-            model_name (str): The name or path of the model to load.
-            no_space_on_bos (bool): If True, configure the tokenizer to not add a space before the beginning of sentence token.
-            trust_remote_code (bool): If True, allow loading of remote code for the model and tokenizer.
-            **kwargs: Additional keyword arguments to pass to the model loader.
-
-        Returns:
-            StandardizedTransformerTL: An instance of StandardizedTransformerTL.
-        """
-        kwargs.setdefault("torch_dtype", th.float16)
-        kwargs.setdefault(
-            "n_devices", th.cuda.device_count() if th.cuda.is_available() else 1
-        )
+    ):
         kwargs.setdefault("device", "cuda" if th.cuda.is_available() else "cpu")
         kwargs["processing"] = False
 
@@ -127,8 +117,7 @@ class StandardizedTransformerTL(UnifiedTransformer, StandardizedTransformer):
             )
             tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_kwargs)
             kwargs["tokenizer"] = tokenizer
-
-        return cls(model_name, **kwargs)
+        super().__init__(model_name, **kwargs)
 
     def get_num_layers(self) -> int:
         return len(self.blocks)
@@ -168,26 +157,13 @@ class StandardizedTransformerTL(UnifiedTransformer, StandardizedTransformer):
 class StandardizedTransformerHF(LanguageModel, StandardizedTransformer):
     """StandardizedTransformer implementation for Hugging Face models."""
 
-    @classmethod
-    def load(
-        cls,
+    def __init__(
+        self,
         model_name: str,
         no_space_on_bos: bool = False,
         trust_remote_code: bool = False,
         **kwargs,
-    ) -> StandardizedTransformerHF:
-        """
-        Load a Hugging Face model with the specified configuration.
-
-        Args:
-            model_name (str): The name or path of the model to load.
-            no_space_on_bos (bool): If True, configure the tokenizer to not add a space before the beginning of sentence token.
-            trust_remote_code (bool): If True, allow loading of remote code for the model and tokenizer.
-            **kwargs: Additional keyword arguments to pass to the model loader.
-
-        Returns:
-            StandardizedTransformerHF: An instance of StandardizedTransformerHF.
-        """
+    ):
         kwargs.setdefault("torch_dtype", th.float16)
         kwargs.setdefault("device_map", "auto")
 
@@ -196,15 +172,13 @@ class StandardizedTransformerHF(LanguageModel, StandardizedTransformer):
             tokenizer_kwargs.update(
                 dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
             )
-
-        self = cls(
+        super().__init__(
             model_name,
             tokenizer_kwargs=tokenizer_kwargs,
             trust_remote_code=trust_remote_code,
+            rename_modules_dict=llm_rename_dict,
             **kwargs,
         )
-        rename_model_modules(self)
-        return self
 
     def get_num_layers(self) -> int:
         return len(self.model.layers)

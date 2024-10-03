@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from nnsight.models.UnifiedTransformer import UnifiedTransformer
 from nnsight.models.LanguageModel import LanguageModelProxy, LanguageModel
 from nnsight.envoy import Envoy
@@ -7,7 +9,7 @@ import nnsight as nns
 from typing import Union, Callable
 from contextlib import nullcontext
 from transformers import AutoTokenizer
-from .model_renaming import rename_model_modules
+from .StandardizedTransformer import llm_rename_dict
 
 NNLanguageModel = Union[UnifiedTransformer, LanguageModel]
 GetModuleOutput = Callable[[NNLanguageModel, int], LanguageModelProxy]
@@ -56,9 +58,13 @@ def load_model(
                 dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
             )
         kwargs.update(kwargs_)
-        model = LanguageModel(model_name, tokenizer_kwargs=tokenizer_kwargs, **kwargs)
-        if use_module_renaming:
-            rename_model_modules(model)
+        rename_modules_dict = llm_rename_dict if use_module_renaming else None
+        model = LanguageModel(
+            model_name,
+            tokenizer_kwargs=tokenizer_kwargs,
+            rename_modules_dict=rename_modules_dict,
+            **kwargs,
+        )
         return model
 
 
