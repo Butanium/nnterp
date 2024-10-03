@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch as th
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
