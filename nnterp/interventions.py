@@ -525,7 +525,7 @@ def run_latent_prompt(
     return probs
 
 
-def latent_prompt_lens_session(  # todo finish
+def latent_prompt_lens(
     nn_model: NNLanguageModel,
     latent_prompts: list[LatentPrompt] | LatentPrompt,
     prompts: list[str] | str | None = None,
