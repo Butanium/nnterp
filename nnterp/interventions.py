@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 import torch as th
 from warnings import warn
@@ -451,6 +452,7 @@ def run_latent_prompt(
         patch_from_layer: The layer to start patching from
         patch_until_layer: The layer to patch until. If None, all layers from patch_from_layer to the last layer are patched.
         remote: Whether to run the model on the remote device.
+        batch_size: The number of prompts to run at once if latents are not provided.
 
     Returns:
         The probabilities of the next token for each latent prompt of shape (num_latent_prompts, vocab_size)
@@ -512,16 +514,18 @@ def run_latent_prompt(
     spot_indices = th.tensor(spot_indices)
     with nn_model.trace(inputs, remote=remote):
         for layer in range(patch_from_layer, patch_until_layer + 1):
-            latent_source = latents[0] if collect_from_single_layer else latents[layer]
+            latent_source = (
+                latents[0] if collect_from_single_layer else latents[layer]
+            )
             get_layer_output(nn_model, layer)[
                 batch_indices, spot_indices
             ] = latent_source
 
         probs = get_next_token_probs(nn_model).cpu().save()
-    return probs.value
+    return probs
 
 
-def latent_prompt_lens(
+def latent_prompt_lens_session(  # todo finish
     nn_model: NNLanguageModel,
     latent_prompts: list[LatentPrompt] | LatentPrompt,
     prompts: list[str] | str | None = None,
@@ -554,31 +558,32 @@ def latent_prompt_lens(
     probs = []
     if layers is None:
         layers = list(range(get_num_layers(nn_model)))
-    for layer in layers:
-        if collect_from_single_layer:
-            latents_ = latents[layer].unsqueeze(0)
-            if patch_until_layer is None:
-                patch_until_layer_ = layer
+    with nn_model.session(remote=remote) as session:
+        for layer in layers:
+            if collect_from_single_layer:
+                latents_ = latents[layer].unsqueeze(0)
+                if patch_until_layer is None:
+                    patch_until_layer_ = layer
+                else:
+                    patch_until_layer_ = patch_until_layer
             else:
-                patch_until_layer_ = patch_until_layer
-        else:
-            patch_until_layer_ = layer
-            latents_ = latents
-        if patch_from_layer is None:
-            patch_from_layer_ = layer
-        else:
-            patch_from_layer_ = patch_from_layer
-        probs.append(
-            run_latent_prompt(
-                nn_model,
-                latent_prompts,
-                latents=latents_,
-                collect_from_single_layer=collect_from_single_layer,
-                patch_from_layer=patch_from_layer_,
-                patch_until_layer=patch_until_layer_,
-                remote=remote,
+                patch_until_layer_ = layer
+                latents_ = latents
+            if patch_from_layer is None:
+                patch_from_layer_ = layer
+            else:
+                patch_from_layer_ = patch_from_layer
+            probs.append(
+                run_latent_prompt(
+                    nn_model,
+                    latent_prompts,
+                    latents=latents_,
+                    collect_from_single_layer=collect_from_single_layer,
+                    patch_from_layer=patch_from_layer_,
+                    patch_until_layer=patch_until_layer_,
+                    remote=remote,
+                )
             )
-        )
     return th.stack(probs).transpose(0, 1)
 
 
