@@ -63,12 +63,19 @@ class TargetPrompt:
     index_to_patch: int
 
 
-def repeat_prompt(
-    nn_model=None, words=None, rel=" ", sep="\n", placeholder="?"
-) -> TargetPrompt:
+def repeat_prompt(words=None, rel=" ", sep="\n", placeholder="?") -> TargetPrompt:
     """
     Prompt used in the patchscopes paper to predict the next token.
     https://github.com/PAIR-code/interpretability/blob/master/patchscopes/code/next_token_prediction.ipynb
+
+    Args:
+        words: The words to repeat. If None, the words will be "king", "1135", "hello".
+        rel: The string between the repeated words
+        sep: The separator between the words
+        placeholder: The placeholder to use for the last word
+
+    Returns:
+        A TargetPrompt object containing the prompt to patch and the index of the token to patch.
     """
     if words is None:
         words = [
@@ -76,9 +83,6 @@ def repeat_prompt(
             "1135",
             "hello",
         ]
-    assert nn_model is None or (
-        len(nn_model.tokenizer.tokenize(placeholder)) == 1
-    ), "Using a placeholder that is not a single token sounds like a bad idea"
     prompt = sep.join([w + rel + w for w in words]) + sep + placeholder
     index_to_patch = -1
     return TargetPrompt(prompt, index_to_patch)
@@ -93,6 +97,21 @@ def it_repeat_prompt(
     complete_prompt=True,
     add_user_instr=True,
 ):
+    """
+    Same as repeat_prompt but using the chat template of the tokenizer to generate a prompt adapted to instruction-tuned models.
+
+    Args:
+        tokenizer: The tokenizer of the model
+        words: The words to repeat. If None, the words will be "king", "1135", "hello".
+        rel: The string between the repeated words
+        sep: The separator between the words
+        placeholder: The placeholder to use for the last word
+        complete_prompt: If True, the repeat_prompt will be added to the end of the prompt.
+        add_user_instr: If True, the prompt will include instructions from the user to the model.
+
+    Returns:
+        A TargetPrompt object containing the prompt to patch and the index of the token to patch.
+    """
     prompt = repeat_prompt(words, rel, sep, placeholder).prompt
     if add_user_instr:
         chat = [
