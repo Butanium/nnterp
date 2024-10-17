@@ -280,7 +280,7 @@ def collect_activations(
             )
             for layer in layers
         ]
-        get_layer_output(nn_model, last_layer).output.stop()
+        get_layer(nn_model, last_layer).output.stop()
         # This early stopping is useful to avoid e.g. Gemma2 converting its logits to floats
     return th.stack(acts)
 
@@ -340,7 +340,7 @@ def collect_activations_session(
                     .save()
                     for layer in layers
                 ]
-                get_layer_output(nn_model, last_layer).output.stop()
+                get_layer(nn_model, last_layer).output.stop()
             all_acts.append(th.stack(acts).save())
         all_acts = nns.apply(th.cat, all_acts, dim=1).save()
     return all_acts.value
