@@ -96,6 +96,7 @@ def it_repeat_prompt(
     placeholder="?",
     complete_prompt=True,
     add_user_instr=True,
+    use_system_prompt=True,
 ):
     """
     Same as repeat_prompt but using the chat template of the tokenizer to generate a prompt adapted to instruction-tuned models.
@@ -113,23 +114,34 @@ def it_repeat_prompt(
         A TargetPrompt object containing the prompt to patch and the index of the token to patch.
     """
     prompt = repeat_prompt(words, rel, sep, placeholder).prompt
+    chat = []
     if add_user_instr:
-        chat = [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {
-                "role": "user",
-                "content": "I will provide you with a series of sentences. I want you to predict the next token for each sentence.",
-            },
-            {"role": "assistant", "content": "Ok."},
-            {"role": "user", "content": prompt},
-            {"role": "assistant", "content": prompt if complete_prompt else ""},
-        ]
+        if use_system_prompt:
+            chat.append({"role": "system", "content": "You are a helpful assistant."})
+        chat.extend(
+            [
+                {
+                    "role": "user",
+                    "content": "I will provide you with a series of sentences. I want you to predict the next token for each sentence.",
+                },
+                {"role": "assistant", "content": "Ok."},
+                {"role": "user", "content": prompt},
+                {"role": "assistant", "content": prompt if complete_prompt else ""},
+            ]
+        )
     else:
-        chat = [
-            {"role": "system", "content": "Guess the next word in the sentence."},
-            {"role": "user", "content": prompt},
-            {"role": "assistant", "content": prompt if complete_prompt else ""},
-        ]
+        if use_system_prompt:
+            chat.append(
+                {"role": "system", "content": "Guess the next word in the sentence."}
+            )
+        else:
+            chat.append(
+                {
+                    "role": "user",
+                    "content": f"Guess the next word in this sentence: {prompt}",
+                }
+            )
+        chat.append({"role": "assistant", "content": prompt if complete_prompt else ""})
     prompt = tokenizer.apply_chat_template(
         chat, tokenize=False, continue_final_message=True, add_special_tokens=False
     )
