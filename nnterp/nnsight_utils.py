@@ -366,9 +366,15 @@ def collect_activations_batched(
         The hidden states of the specified token of each prompt at each layer, moved to cpu.
         Dimensions are (num_layers, num_prompts, hidden_size)
     """
-    if use_session:
+    if use_session and remote:
         return collect_activations_session(
-            nn_model, prompts, batch_size, layers, get_activations, remote, idx
+            nn_model,
+            prompts,
+            batch_size,
+            layers,
+            get_activations,
+            remote,
+            idx,
         )
     num_prompts = len(prompts)
     acts = []
