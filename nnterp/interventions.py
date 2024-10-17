@@ -173,6 +173,7 @@ def patchscope_lens(
         source_prompts: List of prompts or a single prompt to get the hidden states of the last token
         target_patch_prompts: TargetPrompt(s) / TargetPromptBatch containing the prompt to patch and the index of the token to patch
         layers: List of layers to intervene on. If None, all layers are intervened on.
+        latents: List of latents to use. If None, the hidden states of the last token of each source prompt at each layer are collected.
         remote: If True, the function will run on the nndif server. See `nnsight.net/status` to check which models are available.
 
     Returns:
