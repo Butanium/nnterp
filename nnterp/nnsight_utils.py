@@ -258,7 +258,10 @@ def collect_activations(
             "positive index is currently not supported due to left padding"
         )
     if layers is None:
-        layers = range(get_num_layers(nn_model))
+        layers = list(range(get_num_layers(nn_model)))
+    last_layer = max(layers)
+    if min(layers) < 0:
+        last_layer = max(last_layer, get_num_layers(nn_model) + min(layers))
 
     def wrap(h):
         if open_context:
@@ -277,6 +280,8 @@ def collect_activations(
             )
             for layer in layers
         ]
+        get_layer_output(nn_model, last_layer).output.stop()
+        # This early stopping is useful to avoid e.g. Gemma2 converting its logits to floats
     return th.stack(acts)
 
 
@@ -308,6 +313,9 @@ def collect_activations_session(
     """
     if layers is None:
         layers = list(range(get_num_layers(nn_model)))
+    last_layer = max(layers)
+    if min(layers) < 0:
+        last_layer = max(last_layer, get_num_layers(nn_model) + min(layers))
     if get_activations is None:
         get_activations = get_layer_output
     if idx is None:
@@ -332,6 +340,7 @@ def collect_activations_session(
                     .save()
                     for layer in layers
                 ]
+                get_layer_output(nn_model, last_layer).output.stop()
             all_acts.append(th.stack(acts).save())
         all_acts = nns.apply(th.cat, all_acts, dim=1).save()
     return all_acts.value
