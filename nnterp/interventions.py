@@ -84,6 +84,39 @@ def repeat_prompt(
     return TargetPrompt(prompt, index_to_patch)
 
 
+def it_repeat_prompt(
+    tokenizer,
+    words=None,
+    rel=" ",
+    sep="\n",
+    placeholder="?",
+    complete_prompt=True,
+    add_user_instr=True,
+):
+    prompt = repeat_prompt(words, rel, sep, placeholder).prompt
+    if add_user_instr:
+        chat = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {
+                "role": "user",
+                "content": "I will provide you with a series of sentences. I want you to predict the next token for each sentence.",
+            },
+            {"role": "assistant", "content": "Ok."},
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": prompt if complete_prompt else ""},
+        ]
+    else:
+        chat = [
+            {"role": "system", "content": "Guess the next word in the sentence."},
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": prompt if complete_prompt else ""},
+        ]
+    prompt = tokenizer.apply_chat_template(
+        chat, tokenize=False, continue_final_message=True, add_special_tokens=False
+    )
+    return TargetPrompt(prompt, -1)
+
+
 @dataclass
 class TargetPromptBatch:
     """
