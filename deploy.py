@@ -1,5 +1,6 @@
 import subprocess
 import sys
+from argparse import ArgumentParser
 
 
 def create_git_tag(version):
@@ -29,19 +30,41 @@ def publish_package(version):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <version>")
-        sys.exit(1)
-
-    version = sys.argv[1]
+    parser = ArgumentParser()
+    parser.add_argument("version", type=str, help="The version to deploy")
+    parser.add_argument(
+        "--publish",
+        action="store_true",
+        help="Only publish the package to PyPI, do not create a git tag",
+        default=False,
+    )
+    args = parser.parse_args()
+    version = args.version
+    res = subprocess.run(["git", "tag", "-l", "v*"], capture_output=True, text=True)
+    last_tag = res.stdout.strip().split("\n")[-1]
+    print(f"Last tag: {last_tag}")
     confirm = input(f"Deploying version {version}. Would you like to continue? (y/n)")
     if confirm.lower() != "y":
         print("Deployment cancelled.")
         return
     if "v" in version:
         raise ValueError("Version should not contain 'v'.")
-    create_git_tag(version)
-    build_package()
+
+    if not args.publish:
+        if last_tag == "v" + version:
+            overwrite = input(
+                "Git tag already exists, would you like to overwrite it? (y/n) "
+            )
+            if overwrite.lower() != "y":
+                print("Deployment cancelled.")
+                return
+            else:
+                print("Overwriting git tag.")
+                subprocess.run(["git", "tag", "-d", last_tag])
+                subprocess.run(["git", "push", "origin", "tag", "-d", last_tag])
+                print("Git tag overwritten.")
+        create_git_tag(version)
+        build_package()
     publish_package(version)
 
 
