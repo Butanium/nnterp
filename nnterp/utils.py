@@ -1,15 +1,20 @@
-class TLImportError:
-    def __init__(self, e):
-        self.e = e
+class TLImportErrorProxy:
+    def __init__(self, original_error):
+        self.original_error = original_error
 
     def __call__(self, *args, **kwargs):
         print(
-            "You're trying to use TransformerLens but you don't have it installed. The following error was caught when you imported nnterp:"
+            f"You're trying to use UnifiedTransformer but TransformerLens is not installed. "
+            "The following error was caught when importing nnterp:"
         )
-        raise self.e
+        raise self.original_error
+
+    @classmethod
+    def __instancecheck__(cls, instance):
+        return False
 
 
 try:
     from nnsight.models.UnifiedTransformer import UnifiedTransformer
 except ImportError as e:
-    UnifiedTransformer = TLImportError(e)
+    UnifiedTransformer = TLImportErrorProxy(e)
