@@ -64,12 +64,19 @@ class TargetPrompt:
     index_to_patch: int
 
 
-def repeat_prompt(
-    nn_model=None, words=None, rel=" ", sep="\n", placeholder="?"
-) -> TargetPrompt:
+def repeat_prompt(words=None, rel=" ", sep="\n", placeholder="?") -> TargetPrompt:
     """
     Prompt used in the patchscopes paper to predict the next token.
     https://github.com/PAIR-code/interpretability/blob/master/patchscopes/code/next_token_prediction.ipynb
+
+    Args:
+        words: The words to repeat. If None, the words will be "king", "1135", "hello".
+        rel: The string between the repeated words
+        sep: The separator between the words
+        placeholder: The placeholder to use for the last word
+
+    Returns:
+        A TargetPrompt object containing the prompt to patch and the index of the token to patch.
     """
     if words is None:
         words = [
@@ -77,12 +84,69 @@ def repeat_prompt(
             "1135",
             "hello",
         ]
-    assert nn_model is None or (
-        len(nn_model.tokenizer.tokenize(placeholder)) == 1
-    ), "Using a placeholder that is not a single token sounds like a bad idea"
     prompt = sep.join([w + rel + w for w in words]) + sep + placeholder
     index_to_patch = -1
     return TargetPrompt(prompt, index_to_patch)
+
+
+def it_repeat_prompt(
+    tokenizer,
+    words=None,
+    rel=" ",
+    sep="\n",
+    placeholder="?",
+    complete_prompt=True,
+    add_user_instr=True,
+    use_system_prompt=True,
+):
+    """
+    Same as repeat_prompt but using the chat template of the tokenizer to generate a prompt adapted to instruction-tuned models.
+
+    Args:
+        tokenizer: The tokenizer of the model
+        words: The words to repeat. If None, the words will be "king", "1135", "hello".
+        rel: The string between the repeated words
+        sep: The separator between the words
+        placeholder: The placeholder to use for the last word
+        complete_prompt: If True, the repeat_prompt will be added to the end of the prompt.
+        add_user_instr: If True, the prompt will include instructions from the user to the model.
+
+    Returns:
+        A TargetPrompt object containing the prompt to patch and the index of the token to patch.
+    """
+    prompt = repeat_prompt(words, rel, sep, placeholder).prompt
+    chat = []
+    if add_user_instr:
+        if use_system_prompt:
+            chat.append({"role": "system", "content": "You are a helpful assistant."})
+        chat.extend(
+            [
+                {
+                    "role": "user",
+                    "content": "I will provide you with a series of sentences. I want you to predict the next token for each sentence.",
+                },
+                {"role": "assistant", "content": "Ok."},
+                {"role": "user", "content": prompt},
+                {"role": "assistant", "content": prompt if complete_prompt else ""},
+            ]
+        )
+    else:
+        if use_system_prompt:
+            chat.append(
+                {"role": "system", "content": "Guess the next word in the sentence."}
+            )
+        else:
+            chat.append(
+                {
+                    "role": "user",
+                    "content": f"Guess the next word in this sentence: {prompt}",
+                }
+            )
+        chat.append({"role": "assistant", "content": prompt if complete_prompt else ""})
+    prompt = tokenizer.apply_chat_template(
+        chat, tokenize=False, continue_final_message=True, add_special_tokens=False
+    )
+    return TargetPrompt(prompt, -1)
 
 
 @dataclass
@@ -174,6 +238,7 @@ def patchscope_lens(
         source_prompts: List of prompts or a single prompt to get the hidden states of the last token
         target_patch_prompts: TargetPrompt(s) / TargetPromptBatch containing the prompt to patch and the index of the token to patch
         layers: List of layers to intervene on. If None, all layers are intervened on.
+        latents: List of latents to use. If None, the hidden states of the last token of each source prompt at each layer are collected.
         remote: If True, the function will run on the nndif server. See `nnsight.net/status` to check which models are available.
 
     Returns:

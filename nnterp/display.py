@@ -101,9 +101,9 @@ def plot_topk_tokens(
     if file:
         if isinstance(file, str):
             file = Path(file)
-        if file.suffix != "html":
+        if file.suffix != ".html":
             fig.write_image(file, scale=3)
-        if save_html or file.suffix == "html":
+        if save_html or file.suffix == ".html":
             fig.write_html(
                 file if file.suffix == ".html" else file.with_suffix(".html")
             )
