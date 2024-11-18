@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from dataclasses import dataclass
 import torch as th
 from warnings import warn
@@ -579,9 +580,7 @@ def run_latent_prompt(
     spot_indices = th.tensor(spot_indices)
     with nn_model.trace(inputs, remote=remote):
         for layer in range(patch_from_layer, patch_until_layer + 1):
-            latent_source = (
-                latents[0] if collect_from_single_layer else latents[layer]
-            )
+            latent_source = latents[0] if collect_from_single_layer else latents[layer]
             get_layer_output(nn_model, layer)[
                 batch_indices, spot_indices
             ] = latent_source
@@ -600,6 +599,7 @@ def latent_prompt_lens(
     patch_until_layer: int | None = None,
     layers=None,
     remote=False,
+    from_session=False,
     batch_size=32,
 ):
     if not collect_from_single_layer and patch_until_layer is not None:
@@ -623,7 +623,8 @@ def latent_prompt_lens(
     probs = []
     if layers is None:
         layers = list(range(get_num_layers(nn_model)))
-    with nn_model.session(remote=remote) as session:
+    context = nn_model.session(remote=remote) if not from_session else nullcontext()
+    with context as session:
         for layer in layers:
             if collect_from_single_layer:
                 latents_ = latents[layer].unsqueeze(0)
