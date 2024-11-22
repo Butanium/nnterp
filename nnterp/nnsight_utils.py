@@ -224,7 +224,7 @@ def collect_activations(
     layers=None,
     get_activations: GetModuleOutput | None = None,
     remote=False,
-    idx=None,
+    idx: int | None = None,
     open_context=True,
 ):
     """
@@ -246,16 +246,13 @@ def collect_activations(
     """
     if get_activations is None:
         get_activations = get_layer_output
-    tok_prompts = nn_model.tokenizer(prompts, return_tensors="pt", padding=True)
-    # Todo?: This is a hacky way to get the last token index but it works for both left and right padding
-    last_token_index = tok_prompts.attention_mask.flip(1).cumsum(1).bool().int().sum(1)
     if idx is None:
-        idx = last_token_index.sub(1)  # Default to the last token
-    elif idx < 0:
-        idx = last_token_index + idx
-    else:
+        idx = -1
+    if idx < 0 and nn_model.tokenizer.padding_side != "left":
+        raise ValueError("negative index is currently only supported with left padding")
+    if idx > 0 and nn_model.tokenizer.padding_side != "right":
         raise ValueError(
-            "positive index is currently not supported due to left padding"
+            "positive index is currently only supported with right padding"
         )
     if layers is None:
         layers = list(range(get_num_layers(nn_model)))
@@ -271,15 +268,7 @@ def collect_activations(
     # Collect the hidden states of the last token of each prompt at each layer
     context = nn_model.trace(prompts, remote=remote) if open_context else nullcontext()
     with context:
-        acts = [
-            wrap(
-                get_activations(nn_model, layer)[
-                    th.arange(tok_prompts.input_ids.shape[0]),
-                    idx,
-                ]
-            )
-            for layer in layers
-        ]
+        acts = [wrap(get_activations(nn_model, layer)[:, idx]) for layer in layers]
         get_layer(nn_model, last_layer).output.stop()
         # This early stopping is useful to avoid e.g. Gemma2 converting its logits to floats
     return th.stack(acts)
