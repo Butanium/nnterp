@@ -158,14 +158,9 @@ class TargetPromptBatch:
     index_to_patch: th.Tensor
 
     @classmethod
-    def from_target_prompts(cls, prompts_: list[TargetPrompt], tokenizer=None):
+    def from_target_prompts(cls, prompts_: list[TargetPrompt]):
         prompts = [p.prompt for p in prompts_]
         index_to_patch = th.tensor([p.index_to_patch for p in prompts_])
-        if index_to_patch.min() < 0:
-            if tokenizer is None:
-                raise ValueError(
-                    "If using negative index_to_patch, a tokenizer must be provided"
-                )
         return cls(prompts, index_to_patch)
 
     @classmethod
