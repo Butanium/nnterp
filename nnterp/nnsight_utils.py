@@ -1,8 +1,15 @@
 from __future__ import annotations
 
 from .utils import UnifiedTransformer
-from nnsight.models.LanguageModel import LanguageModelProxy, LanguageModel
-from nnsight.envoy import Envoy
+try:
+    from nnsight.models.LanguageModel import LanguageModelProxy, LanguageModel
+    from nnsight.envoy import Envoy
+except ImportError:
+    from nnsight.modeling.language import LanguageModel
+    from nnsight.intervention.envoy import Envoy
+    from nnsight.intervention.graph.proxy import InterventionProxy
+    LanguageModelProxy = InterventionProxy
+
 import torch as th
 from torch.utils.data import DataLoader
 import nnsight as nns
