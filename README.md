@@ -3,7 +3,6 @@
 ## Installation
 - `pip install nnterp`
 - `pip install nnterp[display]` if you want to use the `display` module for visualizations
-For now, `nnterp` also needs `transformer_lens` to be installed even if you don't want to use it. I'm going to change that in a futur release.
 
 ## Usage
 ### Loading a Model

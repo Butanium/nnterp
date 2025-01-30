@@ -15,6 +15,8 @@ def plot_topk_tokens(
     use_token_ids: bool = False,
     file: str | None = None,
     save_html: bool = True,
+    height: int = 300,
+    width: int = 400,
 ) -> go.Figure:
     """
     Plot the top k tokens for each layer using Plotly.
@@ -93,8 +95,8 @@ def plot_topk_tokens(
 
     fig.update_layout(
         title=title or f"Top {k} Tokens Heatmap",
-        height=300 * n_rows,  # Adjust height based on number of rows
-        width=400 * n_cols,  # Adjust width based on number of columns
+        height=height * n_rows,  # Adjust height based on number of rows
+        width=width * n_cols,  # Adjust width based on number of columns
         showlegend=False,
     )
 

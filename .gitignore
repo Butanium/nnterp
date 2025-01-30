@@ -9,3 +9,5 @@ __pycache__/
 .DS_STORE
 config.yaml
 .nfs*
+.junk/**
+junk**
