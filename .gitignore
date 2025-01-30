@@ -10,3 +10,4 @@ __pycache__/
 config.yaml
 .nfs*
 .junk/**
+junk**
