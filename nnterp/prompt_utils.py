@@ -4,7 +4,7 @@ from typing import Callable
 import torch as th
 import pandas as pd
 from tqdm.auto import tqdm
-from .nnsight_utils import NNLanguageModel, next_token_probs
+from .nnsight_utils import LanguageModel, next_token_probs
 from dataclasses import dataclass
 
 
@@ -113,7 +113,7 @@ class Prompt:
 
 
 def next_token_probs_unsqueeze(
-    nn_model: NNLanguageModel, prompt: str | list[str], remote=False, **_kwargs
+    nn_model: LanguageModel, prompt: str | list[str], remote=False, **_kwargs
 ) -> th.Tensor:
     probs = next_token_probs(nn_model, prompt, remote=remote)
     return probs.unsqueeze(1)  # Add a fake layer dimension
@@ -121,7 +121,7 @@ def next_token_probs_unsqueeze(
 
 @th.no_grad
 def run_prompts(
-    nn_model: NNLanguageModel,
+    nn_model: LanguageModel,
     prompts: list[Prompt],
     batch_size: int = 32,
     get_probs_func: Callable | None = None,

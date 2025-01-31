@@ -14,7 +14,7 @@ from .nnsight_utils import (
     collect_activations,
     collect_activations_batched,
     get_num_layers,
-    NNLanguageModel,
+    LanguageModel,
     GetModuleOutput,
     project_on_vocab,
 )
@@ -35,7 +35,7 @@ __all__ = [
 
 
 @th.no_grad
-def logit_lens(nn_model: NNLanguageModel, prompts: list[str] | str, remote=False):
+def logit_lens(nn_model: LanguageModel, prompts: list[str] | str, remote=False):
     """
     Same as logit_lens but for Llama models directly instead of Transformer_lens models.
     Get the probabilities of the next token for the last token of each prompt at each layer using the logit lens.
@@ -217,7 +217,7 @@ class TargetPromptBatch:
 
 @th.no_grad
 def patchscope_lens(
-    nn_model: NNLanguageModel,
+    nn_model: LanguageModel,
     source_prompts: list[str] | str | None = None,
     target_patch_prompts: (
         TargetPromptBatch | list[TargetPrompt] | TargetPrompt | None
@@ -281,7 +281,7 @@ def patchscope_lens(
 
 @th.no_grad
 def patchscope_generate(
-    nn_model: NNLanguageModel,
+    nn_model: LanguageModel,
     prompts: list[str] | str,
     target_patch_prompt: TargetPrompt,
     max_length: int = 50,
@@ -335,7 +335,7 @@ def patchscope_generate(
 
 
 def steer(
-    nn_model: NNLanguageModel,
+    nn_model: LanguageModel,
     layers: int | list[int],
     steering_vector: th.Tensor,
     factor: float = 1,
@@ -357,7 +357,7 @@ def steer(
 
 
 def skip_layers(
-    nn_model: NNLanguageModel,
+    nn_model: LanguageModel,
     layers_to_skip: int | list[int],
     position: int = -1,
 ):
@@ -376,7 +376,7 @@ def skip_layers(
 
 
 def patch_object_attn_lens(
-    nn_model: NNLanguageModel,
+    nn_model: LanguageModel,
     source_prompts: list[str] | str,
     target_prompts: list[str] | str,
     attn_idx_patch: int,
@@ -490,7 +490,7 @@ class LatentPromptBatch:
 
 
 def run_latent_prompt(
-    nn_model: NNLanguageModel,
+    nn_model: LanguageModel,
     latent_prompts: list[LatentPrompt] | LatentPrompt | LatentPromptBatch,
     prompts: list[str] | str | None = None,
     latents: list[th.Tensor] | th.Tensor | None = None,
@@ -585,7 +585,7 @@ def run_latent_prompt(
 
 
 def latent_prompt_lens(
-    nn_model: NNLanguageModel,
+    nn_model: LanguageModel,
     latent_prompts: list[LatentPrompt] | LatentPrompt,
     prompts: list[str] | str | None = None,
     latents: list[th.Tensor] | th.Tensor | None = None,
@@ -662,7 +662,7 @@ class Intervention:
         if self.get_output is None:
             self.get_output = get_layer_output
 
-    def apply(self, nn_model: NNLanguageModel):
+    def apply(self, nn_model: LanguageModel):
         """
         Perform the intervention on the model
         """
