@@ -371,3 +371,9 @@ def next_token_probs(
         out = nn_model.output.logits
         out = out[:, -1].softmax(-1).cpu().save()
     return out.value
+
+def stop_at_layer(nn_model: LanguageModel, layer: int) -> InterventionProxy:
+    """
+    Stop the output of the model at a given layer
+    """
+    return get_layer(nn_model, layer).output.stop()
