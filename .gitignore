@@ -11,3 +11,14 @@ config.yaml
 .nfs*
 .junk/**
 junk**
+# Documentation build files
+docs/_build/
+docs/build/
+_build/
+site/
+.doctrees/
+.buildinfo
+*.mo
+docs/api/
+docs/generated/
+docs/_autosummary/
