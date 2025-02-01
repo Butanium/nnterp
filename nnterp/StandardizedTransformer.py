@@ -16,13 +16,15 @@ def get_rename_dict(
     mlp_name: str | list[str] | None = None,
     ln_final_name: str | list[str] | None = None,
     lm_head_name: str | list[str] | None = None,
+    model_name: str | list[str] | None = None,
+    layers_name: str | list[str] | None = None,
 ) -> dict[str, str]:
 
     rename_dict = (
         {name: "self_attn" for name in ATTENTION_NAMES}
         | {name: "model" for name in MODEL_NAMES}
         | {name: "layers" for name in LAYER_NAMES}
-        | {name: "ln_final" for name in LN_NAMES}
+        | {name: "norm" for name in LN_NAMES}
         | {name: "lm_head" for name in LM_HEAD_NAMES}
     )
 
@@ -36,8 +38,10 @@ def get_rename_dict(
 
     update_rename_dict("self_attn", attn_name)
     update_rename_dict("mlp", mlp_name)
-    update_rename_dict("ln_final", ln_final_name)
+    update_rename_dict("norm", ln_final_name)
     update_rename_dict("lm_head", lm_head_name)
+    update_rename_dict("model", model_name)
+    update_rename_dict("layers", layers_name)
 
     return rename_dict
 
@@ -59,23 +63,28 @@ class StandardizedTransformer(LanguageModel):
 
 
     Args:
-        model_name: Name of the model to load.
-        no_space_on_bos: If True
-        attn_name: Extra module names to rename to self_attn.
-        mlp_name: Extra module names to rename to mlp.
-        ln_final_name: Extra module names to rename to ln_final.
-        lm_head_name: Extra module names to rename to lm_head.
+        repo_id: Hugging Face repository id / path of the model to load.
+        trust_remote_code: If True, trust the remote code when loading the model.
+        attn_rename: Extra module names to rename to self_attn.
+        mlp_rename: Extra module names to rename to mlp.
+        ln_final_rename: Extra module names to rename to ln_final.
+        lm_head_rename: Extra module names to rename to lm_head.
+        model_rename: Extra module names to rename to model.
+        layers_rename: Extra module names to rename to layers.
+        check_renaming: whether to check if the model was properly renamed.
     """
-
 
     def __init__(
         self,
-        model_name: str,
+        repo_id: str,
         trust_remote_code: bool = False,
-        attn_name: str | None = None,
-        mlp_name: str | None = None,
-        ln_final_name: str | None = None,
-        lm_head_name: str | None = None,
+        attn_rename: str | None = None,
+        mlp_rename: str | None = None,
+        ln_final_rename: str | None = None,
+        lm_head_rename: str | None = None,
+        model_rename: str | None = None,
+        layers_rename: str | None = None,
+        check_renaming: bool = True,
         **kwargs,
     ):
         kwargs.setdefault("torch_dtype", th.float16)
@@ -84,20 +93,22 @@ class StandardizedTransformer(LanguageModel):
 
         tokenizer_kwargs = kwargs.pop("tokenizer_kwargs", {})
         super().__init__(
-            model_name,
+            repo_id,
             tokenizer_kwargs=tokenizer_kwargs,
             trust_remote_code=trust_remote_code,
             rename_modules_dict=get_rename_dict(
-                attn_name=attn_name,
-                mlp_name=mlp_name,
-                ln_final_name=ln_final_name,
-                lm_head_name=lm_head_name,
+                attn_name=attn_rename,
+                mlp_name=mlp_rename,
+                ln_final_name=ln_final_rename,
+                lm_head_name=lm_head_rename,
+                model_name=model_rename,
+                layers_name=layers_rename,
             ),
             **kwargs,
         )
-        try:
-            model = self.model
-        except
+
+        if check_renaming:
+            self._check_renaming(repo_id)
 
     def get_num_layers(self) -> int:
         return len(self.model.layers)
@@ -118,6 +129,7 @@ class StandardizedTransformer(LanguageModel):
         return self.model.layers[layer].self_attn.output[0]
 
     def get_logits(self) -> InterventionProxy:
+        """Returns the lm_head output"""
         return self.lm_head.output
 
     def get_unembed_norm(self) -> Envoy:
@@ -132,3 +144,52 @@ class StandardizedTransformer(LanguageModel):
 
     def get_next_token_probs(self) -> InterventionProxy:
         return self.get_logits()[:, -1, :].softmax(-1)
+
+    def stop_at_layer(self, layer: int) -> InterventionProxy:
+        self.get_layer(layer).output.stop()
+
+    def _check_renaming(self, repo_id: str):
+        try:
+
+            _ = self.model
+        except AttributeError:
+            raise ValueError(
+                f"Could not find model module in {repo_id} architecture. This means that it was not properly renamed.\n"
+                "Please pass the name of the model module to the model_rename argument."
+            )
+        try:
+            _ = self.model.layers
+        except AttributeError:
+            raise ValueError(
+                f"Could not find layers module in {repo_id} architecture. This means that it was not properly renamed.\n"
+                "Please pass the name of the layers module to the layers_rename argument."
+            )
+        try:
+            _ = self.model.norm
+        except AttributeError:
+            raise ValueError(
+                f"Could not find norm module in {repo_id} architecture. This means that it was not properly renamed.\n"
+                "Please pass the name of the norm module to the ln_final_rename argument."
+            )
+        try:
+
+            _ = self.lm_head
+        except AttributeError:
+            raise ValueError(
+                f"Could not find lm_head module in {repo_id} architecture. This means that it was not properly renamed.\n"
+                "Please pass the name of the lm_head module to the lm_head_rename argument."
+            )
+        try:
+            _ = self.model.layers[0].self_attn
+        except AttributeError:
+            raise ValueError(
+                f"Could not find self_attn module in {repo_id} architecture. This means that it was not properly renamed.\n"
+                "Please pass the name of the self_attn module to the attn_rename argument."
+            )
+        try:
+            _ = self.model.layers[0].mlp
+        except AttributeError:
+            raise ValueError(
+                f"Could not find mlp module in {repo_id} architecture. This means that it was not properly renamed.\n"
+                "Please pass the name of the mlp module to the mlp_rename argument."
+            )
