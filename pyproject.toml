@@ -23,11 +23,16 @@ dependencies = [
     ]
 [project.optional-dependencies]
 display = ["plotly"]
-docs = [
+dev = [
     "sphinx>=7.2.0",
     "sphinx-rtd-theme>=2.0.0",
     "sphinx-autodoc-typehints>=1.25.0",
-    "myst-parser>=2.0.0"
+    "myst-parser>=2.0.0",
+    "sphinx-copybutton",
+    "pydata-sphinx-theme",
+    "sphinx-design",
+    "nbsphinx",
+    "pytest",
 ]
 [project.urls]
 "Homepage" = "https://github.com/butanium/nnterp"

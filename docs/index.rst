@@ -1,5 +1,5 @@
 Welcome to nnterp's documentation!
-================================
+==================================
 
 .. toctree::
    :maxdepth: 2
@@ -10,19 +10,19 @@ Welcome to nnterp's documentation!
    changelog
 
 nnterp - Neural Network Interpretation Utilities
----------------------------------------------
+================================================
 
 ``nnterp`` is a Python package that provides utilities and mechanistic interpretability interventions using nnsight.
 
 Quick Links
-----------
+===========
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
 
 Installation
------------
+============
 
 You can install ``nnterp`` using pip:
 
