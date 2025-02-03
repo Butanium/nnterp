@@ -11,7 +11,7 @@ import nnsight as nns
 from typing import Union, Callable
 from contextlib import nullcontext
 from transformers import AutoTokenizer
-from .StandardizedTransformer import llm_rename_dict
+from .standardized_transformer import get_rename_dict
 
 GetModuleOutput = Callable[[LanguageModel, int], InterventionProxy]
 
@@ -22,6 +22,7 @@ def load_model(
     use_tl=False,
     use_module_renaming=True,
     no_space_on_bos=False,
+    rename_kwargs=None,
     **kwargs_,
 ):
     """
@@ -31,6 +32,8 @@ def load_model(
     Args:
         no_space_on_bos: If True, add_prefix_space is set to False in the tokenizer. It is useful if you want to use the tokenizer to get the first token of a word when it's not after a space.
     """
+    if rename_kwargs is None:
+        rename_kwargs = {}
     kwargs = dict(torch_dtype=th.float16, trust_remote_code=trust_remote_code)
     if use_tl:
         raise ValueError("TransformerLens is no longer supported as of nnterp v1.0.0")
@@ -42,11 +45,11 @@ def load_model(
                 dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
             )
         kwargs.update(kwargs_)
-        rename_modules_dict = llm_rename_dict if use_module_renaming else None
+        rename_modules_dict = get_rename_dict(**rename_kwargs) if use_module_renaming else None
         model = LanguageModel(
             model_name,
             tokenizer_kwargs=tokenizer_kwargs,
-            rename_modules_dict=rename_modules_dict,
+            rename=rename_modules_dict,
             **kwargs,
         )
         return model
@@ -84,7 +87,7 @@ def get_layer_input(nn_model: LanguageModel, layer: int) -> InterventionProxy:
     Returns:
         The Proxy for the input of the layer
     """
-    return get_layer(nn_model, layer).input[0][0]
+    return get_layer(nn_model, layer).input
 
 
 def get_layer_output(nn_model: LanguageModel, layer: int) -> InterventionProxy:
@@ -124,6 +127,12 @@ def get_attention_output(nn_model: LanguageModel, layer: int) -> InterventionPro
     output = get_attention(nn_model, layer).output
     return output[0]
 
+
+def get_mlp_output(nn_model: LanguageModel, layer: int) -> InterventionProxy:
+    """
+    Get the output of the MLP of a layer
+    """
+    return get_layer(nn_model, layer).mlp.output
 
 def get_logits(nn_model: LanguageModel) -> InterventionProxy:
     """

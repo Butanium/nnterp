@@ -1,7 +1,6 @@
 from __future__ import annotations
-
 import torch as th
-from nnsight_utils import LanguageModel, InterventionProxy, Envoy
+from .nnsight_utils import LanguageModel, InterventionProxy, Envoy
 
 
 ATTENTION_NAMES = ["attn", "self_attention", "attention"]
@@ -48,30 +47,31 @@ def get_rename_dict(
 
 class StandardizedTransformer(LanguageModel):
     """
+    Renames the LanguageModel modules to match a standardized architecture.
 
-    StandardizedTransformer implementation for Hugging Face models.
-    Renames the model modules to match the following architecture:
-    StandardizedTransformer
-        model
-            layers
-                self_attn
-                mlp
-            ln_final
-        lm_head
-    It already renames most models correctly, but you can add extra renaming rules.
-    It also contains built-in functions to e.g. get the layer input, output, etc.
+    The model structure is organized as follows:
+        StandardizedTransformer
+            ├── model
+            │   ├── layers
+            │   │   ├── self_attn
+            │   │   └── mlp
+            │   └── ln_final
+            └── lm_head
 
+    In addition to renaming modules, this class provides built-in methods to extract intermediate activations, such as layer inputs, outputs, and attention outputs.
 
     Args:
-        repo_id: Hugging Face repository id / path of the model to load.
-        trust_remote_code: If True, trust the remote code when loading the model.
-        attn_rename: Extra module names to rename to self_attn.
-        mlp_rename: Extra module names to rename to mlp.
-        ln_final_rename: Extra module names to rename to ln_final.
-        lm_head_rename: Extra module names to rename to lm_head.
-        model_rename: Extra module names to rename to model.
-        layers_rename: Extra module names to rename to layers.
-        check_renaming: whether to check if the model was properly renamed.
+        repo_id (str): Hugging Face repository ID or path of the model to load.
+        trust_remote_code (bool, optional): If True, remote code will be trusted when
+            loading the model. Defaults to False.
+        attn_rename (str, optional): Extra module name to rename to `self_attn`.
+        mlp_rename (str, optional): Extra module name to rename to `mlp`.
+        ln_final_rename (str, optional): Extra module name to rename to `ln_final`.
+        lm_head_rename (str, optional): Extra module name to rename to `lm_head`.
+        model_rename (str, optional): Extra module name to rename to `model`.
+        layers_rename (str, optional): Extra module name to rename to `layers`.
+        check_renaming (bool, optional): If True, the renaming of modules is validated.
+            Defaults to True.
     """
 
     def __init__(
@@ -96,7 +96,7 @@ class StandardizedTransformer(LanguageModel):
             repo_id,
             tokenizer_kwargs=tokenizer_kwargs,
             trust_remote_code=trust_remote_code,
-            rename_modules_dict=get_rename_dict(
+            rename=get_rename_dict(
                 attn_name=attn_rename,
                 mlp_name=mlp_rename,
                 ln_final_name=ln_final_rename,
@@ -109,15 +109,16 @@ class StandardizedTransformer(LanguageModel):
 
         if check_renaming:
             self._check_renaming(repo_id)
+        self.num_layers = len(self.model.layers)
 
     def get_num_layers(self) -> int:
-        return len(self.model.layers)
+        return self.num_layers
 
     def get_layer(self, layer: int) -> Envoy:
         return self.model.layers[layer]
 
     def get_layer_input(self, layer: int) -> InterventionProxy:
-        return self.model.layers[layer].input[0][0]
+        return self.model.layers[layer].input
 
     def get_layer_output(self, layer: int) -> InterventionProxy:
         return self.model.layers[layer].output[0]
@@ -127,6 +128,12 @@ class StandardizedTransformer(LanguageModel):
 
     def get_attention_output(self, layer: int) -> InterventionProxy:
         return self.model.layers[layer].self_attn.output[0]
+
+    def get_mlp_output(self, layer: int) -> InterventionProxy:
+        """
+        Get the output of the MLP of a layer
+        """
+        return self.model.layers[layer].mlp.output
 
     def get_logits(self) -> InterventionProxy:
         """Returns the lm_head output"""
@@ -150,46 +157,44 @@ class StandardizedTransformer(LanguageModel):
 
     def _check_renaming(self, repo_id: str):
         try:
-
             _ = self.model
-        except AttributeError:
+        except AttributeError as exc:
             raise ValueError(
                 f"Could not find model module in {repo_id} architecture. This means that it was not properly renamed.\n"
                 "Please pass the name of the model module to the model_rename argument."
-            )
+            ) from exc
         try:
             _ = self.model.layers
-        except AttributeError:
+        except AttributeError as exc:
             raise ValueError(
                 f"Could not find layers module in {repo_id} architecture. This means that it was not properly renamed.\n"
                 "Please pass the name of the layers module to the layers_rename argument."
-            )
+            ) from exc
         try:
             _ = self.model.norm
-        except AttributeError:
+        except AttributeError as exc:
             raise ValueError(
                 f"Could not find norm module in {repo_id} architecture. This means that it was not properly renamed.\n"
                 "Please pass the name of the norm module to the ln_final_rename argument."
-            )
+            ) from exc
         try:
-
             _ = self.lm_head
-        except AttributeError:
+        except AttributeError as exc:
             raise ValueError(
                 f"Could not find lm_head module in {repo_id} architecture. This means that it was not properly renamed.\n"
                 "Please pass the name of the lm_head module to the lm_head_rename argument."
-            )
+            ) from exc
         try:
             _ = self.model.layers[0].self_attn
-        except AttributeError:
+        except AttributeError as exc:
             raise ValueError(
                 f"Could not find self_attn module in {repo_id} architecture. This means that it was not properly renamed.\n"
                 "Please pass the name of the self_attn module to the attn_rename argument."
-            )
+            ) from exc
         try:
             _ = self.model.layers[0].mlp
-        except AttributeError:
+        except AttributeError as exc:
             raise ValueError(
                 f"Could not find mlp module in {repo_id} architecture. This means that it was not properly renamed.\n"
                 "Please pass the name of the mlp module to the mlp_rename argument."
-            )
+            ) from exc
