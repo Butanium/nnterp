@@ -11,6 +11,8 @@ config.yaml
 .nfs*
 .junk/**
 junk**
+.env
+.venv
 # Documentation build files
 docs/_build/
 docs/build/
