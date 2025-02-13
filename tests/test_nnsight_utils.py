@@ -78,7 +78,7 @@ def test_basic_utils(model_name):
     assert projected.shape[-1] == model.config.vocab_size
     assert layer_input.shape == layer_output.shape
     assert logits.shape[-1] == model.config.vocab_size
-    assert logits_output.shape == next_probs.shape
+    assert next_probs.shape == (logits.shape[0], model.config.vocab_size)
     assert logits_output.shape == projected.shape
     assert mlp_output.shape == layer_output.shape
     assert attn_output.shape == layer_input.shape
@@ -94,7 +94,7 @@ def test_activation_collection(model_name):
     assert acts.shape[:2] == (get_num_layers(model), len(prompts))  # Batch dimension
 
     # Test activation collection with session
-    warnings.warns(UserWarning, "skipping collect activations sessions")
+    warnings.warn("skipping collect activations sessions")
     # acts_session = collect_activations_session(model, prompts, batch_size=1)
     # assert acts_session.shape[:2] == (get_num_layers(model), len(prompts))
 

@@ -18,7 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "nnsight>=0.4",
+    "nnsight>=0.4.2",  # Mandatory fix for renaming
     "pandas",
     ]
 [project.optional-dependencies]

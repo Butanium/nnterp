@@ -308,7 +308,7 @@ def collect_activations_session(
                 get_layer(nn_model, last_layer).output.stop()
             all_acts.append(th.stack(acts).save())
         all_acts = nns.apply(th.cat, all_acts, dim=1).save()
-    return all_acts.value
+    return all_acts
 
 
 def collect_activations_batched(
@@ -379,7 +379,7 @@ def next_token_probs(
     with nn_model.trace(prompt, remote=remote):
         out = nn_model.output.logits
         out = out[:, -1].softmax(-1).cpu().save()
-    return out.value
+    return out
 
 def stop_at_layer(nn_model: LanguageModel, layer: int) -> InterventionProxy:
     """

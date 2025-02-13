@@ -2,6 +2,18 @@ import torch
 import pytest
 from nnterp.nnsight_utils import load_model
 from nnterp import StandardizedTransformer
+from nnterp.nnsight_utils import (
+    get_layer,
+    get_layer_input,
+    get_layer_output,
+    get_attention,
+    get_attention_output,
+    get_logits,
+    get_next_token_probs,
+    project_on_vocab,
+    stop_at_layer,
+    get_mlp_output,
+)
 
 
 # Define a fixture for model names
@@ -97,34 +109,35 @@ def test_model_renaming_activations_diff(model_name):
     print("All activations match between renamed and unrenamed models.")
 
 
-def test_renaming_is_correct(model_name):
+@pytest.mark.parametrize("model_type", ["standardized", "renamed"])
+def test_renaming_forward(model_name, model_type):
     """
-    Test that the renaming is correct
+    Test that the renaming is correct for both StandardizedTransformer and renamed model
     """
-    model_renamed = StandardizedTransformer(model_name)
-    model_loaded = load_model(model_name, use_module_renaming=True)
+    # Load models
+    renamed_model = (
+        StandardizedTransformer(model_name)
+        if model_type == "standardized"
+        else load_model(model_name, use_module_renaming=True)
+    )
     normal_model = load_model(model_name, use_module_renaming=False)
-    model_renamed.model.layers[0].self_attn
-    model_loaded.model.layers[0].self_attn
-    model_renamed.model.layers[0].mlp
-    model_loaded.model.layers[0].mlp
-    model_renamed.model.norm
-    model_loaded.model.norm
-    model_renamed.lm_head
-    model_loaded.lm_head
+
+    # Test that key attributes exist and are accessible
+    renamed_model.model.layers[0].self_attn
+    renamed_model.model.layers[0].mlp
+    renamed_model.model.norm
+    renamed_model.lm_head
+
     prompt = "Hello, world!"
 
+    # Compare outputs
     with normal_model.trace(prompt):
         normal_out = normal_model.output.logits.save()
 
-    with model_renamed.trace(prompt):
-        renamed_out = model_renamed.output.logits.save()
-
-    with model_loaded.trace(prompt):
-        loaded_out = model_loaded.output.logits.save()
+    with renamed_model.trace(prompt):
+        renamed_out = renamed_model.output.logits.save()
 
     assert torch.allclose(normal_out, renamed_out)
-    assert torch.allclose(normal_out, loaded_out)
 
 
 def test_standardized_transformer_methods(model_name):
@@ -172,4 +185,57 @@ def test_standardized_transformer_methods(model_name):
     assert mlp_output.shape == layer_output.shape
     assert attn_output.shape == layer_input.shape
 
-    print("All StandardizedTransformer methods tested successfully.")
+    print("StandardizedTransformer methods tested successfully.")
+
+
+@pytest.mark.parametrize("model_type", ["standardized", "renamed"])
+def test_renamed_model_methods(model_name, model_type):
+    """
+    Test all methods with a renamed model loaded via load_model
+    """
+    model = (
+        StandardizedTransformer(model_name)
+        if model_type == "standardized"
+        else load_model(model_name, use_module_renaming=True)
+    )
+    prompt = "Hello, world!"
+
+    num_layers = model.get_num_layers()
+    assert num_layers > 0
+    with model.trace(prompt):
+        # Test layer count and access
+
+        # Test layer 0 methods
+        _layer = get_layer(model, 0)
+
+        layer_input = get_layer_input(model, 0).save()
+
+        layer_output = get_layer_output(model, 0).save()
+
+        _attention = get_attention(model, 0)
+
+        attn_output = get_attention_output(model, 0).save()
+        mlp_output = get_mlp_output(model, 0).save()
+
+        # Test model-level methods
+        logits = get_logits(model).save()
+
+        # Test token probability methods
+        next_probs = get_next_token_probs(model).save()
+
+        # Test project_on_vocab with layer output
+        projected = project_on_vocab(model, layer_output).save()
+        logits_output = model.output.logits.save()
+        # Test stop_at_layer
+        stop_at_layer(model, 0)
+
+    assert next_probs.shape[-1] == model.config.vocab_size
+    assert projected.shape[-1] == model.config.vocab_size
+    assert layer_input.shape == layer_output.shape
+    assert logits.shape[-1] == model.config.vocab_size
+    assert next_probs.shape == (logits.shape[0], logits.shape[2])
+    assert logits_output.shape == projected.shape
+    assert mlp_output.shape == layer_output.shape
+    assert attn_output.shape == layer_input.shape
+
+    print("Renamed model methods tested successfully.")
