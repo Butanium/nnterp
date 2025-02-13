@@ -13,6 +13,7 @@ from nnterp.nnsight_utils import (
     project_on_vocab,
     stop_at_layer,
     get_mlp_output,
+    get_num_layers,
 )
 
 
@@ -28,7 +29,7 @@ def model_name(request):
     return request.param
 
 
-def get_layer(model_name, model, renamed, i):
+def get_layer_test(model_name, model, renamed, i):
     if renamed:
         return model.model.layers[i]
     elif model_name == "gpt2":
@@ -52,7 +53,7 @@ def get_norm(model_name, model, renamed):
         raise ValueError(f"Model {model_name} not supported")
 
 
-def get_num_layers(model_name, model, renamed):
+def get_num_layers_test(model_name, model, renamed):
     if renamed or model_name == "Maykeye/TinyLLama-v0":
         return len(model.model.layers)
     elif model_name in ["gpt2", "bigscience/bigscience-small-testing"]:
@@ -78,9 +79,9 @@ def test_model_renaming_activations_diff(model_name):
         activations = []
         with model.trace(prompt):
             # Collect layer outputs
-            num_layers = get_num_layers(model_name, model, renamed)
+            num_layers = get_num_layers_test(model_name, model, renamed)
             for i in range(num_layers):
-                layer = get_layer(model_name, model, renamed, i)
+                layer = get_layer_test(model_name, model, renamed, i)
                 activations.append(layer.output[0].save())
 
             # Collect final layer norm output
@@ -200,7 +201,7 @@ def test_renamed_model_methods(model_name, model_type):
     )
     prompt = "Hello, world!"
 
-    num_layers = model.get_num_layers()
+    num_layers = get_num_layers(model)
     assert num_layers > 0
     with model.trace(prompt):
         # Test layer count and access
