@@ -1,5 +1,5 @@
-import warnings
 import pytest
+import torch as th
 from nnterp.nnsight_utils import (
     load_model,
     get_num_layers,
@@ -87,21 +87,25 @@ def test_basic_utils(model_name):
 def test_activation_collection(model_name):
     """Test activation collection functions"""
     model = load_model(model_name, use_module_renaming=True)
-    prompts = ["Hello, world!", "Testing, 1, 2, 3"]
+    prompts = ["Hello, world!", "Testing, 1, 2, 3"] * 2
 
     # Test basic activation collection
     acts = collect_activations(model, prompts)
     assert acts.shape[:2] == (get_num_layers(model), len(prompts))  # Batch dimension
 
-    # Test activation collection with session
-    warnings.warn("skipping collect activations sessions")
-    # acts_session = collect_activations_session(model, prompts, batch_size=1)
-    # assert acts_session.shape[:2] == (get_num_layers(model), len(prompts))
-
     # Test batched activation collection
     acts_batched = collect_activations_batched(model, prompts, batch_size=1)
     assert acts_batched.shape[:2] == (get_num_layers(model), len(prompts))
 
+    acts_batched_no_batch = collect_activations_batched(
+        model, prompts, batch_size=len(prompts)
+    )
+    assert th.allclose(acts, acts_batched_no_batch)
+
     # Test next token probabilities
     probs = next_token_probs(model, prompts)
     assert probs.shape == (len(prompts), model.config.vocab_size)
+
+    # Test activation collection with session
+    acts_session = collect_activations_session(model, prompts, batch_size=1)
+    assert acts_session.shape[:2] == (get_num_layers(model), len(prompts))

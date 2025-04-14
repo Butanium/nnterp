@@ -45,7 +45,9 @@ def load_model(
                 dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
             )
         kwargs.update(kwargs_)
-        rename_modules_dict = get_rename_dict(**rename_kwargs) if use_module_renaming else None
+        rename_modules_dict = (
+            get_rename_dict(**rename_kwargs) if use_module_renaming else None
+        )
         model = LanguageModel(
             model_name,
             tokenizer_kwargs=tokenizer_kwargs,
@@ -133,6 +135,7 @@ def get_mlp_output(nn_model: LanguageModel, layer: int) -> InterventionProxy:
     Get the output of the MLP of a layer
     """
     return get_layer(nn_model, layer).mlp.output
+
 
 def get_logits(nn_model: LanguageModel) -> InterventionProxy:
     """
@@ -291,11 +294,16 @@ def collect_activations_session(
         raise ValueError(
             "positive index is currently only supported with right padding"
         )
+    print(f"last layer: {last_layer}/{get_num_layers(nn_model)}")
     with nn_model.session(remote=remote) as session:
-        all_acts = nns.list().save()
         dl = DataLoader(prompts, batch_size=batch_size)
+        all_acts = nns.list().save()
+        nns.log("len(dl)")
+        # nns.log(len(dl))
         with session.iter(dl) as batch:
             with nn_model.trace(batch):
+                nns.log("batch")
+                nns.log(batch)
                 acts = [
                     get_activations(nn_model, layer)[
                         :,
@@ -305,9 +313,11 @@ def collect_activations_session(
                     .save()
                     for layer in layers
                 ]
-                get_layer(nn_model, last_layer).output.stop()
+                # get_layer(nn_model, last_layer).output.stop()
             all_acts.append(th.stack(acts).save())
-        all_acts = nns.apply(th.cat, all_acts, dim=1).save()
+        nns.log("(all_acts)")
+        nns.log((all_acts))
+        all_acts = th.cat(all_acts, dim=1).save()
     return all_acts
 
 
@@ -380,6 +390,7 @@ def next_token_probs(
         out = nn_model.output.logits
         out = out[:, -1].softmax(-1).cpu().save()
     return out
+
 
 def stop_at_layer(nn_model: LanguageModel, layer: int) -> InterventionProxy:
     """
