@@ -26,9 +26,7 @@ __all__ = [
     "patchscope_generate",
     "steer",
     "skip_layers",
-    "patch_attention_lens",
     "patch_object_attn_lens",
-    "object_lens",
 ]
 
 
@@ -47,7 +45,7 @@ def logit_lens(nn_model: NNLanguageModel, prompts: list[str] | str, remote=False
         of the next token for each prompt at each layer. Tensor is on the CPU.
     """
     with nn_model.trace(prompts, remote=remote) as tracer:
-        hiddens_l = collect_activations(nn_model, prompts, open_context=False)
+        hiddens_l = [get_layer_output(nn_model, i) for i in range(get_num_layers(nn_model))]
         probs_l = []
         for hiddens in hiddens_l:
             logits = project_on_vocab(nn_model, hiddens)
