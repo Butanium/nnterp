@@ -54,7 +54,7 @@ def logit_lens(nn_model: NNLanguageModel, prompts: list[str] | str, remote=False
             probs = logits.softmax(-1).cpu()
             probs_l.append(probs)
         probs = th.stack(probs_l).transpose(0, 1).save()
-    return probs.value
+    return probs
 
 
 @dataclass
