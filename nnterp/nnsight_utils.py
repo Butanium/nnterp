@@ -276,7 +276,8 @@ def collect_activations(
     context = nn_model.trace(prompts, remote=remote) if open_context else nullcontext()
     with context:
         acts = [wrap(get_activations(nn_model, layer)[:, idx]) for layer in layers]
-        get_layer(nn_model, last_layer).output.stop()
+        if open_context:
+            get_layer(nn_model, last_layer).output.stop()
         # This early stopping is useful to avoid e.g. Gemma2 converting its logits to floats
     return th.stack(acts)
 
