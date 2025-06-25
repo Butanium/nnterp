@@ -11,7 +11,7 @@ authors = [
 ]
 description = "Utils and mechanistic interpretability intervensions using nnsight"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -33,6 +33,11 @@ dev = [
     "sphinx-design",
     "nbsphinx",
     "pytest",
+    "ipykernel",
+    "ipywidgets",
+]
+vllm = [
+    "vllm",
 ]
 [project.urls]
 "Homepage" = "https://github.com/butanium/nnterp"

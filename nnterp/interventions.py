@@ -11,7 +11,7 @@ from .nnsight_utils import (
     get_attention,
     get_attention_output,
     get_next_token_probs,
-    collect_activations,
+    get_token_activations,
     collect_activations_batched,
     get_num_layers,
     LanguageModel,
@@ -49,14 +49,14 @@ def logit_lens(nn_model: LanguageModel, prompts: list[str] | str, remote=False):
         of the next token for each prompt at each layer. Tensor is on the CPU.
     """
     with nn_model.trace(prompts, remote=remote) as tracer:
-        hiddens_l = collect_activations(nn_model, prompts, open_context=False)
+        hiddens_l = get_token_activations(nn_model, prompts, tracer=tracer)
         probs_l = []
         for hiddens in hiddens_l:
             logits = project_on_vocab(nn_model, hiddens)
             probs = logits.softmax(-1).cpu()
             probs_l.append(probs)
         probs = th.stack(probs_l).transpose(0, 1).save()
-    return probs.value
+    return probs
 
 
 @dataclass
@@ -259,7 +259,7 @@ def patchscope_lens(
             f"Number of sources ({num_sources}) does not match number of patch prompts ({len(target_patch_prompts)})"
         )
     if latents is None:
-        latents = collect_activations(nn_model, source_prompts, remote=remote)
+        latents = get_token_activations(nn_model, source_prompts, remote=remote)
     elif source_prompts is not None:
         raise ValueError("You cannot provide both source_prompts and hiddens")
 
@@ -275,7 +275,7 @@ def patchscope_lens(
                 th.arange(num_sources), target_patch_prompts.index_to_patch
             ] = latents[layer]
             probs_l.append(get_next_token_probs(nn_model).cpu().save())
-    probs = th.cat([p.value for p in probs_l], dim=0)
+    probs = th.cat(probs_l, dim=0)
     return probs.reshape(len(layers), num_sources, -1).transpose(0, 1)
 
 
@@ -311,7 +311,7 @@ def patchscope_generate(
         warn(
             f"Number of prompts ({len(prompts)}) exceeds max_batch_size ({max_batch_size}). This may cause memory errors."
         )
-    hiddens = collect_activations(nn_model, prompts, remote=remote, layers=layers)
+    hiddens = get_token_activations(nn_model, prompts, remote=remote, layers=layers)
     generations = {}
     gen_kwargs = dict(remote=remote, max_new_tokens=max_length)
     if layers is None:
@@ -406,7 +406,7 @@ def patch_object_attn_lens(
     def get_act(model, layer):
         return get_attention(model, layer).input[1]["hidden_states"]
 
-    source_hiddens = collect_activations(
+    source_hiddens = get_token_activations(
         nn_model,
         source_prompts,
         get_activations=get_act,
@@ -420,7 +420,7 @@ def patch_object_attn_lens(
             probs = get_next_token_probs(nn_model).cpu().save()
             probs_l.append(probs)
     return (
-        th.cat([p.value for p in probs_l], dim=0)
+        th.cat(probs_l, dim=0)
         .reshape(num_layers, len(target_prompts), -1)
         .transpose(0, 1)
     )
@@ -554,7 +554,7 @@ def run_latent_prompt(
         latents = [[] for _ in range(patch_until_layer + 1)]
         for i in range(0, len(prompts), batch_size):
             prompt_batch = prompts[i : i + batch_size]
-            acts = collect_activations(
+            acts = get_token_activations(
                 nn_model,
                 prompt_batch,
                 layers=(
@@ -674,7 +674,7 @@ class Intervention:
     ):
         if isinstance(layers, int):
             layers = [layers]
-        hiddens = collect_activations(
+        hiddens = get_token_activations(
             nn_model, prompts, layers, remote=remote, get_activations=get_layer_output
         )
         return [cls(h, l, position, get_output) for h, l in zip(hiddens, layers)]

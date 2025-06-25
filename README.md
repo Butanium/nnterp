@@ -20,7 +20,7 @@ tokenizer = nn_model.tokenizer
 
 ### Collecting activations
 
-To collect activations from a model using `nnterp`, you can use the `collect_activations` function. This function takes the following parameters:
+To collect activations from a model using `nnterp`, you can use the `get_token_activations` function. This function takes the following parameters:
 
 - `nn_model`: The NNSight model.
 - `prompts`: The prompts for which you want to collect activations.
@@ -31,7 +31,7 @@ To collect activations from a model using `nnterp`, you can use the `collect_act
 - `open_context`: Whether to open a context for the model trace. You can set to false if you want to collect activations in an already opened nnsight tracing context.
 
 ```python
-from nnterp import collect_activations
+from nnterp import get_token_activations
 
 # Load the model
 nn_model = load_model(model_name)
@@ -40,7 +40,7 @@ nn_model = load_model(model_name)
 prompt = "The quick brown fox jumps over the lazy dog"
 
 # Collect activations for all layers
-activations = collect_activations(nn_model, [prompt])
+activations = get_token_activations(nn_model, [prompt])
 
 # Print the activations
 for layer, activation in enumerate(activations):
@@ -49,7 +49,7 @@ for layer, activation in enumerate(activations):
 
 ### Collecting activations in batches
 
-If you have a large number of prompts and want to collect activations in batches to optimize memory usage, you can use the `collect_activations_batched` function. This function has similar parameters to `collect_activations`, but also takes a `batch_size` parameter to specify the batch size for collecting activations.
+If you have a large number of prompts and want to collect activations in batches to optimize memory usage, you can use the `collect_activations_batched` function. This function has similar parameters to `get_token_activations`, but also takes a `batch_size` parameter to specify the batch size for collecting activations.
 
 ```python
 from nnterp import collect_activations_batched

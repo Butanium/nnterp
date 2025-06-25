@@ -20,7 +20,7 @@ def load_model(
     model_name: str,
     trust_remote_code=False,
     use_tl=False,
-    use_module_renaming=True,
+    use_module_renaming=False,
     no_space_on_bos=False,
     rename_kwargs=None,
     **kwargs_,
@@ -197,32 +197,33 @@ def get_next_token_probs(nn_model: LanguageModel) -> InterventionProxy:
 
 
 @th.no_grad
-def collect_activations(
+def get_token_activations(
     nn_model: LanguageModel,
-    prompts,
+    prompts=None,
     layers=None,
     get_activations: GetModuleOutput | None = None,
     remote=False,
     idx: int | None = None,
-    open_context=True,
+    tracer=None,
 ):
     """
     Collect the hidden states of the last token of each prompt at each layer
 
     Args:
         nn_model: The NNSight model
-        prompts: The prompts to collect activations for
+        prompts: The prompts to collect activations for. Can be None if you call this from an existing tracer.
         layers: The layers to collect activations for, default to all layers
         get_activations: The function to get the activations, default to layer output
         remote: Whether to run the model on the remote device
         idx: The index of the token to collect activations for
-        open_context: Whether to open a trace context to collect activations. Set to false if you want to
-            use this function in a context that already has a trace context open
+        tracer: A tracer object to use to collect activations. If None, a new tracer is created.
 
     Returns:
         The hidden states of the last token of each prompt at each layer, moved to cpu. If open_context is False, returns a list of
         Proxies. Dimensions are (num_layers, num_prompts, hidden_size)
     """
+    if tracer is None and prompts is None:
+        raise ValueError("prompts must be provided if tracer is None")
     if get_activations is None:
         get_activations = get_layer_output
     if idx is None:
@@ -239,22 +240,21 @@ def collect_activations(
     if min(layers) < 0:
         last_layer = max(last_layer, get_num_layers(nn_model) + min(layers))
 
-    def wrap(h):
-        if open_context:
-            return h.cpu().save()
-        return h
-
     # Collect the hidden states of the last token of each prompt at each layer
-    context = nn_model.trace(prompts, remote=remote) if open_context else nullcontext()
-    with context:
-        acts = [wrap(get_activations(nn_model, layer)[:, idx]) for layer in layers]
-        get_layer(nn_model, last_layer).output.stop()
-        # This early stopping is useful to avoid e.g. Gemma2 converting its logits to floats
+    if tracer is None:
+        with nn_model.trace(prompts, remote=remote) as tracer:
+            acts = [
+                get_activations(nn_model, layer)[:, idx].cpu().save()
+                for layer in layers
+            ]
+            tracer.stop()
+    else:
+        acts = [get_activations(nn_model, layer)[:, idx] for layer in layers]
     return th.stack(acts)
 
 
 @th.no_grad
-def collect_activations_session(
+def collect_last_token_activations_session(
     nn_model,
     prompts,
     batch_size,
@@ -351,7 +351,7 @@ def collect_activations_batched(
         Dimensions are (num_layers, num_prompts, hidden_size)
     """
     if use_session and remote:
-        return collect_activations_session(
+        return collect_last_token_activations_session(
             nn_model,
             prompts,
             batch_size,
@@ -367,14 +367,14 @@ def collect_activations_batched(
         it = tqdm(it)
     for i in it:
         batch = prompts[i : min(i + batch_size, num_prompts)]
-        acts_batch = collect_activations(
+        acts_batch = get_token_activations(
             nn_model, batch, layers, get_activations, remote, idx
         )
         acts.append(acts_batch)
     return th.cat(acts, dim=1)
 
 
-def next_token_probs(
+def compute_next_token_probs(
     nn_model: LanguageModel, prompt: str | list[str], remote=False
 ) -> th.Tensor:
     """
