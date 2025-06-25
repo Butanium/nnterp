@@ -3,17 +3,16 @@ from __future__ import annotations
 
 from nnsight import LanguageModel
 from nnsight.intervention.envoy import Envoy
-from nnsight.intervention.graph.proxy import InterventionProxy
+from nnsight.intervention.tracing.globals import Object
 
 import torch as th
 from torch.utils.data import DataLoader
 import nnsight as nns
 from typing import Union, Callable
-from contextlib import nullcontext
-from transformers import AutoTokenizer
 from .standardized_transformer import get_rename_dict
 
-GetModuleOutput = Callable[[LanguageModel, int], InterventionProxy]
+TraceTensor = Union[th.Tensor, Object]
+GetModuleOutput = Callable[[LanguageModel, int], TraceTensor]
 
 
 def load_model(
@@ -80,7 +79,7 @@ def get_layer(nn_model: LanguageModel, layer: int) -> Envoy:
     return nn_model.model.layers[layer]
 
 
-def get_layer_input(nn_model: LanguageModel, layer: int) -> InterventionProxy:
+def get_layer_input(nn_model: LanguageModel, layer: int) -> Union[int, Object]:
     """
     Get the hidden state input of a layer
     Args:
@@ -92,7 +91,7 @@ def get_layer_input(nn_model: LanguageModel, layer: int) -> InterventionProxy:
     return get_layer(nn_model, layer).input
 
 
-def get_layer_output(nn_model: LanguageModel, layer: int) -> InterventionProxy:
+def get_layer_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
     """
     Get the output of a layer
     Args:
@@ -117,7 +116,7 @@ def get_attention(nn_model: LanguageModel, layer: int) -> Envoy:
     return nn_model.model.layers[layer].self_attn
 
 
-def get_attention_output(nn_model: LanguageModel, layer: int) -> InterventionProxy:
+def get_attention_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
     """
     Get the output of the attention block of a layer
     Args:
@@ -130,14 +129,14 @@ def get_attention_output(nn_model: LanguageModel, layer: int) -> InterventionPro
     return output[0]
 
 
-def get_mlp_output(nn_model: LanguageModel, layer: int) -> InterventionProxy:
+def get_mlp_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
     """
     Get the output of the MLP of a layer
     """
     return get_layer(nn_model, layer).mlp.output
 
 
-def get_logits(nn_model: LanguageModel) -> InterventionProxy:
+def get_logits(nn_model: LanguageModel) -> TraceTensor:
     """
     Get the logits of the model
     Args:
@@ -170,9 +169,7 @@ def get_unembed(nn_model: LanguageModel) -> Envoy:
     return nn_model.lm_head
 
 
-def project_on_vocab(
-    nn_model: LanguageModel, h: InterventionProxy
-) -> InterventionProxy:
+def project_on_vocab(nn_model: LanguageModel, h: TraceTensor) -> TraceTensor:
     """
     Project the hidden states on the vocabulary, after applying the model's last layer norm
     Args:
@@ -185,7 +182,7 @@ def project_on_vocab(
     return nn_model.lm_head(ln_out)
 
 
-def get_next_token_probs(nn_model: LanguageModel) -> InterventionProxy:
+def get_next_token_probs(nn_model: LanguageModel) -> TraceTensor:
     """
     Get the probabilities of the model
     Args:
@@ -294,29 +291,23 @@ def collect_last_token_activations_session(
         raise ValueError(
             "positive index is currently only supported with right padding"
         )
-    print(f"last layer: {last_layer}/{get_num_layers(nn_model)}")
     with nn_model.session(remote=remote) as session:
         dl = DataLoader(prompts, batch_size=batch_size)
-        all_acts = nns.list().save()
-        nns.log("len(dl)")
-        # nns.log(len(dl))
-        with session.iter(dl) as batch:
-            with nn_model.trace(batch):
-                nns.log("batch")
-                nns.log(batch)
-                acts = [
-                    get_activations(nn_model, layer)[
-                        :,
-                        idx,
-                    ]
-                    .cpu()
-                    .save()
-                    for layer in layers
-                ]
-                # get_layer(nn_model, last_layer).output.stop()
+        all_acts = []
+        for batch in dl:
+            with nn_model.trace(batch) as tracer:
+                acts = []
+                for layer in layers:
+                    acts.append(
+                        get_activations(nn_model, layer)[
+                            :,
+                            idx,
+                        ]
+                        .cpu()
+                        .save()
+                    )
+                tracer.stop()
             all_acts.append(th.stack(acts).save())
-        nns.log("(all_acts)")
-        nns.log((all_acts))
         all_acts = th.cat(all_acts, dim=1).save()
     return all_acts
 
@@ -390,10 +381,3 @@ def compute_next_token_probs(
         out = nn_model.output.logits
         out = out[:, -1].softmax(-1).cpu().save()
     return out
-
-
-def stop_at_layer(nn_model: LanguageModel, layer: int) -> InterventionProxy:
-    """
-    Stop the output of the model at a given layer
-    """
-    return get_layer(nn_model, layer).output.stop()

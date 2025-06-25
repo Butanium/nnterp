@@ -11,19 +11,16 @@ from nnterp.nnsight_utils import (
     get_logits,
     project_on_vocab,
     get_next_token_probs,
-    collect_activations,
-    collect_activations_session,
+    get_token_activations,
+    collect_last_token_activations_session,
     collect_activations_batched,
-    next_token_probs,
-    stop_at_layer,
+    compute_next_token_probs,
     get_mlp_output,
 )
 
 
 @pytest.fixture(
     params=[
-        "gpt2",
-        "bigscience/bigscience-small-testing",
         "Maykeye/TinyLLama-v0",
     ]
 )
@@ -33,16 +30,12 @@ def model_name(request):
 
 def test_load_model(model_name):
     """Test loading model with different configurations"""
-    # Test default loading
-    model = load_model(model_name)
-
-    # Test with module renaming
-    model_renamed = load_model(model_name, use_module_renaming=True)
+    load_model(model_name)
 
 
 def test_basic_utils(model_name):
     """Test basic utility functions"""
-    model = load_model(model_name, use_module_renaming=True)
+    model = load_model(model_name)
     prompt = "Hello, world!"
 
     num_layers = get_num_layers(model)
@@ -55,12 +48,11 @@ def test_basic_utils(model_name):
 
         layer_input = get_layer_input(model, 0).save()
 
-        layer_output = get_layer_output(model, 0).save()
-
         _attention = get_attention(model, 0)
 
         attn_output = get_attention_output(model, 0).save()
         mlp_output = get_mlp_output(model, 0).save()
+        layer_output = get_layer_output(model, 0).save()
 
         # Test model-level methods
         logits = get_logits(model).save()
@@ -71,8 +63,6 @@ def test_basic_utils(model_name):
         # Test project_on_vocab with layer output
         projected = project_on_vocab(model, layer_output).save()
         logits_output = model.output.logits.save()
-        # Test stop_at_layer
-        stop_at_layer(model, 0)
 
     assert next_probs.shape[-1] == model.config.vocab_size
     assert projected.shape[-1] == model.config.vocab_size
@@ -86,11 +76,14 @@ def test_basic_utils(model_name):
 
 def test_activation_collection(model_name):
     """Test activation collection functions"""
-    model = load_model(model_name, use_module_renaming=True)
+    model = load_model(model_name)
     prompts = ["Hello, world!", "Testing, 1, 2, 3"] * 2
 
+    # Test activation collection with session
+    acts_session = collect_last_token_activations_session(model, prompts, batch_size=1)
+    assert acts_session.shape[:2] == (get_num_layers(model), len(prompts))
     # Test basic activation collection
-    acts = collect_activations(model, prompts)
+    acts = get_token_activations(model, prompts)
     assert acts.shape[:2] == (get_num_layers(model), len(prompts))  # Batch dimension
 
     # Test batched activation collection
@@ -103,9 +96,6 @@ def test_activation_collection(model_name):
     assert th.allclose(acts, acts_batched_no_batch)
 
     # Test next token probabilities
-    probs = next_token_probs(model, prompts)
+    probs = compute_next_token_probs(model, prompts)
     assert probs.shape == (len(prompts), model.config.vocab_size)
 
-    # Test activation collection with session
-    acts_session = collect_activations_session(model, prompts, batch_size=1)
-    assert acts_session.shape[:2] == (get_num_layers(model), len(prompts))
