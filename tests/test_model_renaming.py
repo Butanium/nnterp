@@ -154,20 +154,18 @@ def test_standardized_transformer_methods(model_name):
         
         # === Test accessor way ===
         _layer_accessor = model.layers[0]
-        layer_input_accessor = model.layers_input[0].save()
-        _attention_accessor = model.attentions[0]
-        _mlp_accessor = model.mlps[0]
-        attn_output_accessor = model.attention_output[0].save()
-        mlp_output_accessor = model.mlp_output[0].save()
-        layer_output_accessor = model.layers_output[0].save()
-
-        # === Test direct module access way ===
         _layer_direct = model.model.layers[0]
+        layer_input_accessor = model.layers_input[0].save()
         layer_input_direct = model.model.layers[0].input.save()
+        _attention_accessor = model.attentions[0]
         _attention_direct = model.model.layers[0].self_attn
+        _mlp_accessor = model.mlps[0]
         _mlp_direct = model.model.layers[0].mlp
+        attn_output_accessor = model.attention_output[0].save()
         attn_output_direct = model.model.layers[0].self_attn.output[0].save()
+        mlp_output_accessor = model.mlp_output[0].save()
         mlp_output_direct = model.model.layers[0].mlp.output.save()
+        layer_output_accessor = model.layers_output[0].save()
         layer_output_direct = model.model.layers[0].output[0].save()
 
         # Test model-level methods
