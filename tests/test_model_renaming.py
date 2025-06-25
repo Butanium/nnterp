@@ -11,7 +11,6 @@ from nnterp.nnsight_utils import (
     get_logits,
     get_next_token_probs,
     project_on_vocab,
-    stop_at_layer,
     get_mlp_output,
     get_num_layers,
 )
@@ -74,7 +73,7 @@ def test_model_renaming_activations_diff(model_name):
     prompt = "Hello, world!"
 
     # Function to collect activations
-    def collect_activations(model, renamed=True):
+    def get_token_activations(model, renamed=True):
         print(renamed)
         activations = []
         with model.trace(prompt):
@@ -91,11 +90,11 @@ def test_model_renaming_activations_diff(model_name):
             # Collect logits
             activations.append(model.lm_head.output[0].save())
 
-        return [act.value for act in activations]
+        return activations
 
     # Collect activations for both models
-    activations = collect_activations(model, renamed=False)
-    activations_renamed = collect_activations(model_renamed, renamed=True)
+    activations = get_token_activations(model, renamed=False)
+    activations_renamed = get_token_activations(model_renamed, renamed=True)
 
     # Compare activations
     assert len(activations_renamed) == len(
@@ -143,50 +142,63 @@ def test_renaming_forward(model_name, model_type):
 
 def test_standardized_transformer_methods(model_name):
     """
-    Test all methods of StandardizedTransformer
+    Test both accessor methods and direct module access of StandardizedTransformer
     """
     model = StandardizedTransformer(model_name)
     prompt = "Hello, world!"
 
-    num_layers = model.get_num_layers()
+    num_layers = model.num_layers
     assert num_layers > 0
     with model.trace(prompt):
-        # Test layer count and access
+        # Test both accessor and direct module access ways
+        
+        # === Test accessor way ===
+        _layer_accessor = model.layers[0]
+        layer_input_accessor = model.layers_input[0].save()
+        _attention_accessor = model.attentions[0]
+        _mlp_accessor = model.mlps[0]
+        attn_output_accessor = model.attention_output[0].save()
+        mlp_output_accessor = model.mlp_output[0].save()
+        layer_output_accessor = model.layers_output[0].save()
 
-        # Test layer 0 methods
-        _layer = model.get_layer(0)
-
-        layer_input = model.get_layer_input(0).save()
-
-        layer_output = model.get_layer_output(0).save()
-
-        _attention = model.get_attention(0)
-
-        attn_output = model.get_attention_output(0).save()
-        mlp_output = model.get_mlp_output(0).save()
+        # === Test direct module access way ===
+        _layer_direct = model.model.layers[0]
+        layer_input_direct = model.model.layers[0].input.save()
+        _attention_direct = model.model.layers[0].self_attn
+        _mlp_direct = model.model.layers[0].mlp
+        attn_output_direct = model.model.layers[0].self_attn.output[0].save()
+        mlp_output_direct = model.model.layers[0].mlp.output.save()
+        layer_output_direct = model.model.layers[0].output[0].save()
 
         # Test model-level methods
         logits = model.get_logits().save()
+        logits_direct = model.lm_head.output.save()
 
         # Test token probability methods
         next_probs = model.get_next_token_probs().save()
 
         # Test project_on_vocab with layer output
-        projected = model.project_on_vocab(layer_output).save()
+        projected = model.project_on_vocab(layer_output_accessor).save()
         logits_output = model.output.logits.save()
-        # Test stop_at_layer
-        model.stop_at_layer(0)
 
+    # Verify accessor and direct access give same results
+    assert torch.allclose(layer_input_accessor, layer_input_direct), "Layer input mismatch between accessor and direct access"
+    assert torch.allclose(attn_output_accessor, attn_output_direct), "Attention output mismatch between accessor and direct access"  
+    assert torch.allclose(mlp_output_accessor, mlp_output_direct), "MLP output mismatch between accessor and direct access"
+    assert torch.allclose(layer_output_accessor, layer_output_direct), "Layer output mismatch between accessor and direct access"
+    assert torch.allclose(logits, logits_direct), "Logits mismatch between get_logits() and direct access"
+
+    # Test shape consistency
     assert next_probs.shape[-1] == model.config.vocab_size
     assert projected.shape[-1] == model.config.vocab_size
-    assert layer_input.shape == layer_output.shape
+    assert layer_input_accessor.shape == layer_output_accessor.shape
     assert logits.shape[-1] == model.config.vocab_size
     assert next_probs.shape == (logits.shape[0], logits.shape[2])
     assert logits_output.shape == projected.shape
-    assert mlp_output.shape == layer_output.shape
-    assert attn_output.shape == layer_input.shape
+    assert mlp_output_accessor.shape == layer_output_accessor.shape
+    assert attn_output_accessor.shape == layer_input_accessor.shape
 
-    print("StandardizedTransformer methods tested successfully.")
+    print("StandardizedTransformer both accessor and direct access methods tested successfully.")
 
 
 @pytest.mark.parametrize("model_type", ["standardized", "renamed"])
@@ -211,12 +223,12 @@ def test_renamed_model_methods(model_name, model_type):
 
         layer_input = get_layer_input(model, 0).save()
 
-        layer_output = get_layer_output(model, 0).save()
-
         _attention = get_attention(model, 0)
 
         attn_output = get_attention_output(model, 0).save()
         mlp_output = get_mlp_output(model, 0).save()
+        layer_output = get_layer_output(model, 0).save()
+
 
         # Test model-level methods
         logits = get_logits(model).save()
@@ -227,8 +239,6 @@ def test_renamed_model_methods(model_name, model_type):
         # Test project_on_vocab with layer output
         projected = project_on_vocab(model, layer_output).save()
         logits_output = model.output.logits.save()
-        # Test stop_at_layer
-        stop_at_layer(model, 0)
 
     assert next_probs.shape[-1] == model.config.vocab_size
     assert projected.shape[-1] == model.config.vocab_size

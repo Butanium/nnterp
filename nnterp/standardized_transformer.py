@@ -1,13 +1,25 @@
 from __future__ import annotations
+from typing import Union
+from enum import Enum
 import torch as th
-from .nnsight_utils import LanguageModel, InterventionProxy, Envoy
+from nnsight import LanguageModel
+from nnsight.intervention.tracing.globals import Object
+from nnsight.intervention.envoy import Envoy
 
+TraceTensor = Union[th.Tensor, Object]
 
 ATTENTION_NAMES = ["attn", "self_attention", "attention"]
 MODEL_NAMES = ["transformer", "gpt_neox"]
 LAYER_NAMES = ["h"]
 LN_NAMES = ["final_layer_norm", "ln_f"]
 LM_HEAD_NAMES = ["embed_out"]
+
+
+class IOType(Enum):
+    """Enum to specify input or output access"""
+
+    INPUT = "input"
+    OUTPUT = "output"
 
 
 def get_rename_dict(
@@ -45,6 +57,61 @@ def get_rename_dict(
     return rename_dict
 
 
+class ModuleAccessor:
+    """Simple accessor for module access (no get/set, just module retrieval)"""
+
+    def __init__(self, model, attr_name: str | None):
+        self.model = model
+        self.attr_name = attr_name
+
+    def __getitem__(self, layer: int) -> Envoy:
+        target = self.model.model.layers[layer]
+        if self.attr_name is not None:
+            target = getattr(target, self.attr_name)
+        return target
+
+
+class LayerAccessor(ModuleAccessor):
+    """I/O accessor that inherits from ModuleAccessor and provides input/output access with setter"""
+
+    def __init__(
+        self, model, attr_name: str | None, io_type: IOType, returns_tuple: bool = False
+    ):
+        super().__init__(model, attr_name)
+        self.io_type = io_type
+        self.returns_tuple = returns_tuple
+
+    def __getitem__(self, layer: int) -> TraceTensor:
+        # Get the module using parent class
+        module = super().__getitem__(layer)
+
+        # Get input or output
+        if self.io_type == IOType.INPUT:
+            target = module.input
+        else:  # IOType.OUTPUT
+            target = module.output
+        if self.returns_tuple:
+            return target[0]
+        else:
+            return target
+
+    def __setitem__(self, layer: int, value: TraceTensor):
+        # Get the module using parent class
+        module = super().__getitem__(layer)
+
+        # Set input or output
+        if self.io_type == IOType.INPUT:
+            if self.returns_tuple:
+                module.input = (value,)
+            else:
+                module.input = value
+        else:
+            if self.returns_tuple:
+                module.output = (value,)
+            else:
+                module.output = value
+
+
 class StandardizedTransformer(LanguageModel):
     """
     Renames the LanguageModel modules to match a standardized architecture.
@@ -58,7 +125,14 @@ class StandardizedTransformer(LanguageModel):
             │   └── ln_final
             └── lm_head
 
-    In addition to renaming modules, this class provides built-in methods to extract intermediate activations, such as layer inputs, outputs, and attention outputs.
+    In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:
+    - layers_output[i]: Get/set layer output at layer i
+    - layers_input[i]: Get/set layer input at layer i
+    - layers[i]: Get layer module at layer i
+    - attention_output[i]: Get/set attention output at layer i
+    - attentions[i]: Get attention module at layer i
+    - mlp_output[i]: Get/set MLP output at layer i
+    - mlps[i]: Get MLP module at layer i
 
     Args:
         repo_id (str): Hugging Face repository ID or path of the model to load.
@@ -88,7 +162,6 @@ class StandardizedTransformer(LanguageModel):
         **kwargs,
     ):
         kwargs.setdefault("torch_dtype", th.float16)
-
         kwargs.setdefault("device_map", "auto")
 
         tokenizer_kwargs = kwargs.pop("tokenizer_kwargs", {})
@@ -111,49 +184,33 @@ class StandardizedTransformer(LanguageModel):
             self._check_renaming(repo_id)
         self.num_layers = len(self.model.layers)
 
-    def get_num_layers(self) -> int:
-        return self.num_layers
+        # Create accessor instances
+        self.layers_output = LayerAccessor(
+            self, None, IOType.OUTPUT, returns_tuple=True
+        )
+        self.layers_input = LayerAccessor(self, None, IOType.INPUT, returns_tuple=False)
+        self.layers = ModuleAccessor(self, None)
+        self.attention_output = LayerAccessor(
+            self, "self_attn", IOType.OUTPUT, returns_tuple=True
+        )
+        self.attentions = ModuleAccessor(self, "self_attn")
+        self.mlp_output = LayerAccessor(self, "mlp", IOType.OUTPUT, returns_tuple=False)
+        self.mlps = ModuleAccessor(self, "mlp")
 
-    def get_layer(self, layer: int) -> Envoy:
-        return self.model.layers[layer]
-
-    def get_layer_input(self, layer: int) -> InterventionProxy:
-        return self.model.layers[layer].input
-
-    def get_layer_output(self, layer: int) -> InterventionProxy:
-        return self.model.layers[layer].output[0]
-
-    def get_attention(self, layer: int) -> Envoy:
-        return self.model.layers[layer].self_attn
-
-    def get_attention_output(self, layer: int) -> InterventionProxy:
-        return self.model.layers[layer].self_attn.output[0]
-
-    def get_mlp_output(self, layer: int) -> InterventionProxy:
-        """
-        Get the output of the MLP of a layer
-        """
-        return self.model.layers[layer].mlp.output
-
-    def get_logits(self) -> InterventionProxy:
-        """Returns the lm_head output"""
-        return self.lm_head.output
-
-    def get_unembed_norm(self) -> Envoy:
+    @property
+    def unembed_norm(self) -> Envoy:
         return self.model.norm
 
-    def get_unembed(self) -> Envoy:
-        return self.lm_head
-
-    def project_on_vocab(self, h: InterventionProxy) -> InterventionProxy:
+    def project_on_vocab(self, h: TraceTensor) -> TraceTensor:
         ln_out = self.model.norm(h)
         return self.lm_head(ln_out)
 
-    def get_next_token_probs(self) -> InterventionProxy:
-        return self.get_logits()[:, -1, :].softmax(-1)
+    def get_logits(self) -> TraceTensor:
+        """Returns the lm_head output"""
+        return self.lm_head.output
 
-    def stop_at_layer(self, layer: int) -> InterventionProxy:
-        self.get_layer(layer).output.stop()
+    def get_next_token_probs(self) -> TraceTensor:
+        return self.get_logits()[:, -1, :].softmax(-1)
 
     def _check_renaming(self, repo_id: str):
         try:
