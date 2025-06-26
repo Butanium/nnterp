@@ -98,4 +98,3 @@ def test_activation_collection(model_name):
     # Test next token probabilities
     probs = compute_next_token_probs(model, prompts)
     assert probs.shape == (len(prompts), model.config.vocab_size)
-

@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+
 sys.path.insert(0, os.path.abspath(".."))
 
 project = "nnterp"
@@ -33,10 +34,10 @@ html_extra_path = [".nojekyll"]
 
 autodoc_typehints = "description"
 autodoc_member_order = "bysource"
-add_module_names = False 
+add_module_names = False
 html_context = {
-   "default_mode": "dark",
-   "version_identifier": str(int(time.time())),
+    "default_mode": "dark",
+    "version_identifier": str(int(time.time())),
 }
 
 

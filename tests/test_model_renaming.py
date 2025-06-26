@@ -151,7 +151,7 @@ def test_standardized_transformer_methods(model_name):
     assert num_layers > 0
     with model.trace(prompt):
         # Test both accessor and direct module access ways
-        
+
         # === Test accessor way ===
         _layer_accessor = model.layers[0]
         _layer_direct = model.model.layers[0]
@@ -180,11 +180,21 @@ def test_standardized_transformer_methods(model_name):
         logits_output = model.output.logits.save()
 
     # Verify accessor and direct access give same results
-    assert torch.allclose(layer_input_accessor, layer_input_direct), "Layer input mismatch between accessor and direct access"
-    assert torch.allclose(attn_output_accessor, attn_output_direct), "Attention output mismatch between accessor and direct access"  
-    assert torch.allclose(mlp_output_accessor, mlp_output_direct), "MLP output mismatch between accessor and direct access"
-    assert torch.allclose(layer_output_accessor, layer_output_direct), "Layer output mismatch between accessor and direct access"
-    assert torch.allclose(logits, logits_direct), "Logits mismatch between get_logits() and direct access"
+    assert torch.allclose(
+        layer_input_accessor, layer_input_direct
+    ), "Layer input mismatch between accessor and direct access"
+    assert torch.allclose(
+        attn_output_accessor, attn_output_direct
+    ), "Attention output mismatch between accessor and direct access"
+    assert torch.allclose(
+        mlp_output_accessor, mlp_output_direct
+    ), "MLP output mismatch between accessor and direct access"
+    assert torch.allclose(
+        layer_output_accessor, layer_output_direct
+    ), "Layer output mismatch between accessor and direct access"
+    assert torch.allclose(
+        logits, logits_direct
+    ), "Logits mismatch between get_logits() and direct access"
 
     # Test shape consistency
     assert next_probs.shape[-1] == model.config.vocab_size
@@ -196,7 +206,9 @@ def test_standardized_transformer_methods(model_name):
     assert mlp_output_accessor.shape == layer_output_accessor.shape
     assert attn_output_accessor.shape == layer_input_accessor.shape
 
-    print("StandardizedTransformer both accessor and direct access methods tested successfully.")
+    print(
+        "StandardizedTransformer both accessor and direct access methods tested successfully."
+    )
 
 
 @pytest.mark.parametrize("model_type", ["standardized", "renamed"])
@@ -226,7 +238,6 @@ def test_renamed_model_methods(model_name, model_type):
         attn_output = get_attention_output(model, 0).save()
         mlp_output = get_mlp_output(model, 0).save()
         layer_output = get_layer_output(model, 0).save()
-
 
         # Test model-level methods
         logits = get_logits(model).save()
