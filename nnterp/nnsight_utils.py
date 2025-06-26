@@ -7,12 +7,51 @@ from nnsight.intervention.tracing.globals import Object
 
 import torch as th
 from torch.utils.data import DataLoader
-import nnsight as nns
 from typing import Union, Callable
-from .standardized_transformer import get_rename_dict
 
 TraceTensor = Union[th.Tensor, Object]
 GetModuleOutput = Callable[[LanguageModel, int], TraceTensor]
+
+ATTENTION_NAMES = ["attn", "self_attention", "attention"]
+MODEL_NAMES = ["transformer", "gpt_neox"]
+LAYER_NAMES = ["h"]
+LN_NAMES = ["final_layer_norm", "ln_f"]
+LM_HEAD_NAMES = ["embed_out"]
+
+
+def get_rename_dict(
+    attn_name: str | list[str] | None = None,
+    mlp_name: str | list[str] | None = None,
+    ln_final_name: str | list[str] | None = None,
+    lm_head_name: str | list[str] | None = None,
+    model_name: str | list[str] | None = None,
+    layers_name: str | list[str] | None = None,
+) -> dict[str, str]:
+
+    rename_dict = (
+        {name: "self_attn" for name in ATTENTION_NAMES}
+        | {name: "model" for name in MODEL_NAMES}
+        | {name: "layers" for name in LAYER_NAMES}
+        | {name: "norm" for name in LN_NAMES}
+        | {name: "lm_head" for name in LM_HEAD_NAMES}
+    )
+
+    def update_rename_dict(renaming: str, value: str | list[str] | None):
+        if value is not None:
+            if isinstance(value, str):
+                rename_dict[value] = renaming
+            else:
+                for name in value:
+                    rename_dict[name] = renaming
+
+    update_rename_dict("self_attn", attn_name)
+    update_rename_dict("mlp", mlp_name)
+    update_rename_dict("norm", ln_final_name)
+    update_rename_dict("lm_head", lm_head_name)
+    update_rename_dict("model", model_name)
+    update_rename_dict("layers", layers_name)
+
+    return rename_dict
 
 
 def load_model(
@@ -125,15 +164,21 @@ def get_attention_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
     Returns:
         The Proxy for the output of the attention block of the layer
     """
-    output = get_attention(nn_model, layer).output
-    return output[0]
+    return get_attention(nn_model, layer).output[0]
+
+
+def get_mlp(nn_model: LanguageModel, layer: int) -> Envoy:
+    """
+    Get the MLP of a layer
+    """
+    return get_layer(nn_model, layer).mlp
 
 
 def get_mlp_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
     """
     Get the output of the MLP of a layer
     """
-    return get_layer(nn_model, layer).mlp.output
+    return get_mlp(nn_model, layer).output
 
 
 def get_logits(nn_model: LanguageModel) -> TraceTensor:
@@ -182,6 +227,44 @@ def project_on_vocab(nn_model: LanguageModel, h: TraceTensor) -> TraceTensor:
     return nn_model.lm_head(ln_out)
 
 
+def skip_layer(
+    nn_model: LanguageModel, layer: int, skip_with: TraceTensor | None = None
+):
+    """
+    Skip the computation of a layer.
+    Args:
+        nn_model: The NNSight model
+        layer: The layer to skip
+        skip_with: The input to skip the layer with. If None, the input of the layer is used.
+    """
+    return skip_layers(nn_model, layer, layer, skip_with)
+
+
+def skip_layers(
+    nn_model: LanguageModel,
+    start_layer: int,
+    end_layer: int,
+    skip_with: TraceTensor | None = None,
+):
+    """
+    Skip all layers between start_layer and end_layer (inclusive). Equivalent to:
+    ```py
+    set_layer_output(nn_model, end_layer, get_layer_input(nn_model, start_layer))
+    ```
+    But skip the useless computa
+
+    Args:
+        nn_model: The NNSight model
+        start_layer: The layer to start skipping from
+        end_layer: The layer to stop skipping at
+    """
+    if skip_with is None:
+        skip_with = get_layer_input(nn_model, start_layer)
+    for layer in range(start_layer, end_layer):
+        get_layer(nn_model, layer).skip((skip_with,))
+    get_layer(nn_model, end_layer).skip((skip_with,))
+
+
 def get_next_token_probs(nn_model: LanguageModel) -> TraceTensor:
     """
     Get the probabilities of the model
@@ -191,6 +274,17 @@ def get_next_token_probs(nn_model: LanguageModel) -> TraceTensor:
         The Proxy for the probabilities of the model
     """
     return get_logits(nn_model)[:, -1, :].softmax(-1)
+
+
+def set_layer_output(nn_model: LanguageModel, layer: int, tensor: TraceTensor):
+    """
+    Set the output of a layer to a certain tensor.
+    Args:
+        nn_model: The NNSight model
+        layer: The layer to set the output of
+        tensor: The tensor to set the output of the layer to
+    """
+    get_layer(nn_model, layer).output = (tensor, *get_layer_output(nn_model, layer)[1:])
 
 
 @th.no_grad
@@ -238,15 +332,15 @@ def get_token_activations(
         last_layer = max(last_layer, get_num_layers(nn_model) + min(layers))
 
     # Collect the hidden states of the last token of each prompt at each layer
+    acts = []
     if tracer is None:
         with nn_model.trace(prompts, remote=remote) as tracer:
-            acts = [
-                get_activations(nn_model, layer)[:, idx].cpu().save()
-                for layer in layers
-            ]
+            for layer in layers:
+                acts.append(get_activations(nn_model, layer)[:, idx].cpu().save())
             tracer.stop()
     else:
-        acts = [get_activations(nn_model, layer)[:, idx] for layer in layers]
+        for layer in layers:
+            acts.append(get_activations(nn_model, layer)[:, idx].cpu().save())
     return th.stack(acts)
 
 

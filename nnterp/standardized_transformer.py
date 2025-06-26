@@ -6,13 +6,20 @@ from nnsight import LanguageModel
 from nnsight.intervention.tracing.globals import Object
 from nnsight.intervention.envoy import Envoy
 
-TraceTensor = Union[th.Tensor, Object]
-
-ATTENTION_NAMES = ["attn", "self_attention", "attention"]
-MODEL_NAMES = ["transformer", "gpt_neox"]
-LAYER_NAMES = ["h"]
-LN_NAMES = ["final_layer_norm", "ln_f"]
-LM_HEAD_NAMES = ["embed_out"]
+from .nnsight_utils import (
+    TraceTensor,
+    get_rename_dict,
+    get_num_layers,
+    get_layer,
+    get_attention,
+    get_mlp,
+    get_logits,
+    get_unembed_norm,
+    project_on_vocab,
+    skip_layer,
+    skip_layers,
+    get_next_token_probs,
+)
 
 
 class IOType(Enum):
@@ -20,41 +27,6 @@ class IOType(Enum):
 
     INPUT = "input"
     OUTPUT = "output"
-
-
-def get_rename_dict(
-    attn_name: str | list[str] | None = None,
-    mlp_name: str | list[str] | None = None,
-    ln_final_name: str | list[str] | None = None,
-    lm_head_name: str | list[str] | None = None,
-    model_name: str | list[str] | None = None,
-    layers_name: str | list[str] | None = None,
-) -> dict[str, str]:
-
-    rename_dict = (
-        {name: "self_attn" for name in ATTENTION_NAMES}
-        | {name: "model" for name in MODEL_NAMES}
-        | {name: "layers" for name in LAYER_NAMES}
-        | {name: "norm" for name in LN_NAMES}
-        | {name: "lm_head" for name in LM_HEAD_NAMES}
-    )
-
-    def update_rename_dict(renaming: str, value: str | list[str] | None):
-        if value is not None:
-            if isinstance(value, str):
-                rename_dict[value] = renaming
-            else:
-                for name in value:
-                    rename_dict[name] = renaming
-
-    update_rename_dict("self_attn", attn_name)
-    update_rename_dict("mlp", mlp_name)
-    update_rename_dict("norm", ln_final_name)
-    update_rename_dict("lm_head", lm_head_name)
-    update_rename_dict("model", model_name)
-    update_rename_dict("layers", layers_name)
-
-    return rename_dict
 
 
 class ModuleAccessor:
@@ -182,7 +154,7 @@ class StandardizedTransformer(LanguageModel):
 
         if check_renaming:
             self._check_renaming(repo_id)
-        self.num_layers = len(self.model.layers)
+        self.num_layers = get_num_layers(self)
 
         # Create accessor instances
         self.layers_output = LayerAccessor(
@@ -199,18 +171,39 @@ class StandardizedTransformer(LanguageModel):
 
     @property
     def unembed_norm(self) -> Envoy:
-        return self.model.norm
+        return get_unembed_norm(self)
 
     def project_on_vocab(self, h: TraceTensor) -> TraceTensor:
-        ln_out = self.model.norm(h)
-        return self.lm_head(ln_out)
+        return project_on_vocab(self, h)
 
     def get_logits(self) -> TraceTensor:
         """Returns the lm_head output"""
-        return self.lm_head.output
+        return get_logits(self)
 
     def get_next_token_probs(self) -> TraceTensor:
-        return self.get_logits()[:, -1, :].softmax(-1)
+        return get_next_token_probs(self)
+
+    def skip_layer(self, layer: int, skip_with: TraceTensor | None = None):
+        """
+        Skip the computation of a layer.
+        Args:
+            layer: The layer to skip
+            skip_with: The input to skip the layer with. If None, the input of the layer is used.
+        """
+        return skip_layer(self, layer, skip_with)
+
+    def skip_layers(
+        self, start_layer: int, end_layer: int, skip_with: TraceTensor | None = None
+    ):
+        """
+        Skip all layers between start_layer and end_layer (inclusive).
+
+        Args:
+            start_layer: The layer to start skipping from
+            end_layer: The layer to stop skipping at (inclusive)
+            skip_with: The input to skip the layers with. If None, the input of start_layer is used.
+        """
+        return skip_layers(self, start_layer, end_layer, skip_with)
 
     def _check_renaming(self, repo_id: str):
         try:
@@ -228,7 +221,7 @@ class StandardizedTransformer(LanguageModel):
                 "Please pass the name of the layers module to the layers_rename argument."
             ) from exc
         try:
-            _ = self.model.norm
+            _ = get_unembed_norm(self)
         except AttributeError as exc:
             raise ValueError(
                 f"Could not find norm module in {repo_id} architecture. This means that it was not properly renamed.\n"
@@ -242,14 +235,14 @@ class StandardizedTransformer(LanguageModel):
                 "Please pass the name of the lm_head module to the lm_head_rename argument."
             ) from exc
         try:
-            _ = self.model.layers[0].self_attn
+            _ = get_attention(self, 0)
         except AttributeError as exc:
             raise ValueError(
                 f"Could not find self_attn module in {repo_id} architecture. This means that it was not properly renamed.\n"
                 "Please pass the name of the self_attn module to the attn_rename argument."
             ) from exc
         try:
-            _ = self.model.layers[0].mlp
+            _ = get_mlp(self, 0)
         except AttributeError as exc:
             raise ValueError(
                 f"Could not find mlp module in {repo_id} architecture. This means that it was not properly renamed.\n"
