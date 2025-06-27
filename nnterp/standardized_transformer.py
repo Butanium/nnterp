@@ -19,6 +19,8 @@ from .nnsight_utils import (
     skip_layer,
     skip_layers,
     get_next_token_probs,
+    GetModuleOutput,
+    get_layer_output,
 )
 
 
@@ -204,6 +206,31 @@ class StandardizedTransformer(LanguageModel):
             skip_with: The input to skip the layers with. If None, the input of start_layer is used.
         """
         return skip_layers(self, start_layer, end_layer, skip_with)
+
+    def steer(
+        self,
+        layers: int | list[int],
+        steering_vector: th.Tensor,
+        factor: float = 1,
+        positions: int | list[int] | th.Tensor | None = None,
+        get_module: GetModuleOutput = get_layer_output,
+    ):
+        """
+        Steer the hidden states of a layer using a steering vector
+        Args:
+            nn_model: The NNSight model
+            layers: The layer(s) to steer
+            steering_vector: The steering vector to apply
+            factor: The factor to multiply the steering vector by
+            positions: The position to steer. If None, all positions are steered.
+        """
+        if isinstance(layers, int):
+            layers = [layers]
+        for layer in layers:
+            layer_device = get_layer_output(self, layer).device
+            get_module(self, layer)[:, positions] += factor * steering_vector.to(
+                layer_device
+            )
 
     def _check_renaming(self, repo_id: str):
         try:
