@@ -340,7 +340,7 @@ def get_token_activations(
             tracer.stop()
     else:
         for layer in layers:
-            acts.append(get_activations(nn_model, layer)[:, idx].cpu().save())
+            acts.append(get_activations(nn_model, layer)[:, idx])
     return th.stack(acts)
 
 

@@ -5,11 +5,7 @@ from dataclasses import dataclass
 import torch as th
 from warnings import warn
 from .nnsight_utils import (
-    get_layer,
     get_layer_output,
-    get_layer_input,
-    get_attention,
-    get_attention_output,
     get_next_token_probs,
     get_token_activations,
     collect_activations_batched,
@@ -27,10 +23,7 @@ __all__ = [
     "patchscope_lens",
     "patchscope_generate",
     "steer",
-    "skip_layers",
-    "patch_attention_lens",
     "patch_object_attn_lens",
-    "object_lens",
 ]
 
 
@@ -271,9 +264,10 @@ def patchscope_lens(
             target_patch_prompts.prompts,
             remote=remote,
         ):
+            device = get_layer_output(nn_model, layer).device
             get_layer_output(nn_model, layer)[
                 th.arange(num_sources), target_patch_prompts.index_to_patch
-            ] = latents[layer]
+            ] = latents[layer].to(device)
             probs_l.append(get_next_token_probs(nn_model).cpu().save())
     probs = th.cat(probs_l, dim=0)
     return probs.reshape(len(layers), num_sources, -1).transpose(0, 1)
@@ -353,26 +347,10 @@ def steer(
     if isinstance(layers, int):
         layers = [layers]
     for layer in layers:
-        get_module(nn_model, layer)[:, position] += factor * steering_vector
-
-
-def skip_layers(
-    nn_model: LanguageModel,
-    layers_to_skip: int | list[int],
-    position: int = -1,
-):
-    """
-    Skip the computation of the specified layers
-    Args:
-        nn_model: The NNSight model
-        layers_to_skip: The layers to skip
-    """
-    if isinstance(layers_to_skip, int):
-        layers_to_skip = [layers_to_skip]
-    for layer in layers_to_skip:
-        get_layer_output(nn_model, layer)[:, position] = get_layer_input(
-            nn_model, layer
-        )[:, position]
+        layer_device = get_layer_output(nn_model, layer).device
+        get_module(nn_model, layer)[:, position] += factor * steering_vector.to(
+            layer_device
+        )
 
 
 def patch_object_attn_lens(
@@ -565,7 +543,10 @@ def run_latent_prompt(
                 remote=remote,
             )  # [layer, batch, d]
             for layer, act in enumerate(acts):
-                latents[layer].extend(act)
+                latents[layer].append(act)
+        for layer, ll in enumerate(latents):
+            latents[layer] = th.cat(ll, dim=0)
+
     batch_indices = []
     spot_indices = []
     for i, lp in enumerate(latent_prompts):
@@ -576,9 +557,9 @@ def run_latent_prompt(
     with nn_model.trace(inputs, remote=remote):
         for layer in range(patch_from_layer, patch_until_layer + 1):
             latent_source = latents[0] if collect_from_single_layer else latents[layer]
-            get_layer_output(nn_model, layer)[
-                batch_indices, spot_indices
-            ] = latent_source
+            get_layer_output(nn_model, layer)[batch_indices, spot_indices] = (
+                latent_source.to(get_layer_output(nn_model, layer).device)
+            )
 
         probs = get_next_token_probs(nn_model).cpu().save()
     return probs
