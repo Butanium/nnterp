@@ -53,5 +53,5 @@ html_theme_options = {
         },
     ],
     "show_prev_next": False,
-    "pygment_dark_style": "monokai",
+    "pygments_dark_style": "monokai",
 }
