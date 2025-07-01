@@ -1,6 +1,6 @@
 import torch
 import pytest
-from nnterp.nnsight_utils import load_model
+from nnsight import LanguageModel
 from nnterp import StandardizedTransformer
 from nnterp.nnsight_utils import (
     get_layer,
@@ -66,8 +66,8 @@ def test_model_renaming_activations_diff(model_name):
     Test that the activations of the model are the same with and without renaming
     """
     # Load models with and without patching
-    model_renamed = load_model(model_name, use_module_renaming=True)
-    model = load_model(model_name, use_module_renaming=False)
+    model_renamed = StandardizedTransformer(model_name)
+    model = LanguageModel(model_name, device_map="auto")
 
     # Set up test input
     prompt = "Hello, world!"
@@ -118,9 +118,9 @@ def test_renaming_forward(model_name, model_type):
     renamed_model = (
         StandardizedTransformer(model_name)
         if model_type == "standardized"
-        else load_model(model_name, use_module_renaming=True)
+        else StandardizedTransformer(model_name)
     )
-    normal_model = load_model(model_name, use_module_renaming=False)
+    normal_model = LanguageModel(model_name, device_map="auto")
 
     # Test that key attributes exist and are accessible
     renamed_model.model.layers[0].self_attn
@@ -169,11 +169,11 @@ def test_standardized_transformer_methods(model_name):
         layer_output_direct = model.model.layers[0].output[0].save()
 
         # Test model-level methods
-        logits = model.get_logits().save()
+        logits = model.logits.save()
         logits_direct = model.lm_head.output.save()
 
         # Test token probability methods
-        next_probs = model.get_next_token_probs().save()
+        next_probs = model.next_token_probs.save()
 
         # Test project_on_vocab with layer output
         projected = model.project_on_vocab(layer_output_accessor).save()
@@ -194,7 +194,7 @@ def test_standardized_transformer_methods(model_name):
     ), "Layer output mismatch between accessor and direct access"
     assert torch.allclose(
         logits, logits_direct
-    ), "Logits mismatch between get_logits() and direct access"
+    ), "Logits mismatch between logits and direct access"
 
     # Test shape consistency
     assert next_probs.shape[-1] == model.config.vocab_size
@@ -214,12 +214,12 @@ def test_standardized_transformer_methods(model_name):
 @pytest.mark.parametrize("model_type", ["standardized", "renamed"])
 def test_renamed_model_methods(model_name, model_type):
     """
-    Test all methods with a renamed model loaded via load_model
+    Test all methods with a renamed model loaded via StandardizedTransformer
     """
     model = (
         StandardizedTransformer(model_name)
         if model_type == "standardized"
-        else load_model(model_name, use_module_renaming=True)
+        else StandardizedTransformer(model_name)
     )
     prompt = "Hello, world!"
 

@@ -1,7 +1,7 @@
 import pytest
 import torch as th
+from nnsight import LanguageModel
 from nnterp.nnsight_utils import (
-    load_model,
     get_num_layers,
     get_layer,
     get_layer_input,
@@ -33,12 +33,12 @@ def model_name(request):
 
 def test_load_model(model_name):
     """Test loading model with different configurations"""
-    load_model(model_name)
+    LanguageModel(model_name, device_map="auto")
 
 
 def test_basic_utils(model_name):
     """Test basic utility functions"""
-    model = load_model(model_name)
+    model = LanguageModel(model_name, device_map="auto")
     prompt = "Hello, world!"
 
     num_layers = get_num_layers(model)
@@ -79,7 +79,7 @@ def test_basic_utils(model_name):
 
 def test_activation_collection(model_name):
     """Test activation collection functions"""
-    model = load_model(model_name)
+    model = LanguageModel(model_name, device_map="auto")
     prompts = ["Hello, world!", "Testing, 1, 2, 3"] * 2
 
     # Test activation collection with session
@@ -105,7 +105,7 @@ def test_activation_collection(model_name):
 
 def test_skip_layers(model_name):
     """Test skip_layers function"""
-    model = load_model(model_name)
+    model = LanguageModel(model_name, device_map="auto")
     prompt = "Hello, world!"
 
     # Get baseline output without skipping
@@ -156,7 +156,7 @@ def test_skip_layers(model_name):
 
 def test_skip_layer_and_skip_with(model_name):
     """Test skip_layer function and skip_with parameter"""
-    model = load_model(model_name)
+    model = LanguageModel(model_name, device_map="auto")
     prompt = "Hello, world!"
 
     # Test skip_layer function (single layer skipping)
