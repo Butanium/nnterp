@@ -8,7 +8,7 @@ from .nnsight_utils import (
     get_layer_output,
     get_next_token_probs,
     get_token_activations,
-    collect_activations_batched,
+    get_attention,
     get_num_layers,
     LanguageModel,
     GetModuleOutput,
@@ -382,7 +382,7 @@ def patch_object_attn_lens(
     probs_l = []
 
     def get_act(model, layer):
-        return get_attention(model, layer).input[1]["hidden_states"]
+        return get_attention(model, layer).input
 
     source_hiddens = get_token_activations(
         nn_model,
@@ -392,9 +392,9 @@ def patch_object_attn_lens(
     for layer in range(num_layers):
         with nn_model.trace(target_prompts):
             for next_layer in range(layer, min(num_layers, layer + num_patches)):
-                get_attention(nn_model, next_layer).input[1]["hidden_states"][
-                    :, attn_idx_patch
-                ] = source_hiddens[next_layer]
+                get_attention(nn_model, next_layer).input[:, attn_idx_patch] = (
+                    source_hiddens[next_layer]
+                )
             probs = get_next_token_probs(nn_model).cpu().save()
             probs_l.append(probs)
     return (
@@ -402,260 +402,3 @@ def patch_object_attn_lens(
         .reshape(num_layers, len(target_prompts), -1)
         .transpose(0, 1)
     )
-
-
-@dataclass
-class LatentPrompt:
-    """
-    A class to handle prompts with latent spots that will be replaced with latent vectors
-    """
-
-    prompt: str
-    latent_spots: list[int]
-
-    @classmethod
-    def from_string(cls, prompt: str, tokenizer, placeholder_token: str | None = None):
-        """
-        Create a LatentPrompt object from a string prompt
-
-        Args:
-            prompt: The prompt string
-            tokenizer: The tokenizer to use
-            placeholder_token: The token to use as a placeholder. If None, the tokenizer's bos_token is used.
-        """
-        if placeholder_token is None:
-            placeholder_token = tokenizer.bos_token
-        tokens = tokenizer.tokenize(prompt)
-        latent_spots = [
-            i - len(tokens) for i, t in enumerate(tokens) if t == placeholder_token
-        ]
-        return cls(prompt, latent_spots)
-
-
-@dataclass
-class LatentPromptBatch:
-    """
-    A class to batch multiple LatentPrompt objects and modify them at the token level
-    """
-
-    inputs: dict
-    latent_prompts: list[LatentPrompt]
-
-    @classmethod
-    def from_latent_prompts(cls, latent_prompts: list[LatentPrompt], tokenizer):
-        prompts = [lp.prompt for lp in latent_prompts]
-        inputs = tokenizer(prompts, return_tensors="pt")
-        return cls(inputs, latent_prompts)
-
-    def replace_tokens(self, token: int, replacements: list[int] | int):
-        for tokens in self.inputs.input_ids:
-            for i, t in enumerate(tokens):
-                if t == token:
-                    if isinstance(replacements, int):
-                        tokens[i] = replacements
-                    else:
-                        tokens[i] = replacements.pop(0)
-        return self
-
-    def replace_spot_tokens(self, replacements: list[int] | int):
-        for tokens, lp in zip(self.inputs.input_ids, self.latent_prompts):
-            for spot in lp.latent_spots:
-                if isinstance(replacements, int):
-                    tokens[spot] = replacements
-                else:
-                    tokens[spot] = replacements.pop(0)
-        return self
-
-
-def run_latent_prompt(
-    nn_model: LanguageModel,
-    latent_prompts: list[LatentPrompt] | LatentPrompt | LatentPromptBatch,
-    prompts: list[str] | str | None = None,
-    latents: list[th.Tensor] | th.Tensor | None = None,
-    collect_from_single_layer: int | bool = False,
-    patch_from_layer: int = 0,
-    patch_until_layer: int | None = None,
-    remote=False,
-    batch_size=32,
-):
-    """
-    Perform a forward pass on latent prompts and return the probabilities of the next token for each latent prompt.
-    Args:
-        nn_model: The NNSight model
-        latent_prompts: A (list of) LatentPrompt object(s) / a latent prompt batch to run the forward pass on.
-        prompts: The prompts to use as placeholders for the latent spots. If None, latents must be provided.
-        latents: The latent vectors to use.  Must be of shape (num_latent_prompts, num_patches, hidden_size) if collect_from_single_layer is False, else (1, num_patches, hidden_size).
-        If None, prompts must be provided.
-        collect_from_single_layer: If True, assume that the latents are collected from a single layer. If int, will use latent from this layer for every patch.
-        Must be of shape (1, num_patches, hidden_size).
-        patch_from_layer: The layer to start patching from
-        patch_until_layer: The layer to patch until. If None, all layers from patch_from_layer to the last layer are patched.
-        remote: Whether to run the model on the remote device.
-        batch_size: The number of prompts to run at once if latents are not provided.
-
-    Returns:
-        The probabilities of the next token for each latent prompt of shape (num_latent_prompts, vocab_size)
-    """
-    if patch_until_layer is None:
-        patch_until_layer = get_num_layers(nn_model) - 1
-    if isinstance(prompts, str):
-        prompts = [prompts]
-    if isinstance(latent_prompts, LatentPrompt):
-        latent_prompts = [latent_prompts]
-    if isinstance(latent_prompts, LatentPromptBatch):
-        inputs = latent_prompts.inputs
-        latent_prompts = latent_prompts.latent_prompts
-    else:
-        inputs = [lp.prompt for lp in latent_prompts]
-    if latents is None == prompts is None:
-        raise ValueError("Either prompts or latents must be provided")
-    if collect_from_single_layer is True and latents is None:
-        raise ValueError(
-            "When collecting from a single layer, latents must be provided"
-        )
-    if latents is not None and latents.dim() != 3:
-        raise ValueError(
-            f"Latents must be of shape (num_layers, num_patches, hidden_size), got {latents.shape}"
-        )
-    if collect_from_single_layer and latents is not None:
-        if latents.shape[0] != 1:
-            raise ValueError(
-                f"Latents must be of shape (1, num_patches, hidden_size) when collect_from_single_layer is True, got {latents.shape}"
-            )
-    n_patches = len(prompts) if prompts is not None else latents.shape[1]
-    num_spots = sum([len(lp.latent_spots) for lp in latent_prompts])
-    if num_spots != n_patches:
-        raise ValueError(
-            f"Number of latent spots does not match number of prompts/latents: got {num_spots} spots and {n_patches} prompts/latents"
-        )
-    if latents is None:
-        latents = [[] for _ in range(patch_until_layer + 1)]
-        for i in range(0, len(prompts), batch_size):
-            prompt_batch = prompts[i : i + batch_size]
-            acts = get_token_activations(
-                nn_model,
-                prompt_batch,
-                layers=(
-                    list(range(patch_from_layer, patch_until_layer + 1))
-                    if not collect_from_single_layer
-                    else collect_from_single_layer
-                ),
-                remote=remote,
-            )  # [layer, batch, d]
-            for layer, act in enumerate(acts):
-                latents[layer].append(act)
-        for layer, ll in enumerate(latents):
-            latents[layer] = th.cat(ll, dim=0)
-
-    batch_indices = []
-    spot_indices = []
-    for i, lp in enumerate(latent_prompts):
-        batch_indices.extend([i] * len(lp.latent_spots))
-        spot_indices.extend(lp.latent_spots)
-    batch_indices = th.tensor(batch_indices)
-    spot_indices = th.tensor(spot_indices)
-    with nn_model.trace(inputs, remote=remote):
-        for layer in range(patch_from_layer, patch_until_layer + 1):
-            latent_source = latents[0] if collect_from_single_layer else latents[layer]
-            get_layer_output(nn_model, layer)[batch_indices, spot_indices] = (
-                latent_source.to(get_layer_output(nn_model, layer).device)
-            )
-
-        probs = get_next_token_probs(nn_model).cpu().save()
-    return probs
-
-
-def latent_prompt_lens(
-    nn_model: LanguageModel,
-    latent_prompts: list[LatentPrompt] | LatentPrompt,
-    prompts: list[str] | str | None = None,
-    latents: list[th.Tensor] | th.Tensor | None = None,
-    collect_from_single_layer: bool = True,
-    patch_from_layer: int | None = 0,
-    patch_until_layer: int | None = None,
-    layers=None,
-    remote=False,
-    from_session=False,
-    batch_size=32,
-):
-    if not collect_from_single_layer and patch_until_layer is not None:
-        raise ValueError(
-            "When collecting from multiple layers, patch_until_layer must be None"
-        )
-    if prompts is None and latents is None:
-        raise ValueError("Either prompts or latents must be provided")
-    if prompts is not None and latents is not None:
-        raise ValueError("Only one of prompts or latents can be provided")
-    if isinstance(prompts, str):
-        prompts = [prompts]
-    if prompts is not None:
-        latents = collect_activations_batched(
-            nn_model,
-            prompts,
-            remote=remote,
-            batch_size=batch_size,
-        )
-
-    probs = []
-    if layers is None:
-        layers = list(range(get_num_layers(nn_model)))
-    context = nn_model.session(remote=remote) if not from_session else nullcontext()
-    with context as session:
-        for layer in layers:
-            if collect_from_single_layer:
-                latents_ = latents[layer].unsqueeze(0)
-                if patch_until_layer is None:
-                    patch_until_layer_ = layer
-                else:
-                    patch_until_layer_ = patch_until_layer
-            else:
-                patch_until_layer_ = layer
-                latents_ = latents
-            if patch_from_layer is None:
-                patch_from_layer_ = layer
-            else:
-                patch_from_layer_ = patch_from_layer
-            probs.append(
-                run_latent_prompt(
-                    nn_model,
-                    latent_prompts,
-                    latents=latents_,
-                    collect_from_single_layer=collect_from_single_layer,
-                    patch_from_layer=patch_from_layer_,
-                    patch_until_layer=patch_until_layer_,
-                    remote=remote,
-                )
-            )
-    return th.stack(probs).transpose(0, 1)
-
-
-class Intervention:
-    """
-    A class that contains an intervention on a model
-    """
-
-    latent: th.Tensor
-    layer: int
-    position: int | None = None
-    get_output: GetModuleOutput | None = None
-
-    def __post_init__(self):
-        if self.get_output is None:
-            self.get_output = get_layer_output
-
-    def apply(self, nn_model: LanguageModel):
-        """
-        Perform the intervention on the model
-        """
-        self.get_output(nn_model, self.layer)[:, self.position] = self.latent
-
-    @classmethod
-    def from_prompts(
-        cls, nn_model, prompts, layers, position=None, remote=False, get_output=None
-    ):
-        if isinstance(layers, int):
-            layers = [layers]
-        hiddens = get_token_activations(
-            nn_model, prompts, layers, remote=remote, get_activations=get_layer_output
-        )
-        return [cls(h, l, position, get_output) for h, l in zip(hiddens, layers)]
