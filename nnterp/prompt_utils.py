@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Callable
 import torch as th
-import pandas as pd
 from tqdm.auto import tqdm
 from .nnsight_utils import LanguageModel, compute_next_token_probs
 from dataclasses import dataclass
@@ -81,16 +80,17 @@ class Prompt:
         )
 
     def has_no_collisions(self, ignore_targets: None | str | list[str] = None):
-        tokens = self.target_tokens[:]  # Copy the list
         if isinstance(ignore_targets, str):
             ignore_targets = [ignore_targets]
         if ignore_targets is None:
             ignore_targets = []
-        for target, target_tokens in self.target_tokens.items():
+        # Collect all tokens for non-ignored targets
+        all_tokens = []
+        for target, tokens in self.target_tokens.items():
             if target in ignore_targets:
                 continue
-            tokens += target_tokens
-        return len(tokens) == len(set(tokens))
+            all_tokens.extend(tokens)
+        return len(all_tokens) == len(set(all_tokens))
 
     def get_target_probs(self, probs, layer=None):
         target_probs = {
@@ -128,21 +128,29 @@ def run_prompts(
     func_kwargs: dict | None = None,
     remote: bool = False,
     tqdm=tqdm,
-) -> tuple[th.Tensor, dict[str, th.Tensor]]:
+) -> dict[str, th.Tensor]:
     """
     Run a list of prompts through the model and return the probabilities of the next token for the target tokens.
 
     Args:
         nn_model: The NNSight model
-        prompts: A list of prompts
+        prompts: A list of prompts. All prompts must have the same target keys
         batch_size: The batch size to use
         get_probs: The function to get the probabilities of the next token, default to next token prediction
         method_kwargs: The kwargs to pass to the get_probs function
         tqdm: The tqdm function to use, default to tqdm.auto.tqdm. Use None to disable tqdm
 
     Returns:
-        A target_probs tensor of shape (num_prompts, num_layers)
+        A dictionary of target names and the probabilities of the next token for the target tokens.
     """
+    if len(prompts) == 0:
+        return {}
+    keys = set(prompts[0].target_tokens.keys())
+    for prompt in prompts:
+        if set(prompt.target_tokens.keys()) != keys:
+            raise ValueError(
+                f"All prompts must have the same target keys. Got {keys} and {set(prompt.target_tokens.keys())}"
+            )
     str_prompts = [prompt.prompt for prompt in prompts]
     probs = []
     if get_probs_func is None:
@@ -166,15 +174,3 @@ def run_prompts(
         target: th.stack(probs).cpu() for target, probs in target_probs.items()
     }
     return target_probs
-
-
-def prompts_to_df(prompts: list[Prompt], tokenizer=None):
-    dic = {}
-    for i, prompt in enumerate(prompts):
-        dic[i] = {"prompt": prompt.prompt}
-        for tgt, string in prompt.target_strings.items():
-            dic[i][tgt + "_string"] = string
-        if tokenizer is not None:
-            for tgt, tokens in prompt.target_tokens.items():
-                dic[i][tgt + "_tokens"] = tokenizer.convert_ids_to_tokens(tokens)
-    return pd.DataFrame.from_dict(dic)
