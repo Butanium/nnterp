@@ -1,191 +1,234 @@
 # nnterp
 
+A Python package for neural network mechanistic interpretability using [nnsight](https://github.com/ndif-team/nnsight). This library provides tools for activation collection, interventions, and analysis of transformer models.
+
 ## Installation
-- `pip install nnterp`
-- `pip install nnterp[display]` if you want to use the `display` module for visualizations
+- `pip install nnterp` - Basic installation
+- `pip install nnterp[display]` - Includes visualization dependencies
+- `pip install nnterp[vllm]` - Includes vLLM support for efficient inference (NOT supported yet)
 
-## Usage
-### Loading a Model
+## Key Features
 
-First, let's load a model in `nnsight` using `nnterp`'s `load_model` function.
+### StandardizedTransformer
+The `StandardizedTransformer` class provides a unified interface for working with different transformer architectures by standardizing module names and providing convenient accessors for intermediate activations.
 
 ```python
-from nnterp import load_model
+from nnterp import StandardizedTransformer
 
-model_name = "meta-llama/Llama-2-7b-hf"
-# Load the model (float16 and gpu by default)
-nn_model = load_model(model_name)
-tokenizer = nn_model.tokenizer
+# Load a model with standardized naming
+model = StandardizedTransformer("gpt2")
+
+# Access layers and components using standardized names
+with model.trace("Hello world"):
+    # Direct layer access
+    layer_0_input = model.layers_input[0].save()
+    # Attention and MLP outputs
+    attn_output = model.attention_output[0].save()
+    mlp_output = model.mlp_output[0].save()
+    layer_0_output = model.layers_output[0].save()
+    
+    
+    
+    # Final logits and probabilities
+    logits = model.logits.save()
+    probs = model.next_token_probs.save()
 ```
 
-### Collecting activations
 
-To collect activations from a model using `nnterp`, you can use the `get_token_activations` function. This function takes the following parameters:
+### Collecting Activations
 
-- `nn_model`: The NNSight model.
-- `prompts`: The prompts for which you want to collect activations.
-- `layers`: The layers for which you want to collect activations. If not specified, activations will be collected for all layers.
-- `get_activations`: A function to get the activations. By default, it will collect the layer output, but you can also collect other things like attention input/output
-- `remote`: Whether to run the model on the remote device.
-- `idx`: The index of the token to collect activations for.
-- `open_context`: Whether to open a context for the model trace. You can set to false if you want to collect activations in an already opened nnsight tracing context.
-
+#### Single Batch Activation Collection
 ```python
 from nnterp import get_token_activations
 
-# Load the model
-nn_model = load_model(model_name)
-
-# Create a prompt
-prompt = "The quick brown fox jumps over the lazy dog"
-
 # Collect activations for all layers
+prompt = "The quick brown fox jumps over the lazy dog"
 activations = get_token_activations(nn_model, [prompt])
 
-# Print the activations
+# Print activation shapes
 for layer, activation in enumerate(activations):
     print(f"Layer {layer}: {activation.shape}")
 ```
 
-### Collecting activations in batches
-
-If you have a large number of prompts and want to collect activations in batches to optimize memory usage, you can use the `collect_activations_batched` function. This function has similar parameters to `get_token_activations`, but also takes a `batch_size` parameter to specify the batch size for collecting activations.
+#### Batched Activation Collection
+For large datasets, use batched collection to optimize memory usage:
 
 ```python
 from nnterp import collect_activations_batched
-# Load the model
-nn_model = load_model(model_name)
 
-# Create a list of prompts
 prompts = ["The quick brown fox", "jumps over the lazy dog"]
-
-# Collect activations in batches
 batch_size = 2
 activations = collect_activations_batched(nn_model, prompts, batch_size)
 
-# Print the activations
 for layer, activation in enumerate(activations):
     print(f"Layer {layer}: {activation.shape}")
 ```
 
-### Creating and Running Prompts
-
-Next, we create some toy prompts and run them through the model to get the next token probabilities.
+### Prompt Utilities and Evaluation
 
 ```python
 from nnterp import Prompt, run_prompts
 
-# Create toy prompts
+# Create prompts with target tokens to track
 prompts = [
     Prompt.from_strings("The quick brown fox", {"target": "jumps"}, tokenizer),
     Prompt.from_strings("Hello, how are you", {"target": "doing"}, tokenizer)
 ]
 
-# Run prompts through the model and get the next token probabilities
+# Get target token probabilities
 target_probs = run_prompts(nn_model, prompts, batch_size=2)
 
-# Print the results
 for prompt, probs in zip(prompts, target_probs["target"]):
     print(f"Prompt: {prompt.prompt}")
     print(f"Target Probabilities: {probs}")
 ```
 
-### Using Interventions
-
-Now, let's use some interventions like `logit_lens`
+### Interventions
 
 #### Logit Lens
+Analyze what the model "thinks" at each layer by projecting hidden states to vocabulary:
 
 ```python
 from nnterp import logit_lens
 
-# Create a toy prompt
 prompt = "The quick brown fox jumps over the lazy dog"
-
-# Get the logit lens probabilities
 logit_probs = logit_lens(nn_model, prompt)
-
-# Print the results
-print(f"Logit Lens Probabilities: {logit_probs.shape}")
+print(f"Logit Lens Probabilities: {logit_probs.shape}")  # (num_prompts, num_layers, vocab_size)
 ```
 
 #### Patchscope Lens
+Compare activations between different contexts:
 
 ```python
-from nnterp import patchscope_lens, TargetPrompt
+from nnterp import patchscope_lens, TargetPrompt, repeat_prompt
 
-# Create source and target prompts
 source_prompt = "The quick brown fox"
 target_prompt = TargetPrompt(prompt="jumps over the lazy dog", index_to_patch=-1)
 
-# Get the patchscope lens probabilities
-patchscope_probs = patchscope_lens(nn_model, source_prompts=[source_prompt], target_patch_prompts=[target_prompt])
+# Or use the repeat prompt from the patchscopes paper
+target_prompt = repeat_prompt(words=["king", "hello", "world"])
 
-# Print the results
-print(f"Patchscope Lens Probabilities: {patchscope_probs}")
+patchscope_probs = patchscope_lens(
+    nn_model, 
+    source_prompts=[source_prompt], 
+    target_patch_prompts=[target_prompt]
+)
 ```
 
-### Using the Display Module
+#### Patchscope Generation
+Generate text using patchscope interventions:
 
 ```python
-from nnterp import plot_topk_tokens
+from nnterp import patchscope_generate
 
-# Plot Patchscope Lens Probabilities and save the figure to test.png and test.html
+generated_text = patchscope_generate(
+    nn_model,
+    prompts=["The capital of France is"],
+    target_patch_prompt=TargetPrompt("Paris is the capital of", -1),
+    max_length=20
+)
+```
+
+#### Activation Steering
+Steer model behavior using activation additions:
+
+```python
+from nnterp import steer
+
+# Create a steering vector (e.g., from activation differences)
+steering_vector = torch.randn(model.config.hidden_size)
+
+with model.trace("Hello, how are you?"):
+    # Apply steering at layer 10
+    steer(model, layers=10, steering_vector=steering_vector, factor=2.0)
+    output = model.lm_head.output.save()
+```
+
+
+### Visualization
+
+```python
+from nnterp.display import plot_topk_tokens
+
+# Visualize top-k token probabilities across layers
 fig = plot_topk_tokens(
     patchscope_probs,
     tokenizer,
     k=5,
     title="Patchscope Lens Probabilities",
-    file="test.png",
-    save_html=True,  # Default is True
+    file="results.png",
+    save_html=True
 )
 fig.show()
 ```
 
-### Full Example
-
-Here is a full example combining all the above functionalities:
+### Instruction-Tuned Models
+For chat/instruction-tuned models, use specialized prompt functions:
 
 ```python
-from nnterp import load_model
-from nnterp.prompt_utils import Prompt, run_prompts
-from nnterp.interventions import logit_lens, patchscope_lens, TargetPrompt
+from nnterp.interventions import it_repeat_prompt
 
-# Load the model
-model_name = "meta-llama/Llama-2-7b-hf"
-nn_model = load_model(model_name, trust_remote_code=False, device_map="auto")
-tokenizer = nn_model.tokenizer
-
-# Create toy prompts
-prompts = [
-    Prompt.from_strings("The quick brown fox", {"target": "jumps"}, tokenizer),
-    Prompt.from_strings("Hello, how are you", {"target": "doing"}, tokenizer)
-]
-
-# Run prompts through the model
-target_probs = run_prompts(nn_model, prompts, batch_size=2)
-
-# Print the results
-for prompt, probs in zip(prompts, target_probs["target"]):
-    print(f"Prompt: {prompt.prompt}")
-    print(f"Target Probabilities: {probs}")
-
-# Logit Lens
-prompt = "The quick brown fox jumps over the lazy dog"
-logit_probs = logit_lens(nn_model, prompt)
-print(f"Logit Lens Probabilities: {logit_probs}")
-
-# Patchscope Lens
-source_prompt = "The quick brown fox"
-target_prompt = TargetPrompt(prompt="jumps over the lazy dog", index_to_patch=-1)
-patchscope_probs = patchscope_lens(nn_model, source_prompts=[source_prompt], target_patch_prompts=[target_prompt])
-print(f"Patchscope Lens Probabilities: {patchscope_probs}")
+# Generate prompts adapted for instruction-tuned models
+target_prompt = it_repeat_prompt(
+    tokenizer,
+    words=["Paris", "London", "Tokyo"],
+    complete_prompt=True,
+    add_user_instr=True
+)
 ```
 
 ## Codebase Overview
-- `nnsight_utils.py` basically allows you to deal with TL and HF models in a similar way.
-- `interventions.py` is a module that contains tools like logit lens, patchscope lens and other interventions.
-- `prompt_utils.py` contains utils to create prompts for which you want to track specific tokens in the next token distribution and run interventions on them and collect the probabilities of the tokens you're interested in.
+
+- **`standardized_transformer.py`** - `StandardizedTransformer` class for unified model interface with standardized naming and convenient accessors
+- **`nnsight_utils.py`** - Core utilities for model loading, activation collection, and model manipulation compatible with both TransformerLens and HuggingFace models
+- **`interventions.py`** - Comprehensive intervention toolkit including:
+  - Logit lens and patchscope lens
+  - Activation steering and patching
+  - Latent prompt manipulation
+  - Advanced attention interventions
+- **`prompt_utils.py`** - Utilities for creating and managing prompts with target token tracking
+- **`display.py`** - Visualization tools for analyzing model outputs and probabilities
+
+## Advanced Usage Example
+
+```python
+from nnterp import StandardizedTransformer, logit_lens, patchscope_lens, TargetPrompt
+from nnterp.display import plot_topk_tokens
+import torch as th
+
+# Load model with standardized interface
+model = StandardizedTransformer("gpt2")
+
+# Analyze layer-wise predictions
+prompt = "The quick brown fox jumps over the lazy dog"
+logit_probs = logit_lens(model, prompt)
+
+# Compare with patchscope
+source_prompt = "The quick brown fox"
+target_prompt = TargetPrompt(prompt="jumps over the lazy dog", index_to_patch=-1)
+patchscope_probs = patchscope_lens(model, [source_prompt], [target_prompt])
+
+# Visualize results
+fig = plot_topk_tokens(
+    logit_probs[0],  # First prompt
+    model.tokenizer,
+    k=5,
+    title="Logit Lens Analysis",
+    file="logit_lens.png"
+)
+
+# Layer-specific steering
+steering_vector = th.randn(model.config.hidden_size) * 0.1  # Will be automatically moved to the different layers devices.
+with model.trace("Hello, how are you?"):
+    model.steer(layers=[10, 15], steering_vector=steering_vector, factor=1.5)
+    steered_output = model.next_token_probs.save()
+```
+
+## Dependencies
+
+- **Core**: `nnsight>=0.5.0`
+- **Visualization**: `plotly`, `pandas` (install with `[display]` extra)
+- **High-performance inference**: `vllm` (install with `[vllm]` extra)
 
 # Contributing
 - Create a git tag with the version number `git tag vx.y.z; git push origin vx.y.z`

@@ -90,7 +90,8 @@ class StandardizedTransformer(LanguageModel):
     """
     Renames the LanguageModel modules to match a standardized architecture.
 
-    The model structure is organized as follows:
+    The model structure is organized as follows::
+
         StandardizedTransformer
             ├── model
             │   ├── layers
@@ -100,6 +101,7 @@ class StandardizedTransformer(LanguageModel):
             └── lm_head
 
     In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:
+
     - layers_output[i]: Get/set layer output at layer i
     - layers_input[i]: Get/set layer input at layer i
     - layers[i]: Get layer module at layer i
@@ -112,12 +114,12 @@ class StandardizedTransformer(LanguageModel):
         repo_id (str): Hugging Face repository ID or path of the model to load.
         trust_remote_code (bool, optional): If True, remote code will be trusted when
             loading the model. Defaults to False.
-        attn_rename (str, optional): Extra module name to rename to `self_attn`.
-        mlp_rename (str, optional): Extra module name to rename to `mlp`.
-        ln_final_rename (str, optional): Extra module name to rename to `ln_final`.
-        lm_head_rename (str, optional): Extra module name to rename to `lm_head`.
-        model_rename (str, optional): Extra module name to rename to `model`.
-        layers_rename (str, optional): Extra module name to rename to `layers`.
+        attn_rename (str, optional): Extra module name to rename to ``self_attn``.
+        mlp_rename (str, optional): Extra module name to rename to ``mlp``.
+        ln_final_rename (str, optional): Extra module name to rename to ``ln_final``.
+        lm_head_rename (str, optional): Extra module name to rename to ``lm_head``.
+        model_rename (str, optional): Extra module name to rename to ``model``.
+        layers_rename (str, optional): Extra module name to rename to ``layers``.
         check_renaming (bool, optional): If True, the renaming of modules is validated.
             Defaults to True.
     """
@@ -188,6 +190,7 @@ class StandardizedTransformer(LanguageModel):
     def skip_layer(self, layer: int, skip_with: TraceTensor | None = None):
         """
         Skip the computation of a layer.
+
         Args:
             layer: The layer to skip
             skip_with: The input to skip the layer with. If None, the input of the layer is used.
@@ -216,13 +219,14 @@ class StandardizedTransformer(LanguageModel):
         get_module: GetModuleOutput = get_layer_output,
     ):
         """
-        Steer the hidden states of a layer using a steering vector
+        Steer the hidden states of a layer using a steering vector.
+
         Args:
-            nn_model: The NNSight model
             layers: The layer(s) to steer
             steering_vector: The steering vector to apply
             factor: The factor to multiply the steering vector by
             positions: The position to steer. If None, all positions are steered.
+            get_module: Function to get the module output to steer
         """
         if isinstance(layers, int):
             layers = [layers]
