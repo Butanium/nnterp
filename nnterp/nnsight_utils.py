@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 from nnsight import LanguageModel
 from nnsight.intervention.envoy import Envoy
 from nnsight.intervention.tracing.globals import Object
@@ -52,47 +51,6 @@ def get_rename_dict(
     update_rename_dict("layers", layers_name)
 
     return rename_dict
-
-
-def load_model(
-    model_name: str,
-    trust_remote_code=False,
-    use_tl=False,
-    use_module_renaming=False,
-    no_space_on_bos=False,
-    rename_kwargs=None,
-    **kwargs_,
-):
-    """
-    Load a model into nnsight. If use_tl is True, a TransformerLens model is loaded.
-    Default device is "auto" and default torch_dtype is th.float16.
-
-    Args:
-        no_space_on_bos: If True, add_prefix_space is set to False in the tokenizer. It is useful if you want to use the tokenizer to get the first token of a word when it's not after a space.
-    """
-    if rename_kwargs is None:
-        rename_kwargs = {}
-    kwargs = dict(torch_dtype=th.float16, trust_remote_code=trust_remote_code)
-    if use_tl:
-        raise ValueError("TransformerLens is no longer supported as of nnterp v1.0.0")
-    else:
-        kwargs["device_map"] = "auto"
-        tokenizer_kwargs = kwargs_.pop("tokenizer_kwargs", {})
-        if no_space_on_bos:
-            tokenizer_kwargs.update(
-                dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
-            )
-        kwargs.update(kwargs_)
-        rename_modules_dict = (
-            get_rename_dict(**rename_kwargs) if use_module_renaming else None
-        )
-        model = LanguageModel(
-            model_name,
-            tokenizer_kwargs=tokenizer_kwargs,
-            rename=rename_modules_dict,
-            **kwargs,
-        )
-        return model
 
 
 def get_num_layers(nn_model: LanguageModel):

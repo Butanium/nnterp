@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Union
+from warnings import warn
 from enum import Enum
 import torch as th
 from nnsight import LanguageModel
@@ -22,6 +23,49 @@ from .nnsight_utils import (
     GetModuleOutput,
     get_layer_output,
 )
+
+
+def load_model(
+    model_name: str,
+    trust_remote_code=False,
+    no_space_on_bos=False,
+    rename_kwargs=None,
+    use_tl=False,
+    **kwargs_,
+):
+    """
+    Load a model into nnsight. If use_tl is True, a TransformerLens model is loaded.
+    Default device is "auto" and default torch_dtype is th.float16.
+
+    Args:
+        no_space_on_bos: If True, add_prefix_space is set to False in the tokenizer. It is useful if you want to use the tokenizer to get the first token of a word when it's not after a space.
+    """
+    warn(
+        "This function is deprecated and will be removed in the future. Use nnterp.StandardizedTransformer instead."
+    )
+    if rename_kwargs is None:
+        rename_kwargs = {}
+    kwargs = dict(torch_dtype=th.bfloat16, trust_remote_code=trust_remote_code)
+    if use_tl:
+        raise ValueError("TransformerLens is no longer supported as of nnterp v1.0.0")
+    else:
+        kwargs["device_map"] = "auto"
+        tokenizer_kwargs = kwargs_.pop("tokenizer_kwargs", {})
+        if no_space_on_bos:
+            tokenizer_kwargs.update(
+                dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
+            )
+        kwargs.update(kwargs_)
+        rename_modules_dict = (
+            get_rename_dict(**rename_kwargs) if use_module_renaming else None
+        )
+        model = StandardizedTransformer(
+            model_name,
+            tokenizer_kwargs=tokenizer_kwargs,
+            rename=rename_modules_dict,
+            **kwargs,
+        )
+        return model
 
 
 class IOType(Enum):
@@ -137,7 +181,6 @@ class StandardizedTransformer(LanguageModel):
         check_renaming: bool = True,
         **kwargs,
     ):
-        kwargs.setdefault("torch_dtype", th.float16)
         kwargs.setdefault("device_map", "auto")
 
         tokenizer_kwargs = kwargs.pop("tokenizer_kwargs", {})
@@ -180,11 +223,13 @@ class StandardizedTransformer(LanguageModel):
     def project_on_vocab(self, h: TraceTensor) -> TraceTensor:
         return project_on_vocab(self, h)
 
-    def get_logits(self) -> TraceTensor:
+    @property
+    def logits(self) -> TraceTensor:
         """Returns the lm_head output"""
         return get_logits(self)
 
-    def get_next_token_probs(self) -> TraceTensor:
+    @property
+    def next_token_probs(self) -> TraceTensor:
         return get_next_token_probs(self)
 
     def skip_layer(self, layer: int, skip_with: TraceTensor | None = None):
