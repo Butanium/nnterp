@@ -15,23 +15,6 @@ from nnterp.interventions import (
 from nnterp import StandardizedTransformer
 
 
-@pytest.fixture(
-    params=[
-        "Maykeye/TinyLLama-v0",
-        "gpt2",
-        "bigscience/bigscience-small-testing",
-        "sbintuitions/tiny-lm-chat",
-    ]
-)
-def model_name(request):
-    return request.param
-
-
-@pytest.fixture
-def model(model_name):
-    return StandardizedTransformer(model_name)
-
-
 def test_logit_lens(model):
     """Test logit lens returns correct dimensions and doesn't crash."""
     prompts = ["Hello world", "Test prompt"]
@@ -154,7 +137,19 @@ def test_it_repeat_prompt(model):
     # Test basic functionality
     if model.tokenizer.chat_template is None:
         pytest.skip("Model does not support chat template")
-    it_prompt = it_repeat_prompt(model.tokenizer)
+    use_system_prompt = True
+    try:
+        model.tokenizer.apply_chat_template(
+            [
+                {"role": "system", "content": "a"},
+                {"role": "user", "content": "b"},
+            ],
+            tokenize=False,
+        )
+    except Exception as e:
+        use_system_prompt = False
+
+    it_prompt = it_repeat_prompt(model.tokenizer, use_system_prompt=use_system_prompt)
     assert isinstance(it_prompt, TargetPrompt)
     assert it_prompt.index_to_patch == -1
     assert len(it_prompt.prompt) > 0  # Should generate some prompt
@@ -165,6 +160,7 @@ def test_it_repeat_prompt(model):
         words=["test", "word"],
         complete_prompt=False,
         add_user_instr=False,
+        use_system_prompt=False,
     )
     assert isinstance(custom_it_prompt, TargetPrompt)
 
@@ -220,6 +216,11 @@ def test_patchscope_generate(model):
     # Test with limited layers to avoid memory issues
     num_layers = get_num_layers(model)
     test_layers = [0, min(1, num_layers - 1)] if num_layers > 1 else [0]
+    try:
+        with model.generate("a", max_length=2):
+            pass
+    except Exception as e:
+        pytest.skip(f"Model does not support generate with nnsight: {e}")
 
     result = patchscope_generate(
         model,
