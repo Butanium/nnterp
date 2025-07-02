@@ -6,6 +6,7 @@ import torch as th
 from nnsight import LanguageModel
 from nnsight.intervention.tracing.globals import Object
 from nnsight.intervention.envoy import Envoy
+from loguru import logger
 
 from .nnsight_utils import (
     TraceTensor,
@@ -182,10 +183,25 @@ class StandardizedTransformer(LanguageModel):
         **kwargs,
     ):
         kwargs.setdefault("device_map", "auto")
-
+        # Check if attention implementation is supported for attention pattern tracing
+        if "attn_implementation" in kwargs or "config" in kwargs:
+            impl = (
+                kwargs.pop("attn_implementation", None)
+                or kwargs["config"]._attn_implementation
+            )
+            if impl != "eager":
+                warn(
+                    f"Attention implementation {impl} is not supported for attention pattern tracing. Please use eager attention implementation if you plan to access attention patterns."
+                )
+        else:
+            logger.info(
+                "Enforcing eager attention implementation for attention pattern tracing. The HF default would be to use sdpa if available"
+            )
+            impl = "eager"
         tokenizer_kwargs = kwargs.pop("tokenizer_kwargs", {})
         super().__init__(
             repo_id,
+            attn_implementation=impl,
             tokenizer_kwargs=tokenizer_kwargs,
             trust_remote_code=trust_remote_code,
             rename=get_rename_dict(
