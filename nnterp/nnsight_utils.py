@@ -11,47 +11,6 @@ from typing import Union, Callable
 TraceTensor = Union[th.Tensor, Object]
 GetModuleOutput = Callable[[LanguageModel, int], TraceTensor]
 
-ATTENTION_NAMES = ["attn", "self_attention", "attention"]
-MODEL_NAMES = ["transformer", "gpt_neox"]
-LAYER_NAMES = ["h"]
-LN_NAMES = ["final_layer_norm", "ln_f"]
-LM_HEAD_NAMES = ["embed_out"]
-
-
-def get_rename_dict(
-    attn_name: str | list[str] | None = None,
-    mlp_name: str | list[str] | None = None,
-    ln_final_name: str | list[str] | None = None,
-    lm_head_name: str | list[str] | None = None,
-    model_name: str | list[str] | None = None,
-    layers_name: str | list[str] | None = None,
-) -> dict[str, str]:
-
-    rename_dict = (
-        {name: "self_attn" for name in ATTENTION_NAMES}
-        | {name: "model" for name in MODEL_NAMES}
-        | {name: "layers" for name in LAYER_NAMES}
-        | {name: "norm" for name in LN_NAMES}
-        | {name: "lm_head" for name in LM_HEAD_NAMES}
-    )
-
-    def update_rename_dict(renaming: str, value: str | list[str] | None):
-        if value is not None:
-            if isinstance(value, str):
-                rename_dict[value] = renaming
-            else:
-                for name in value:
-                    rename_dict[name] = renaming
-
-    update_rename_dict("self_attn", attn_name)
-    update_rename_dict("mlp", mlp_name)
-    update_rename_dict("norm", ln_final_name)
-    update_rename_dict("lm_head", lm_head_name)
-    update_rename_dict("model", model_name)
-    update_rename_dict("layers", layers_name)
-
-    return rename_dict
-
 
 def get_num_layers(nn_model: LanguageModel):
     """

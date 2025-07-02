@@ -4,13 +4,12 @@ from warnings import warn
 from enum import Enum
 import torch as th
 from nnsight import LanguageModel
-from nnsight.intervention.tracing.globals import Object
-from nnsight.intervention.envoy import Envoy
 from loguru import logger
+from nnsight.intervention.envoy import Envoy
+from transformers.utils import logging
 
 from .nnsight_utils import (
     TraceTensor,
-    get_rename_dict,
     get_num_layers,
     get_layer,
     get_attention,
@@ -23,6 +22,14 @@ from .nnsight_utils import (
     get_next_token_probs,
     GetModuleOutput,
     get_layer_output,
+)
+from .rename_utils import (
+    get_rename_dict,
+    LayerAccessor,
+    IOType,
+    get_ignores,
+    mlp_returns_tuple,
+    check_model_renaming,
 )
 
 
@@ -57,9 +64,7 @@ def load_model(
                 dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
             )
         kwargs.update(kwargs_)
-        rename_modules_dict = (
-            get_rename_dict(**rename_kwargs) if use_module_renaming else None
-        )
+        rename_modules_dict = get_rename_dict(**rename_kwargs)
         model = StandardizedTransformer(
             model_name,
             tokenizer_kwargs=tokenizer_kwargs,
@@ -67,68 +72,6 @@ def load_model(
             **kwargs,
         )
         return model
-
-
-class IOType(Enum):
-    """Enum to specify input or output access"""
-
-    INPUT = "input"
-    OUTPUT = "output"
-
-
-class ModuleAccessor:
-    """Simple accessor for module access (no get/set, just module retrieval)"""
-
-    def __init__(self, model, attr_name: str | None):
-        self.model = model
-        self.attr_name = attr_name
-
-    def __getitem__(self, layer: int) -> Envoy:
-        target = self.model.model.layers[layer]
-        if self.attr_name is not None:
-            target = getattr(target, self.attr_name)
-        return target
-
-
-class LayerAccessor(ModuleAccessor):
-    """I/O accessor that inherits from ModuleAccessor and provides input/output access with setter"""
-
-    def __init__(
-        self, model, attr_name: str | None, io_type: IOType, returns_tuple: bool = False
-    ):
-        super().__init__(model, attr_name)
-        self.io_type = io_type
-        self.returns_tuple = returns_tuple
-
-    def __getitem__(self, layer: int) -> TraceTensor:
-        # Get the module using parent class
-        module = super().__getitem__(layer)
-
-        # Get input or output
-        if self.io_type == IOType.INPUT:
-            target = module.input
-        else:  # IOType.OUTPUT
-            target = module.output
-        if self.returns_tuple:
-            return target[0]
-        else:
-            return target
-
-    def __setitem__(self, layer: int, value: TraceTensor):
-        # Get the module using parent class
-        module = super().__getitem__(layer)
-
-        # Set input or output
-        if self.io_type == IOType.INPUT:
-            if self.returns_tuple:
-                module.input = (value,)
-            else:
-                module.input = value
-        else:
-            if self.returns_tuple:
-                module.output = (value,)
-            else:
-                module.output = value
 
 
 class StandardizedTransformer(LanguageModel):
@@ -147,12 +90,12 @@ class StandardizedTransformer(LanguageModel):
 
     In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:
 
-    - layers_output[i]: Get/set layer output at layer i
-    - layers_input[i]: Get/set layer input at layer i
     - layers[i]: Get layer module at layer i
-    - attention_output[i]: Get/set attention output at layer i
+    - layers_input[i]: Get/set layer input at layer i
+    - layers_output[i]: Get/set layer output at layer i
+    - attentions_output[i]: Get/set attention output at layer i
     - attentions[i]: Get attention module at layer i
-    - mlp_output[i]: Get/set MLP output at layer i
+    - mlps_output[i]: Get/set MLP output at layer i
     - mlps[i]: Get MLP module at layer i
 
     Args:
@@ -180,6 +123,7 @@ class StandardizedTransformer(LanguageModel):
         model_rename: str | None = None,
         layers_rename: str | None = None,
         check_renaming: bool = True,
+        fallback_check_to_trace: bool = True,
         **kwargs,
     ):
         kwargs.setdefault("device_map", "auto")
@@ -195,7 +139,7 @@ class StandardizedTransformer(LanguageModel):
                 )
         else:
             logger.info(
-                "Enforcing eager attention implementation for attention pattern tracing. The HF default would be to use sdpa if available"
+                "Enforcing eager attention implementation for attention pattern tracing. The HF default would be to use sdpa if available. To use sdpa, set attn_implementation='sdpa' or None to use the HF default."
             )
             impl = "eager"
         tokenizer_kwargs = kwargs.pop("tokenizer_kwargs", {})
@@ -214,23 +158,31 @@ class StandardizedTransformer(LanguageModel):
             ),
             **kwargs,
         )
-
-        if check_renaming:
-            self._check_renaming(repo_id)
-        self.num_layers = get_num_layers(self)
+        ignores = get_ignores(self._model)
 
         # Create accessor instances
+        self.layers_input = LayerAccessor(self, None, IOType.INPUT, returns_tuple=False)
         self.layers_output = LayerAccessor(
             self, None, IOType.OUTPUT, returns_tuple=True
         )
-        self.layers_input = LayerAccessor(self, None, IOType.INPUT, returns_tuple=False)
-        self.layers = ModuleAccessor(self, None)
-        self.attention_output = LayerAccessor(
+        self.attentions = LayerAccessor(self, "self_attn", None)
+        self.attentions_input = LayerAccessor(
+            self, "self_attn", IOType.INPUT, returns_tuple=False
+        )
+        self.attentions_output = LayerAccessor(
             self, "self_attn", IOType.OUTPUT, returns_tuple=True
         )
-        self.attentions = ModuleAccessor(self, "self_attn")
-        self.mlp_output = LayerAccessor(self, "mlp", IOType.OUTPUT, returns_tuple=False)
-        self.mlps = ModuleAccessor(self, "mlp")
+        self.mlps = LayerAccessor(self, "mlp", None)
+        self.mlps_input = LayerAccessor(self, "mlp", IOType.INPUT, returns_tuple=False)
+        self.mlps_output = LayerAccessor(
+            self,
+            "mlp",
+            IOType.OUTPUT,
+            returns_tuple=mlp_returns_tuple(self._model),
+        )
+        if check_renaming:
+            check_model_renaming(self, repo_id, ignores, fallback_check_to_trace)
+        self.num_layers = get_num_layers(self)
 
     @property
     def unembed_norm(self) -> Envoy:
@@ -296,47 +248,3 @@ class StandardizedTransformer(LanguageModel):
             get_module(self, layer)[:, positions] += factor * steering_vector.to(
                 layer_device
             )
-
-    def _check_renaming(self, repo_id: str):
-        try:
-            _ = self.model
-        except AttributeError as exc:
-            raise ValueError(
-                f"Could not find model module in {repo_id} architecture. This means that it was not properly renamed.\n"
-                "Please pass the name of the model module to the model_rename argument."
-            ) from exc
-        try:
-            _ = self.model.layers
-        except AttributeError as exc:
-            raise ValueError(
-                f"Could not find layers module in {repo_id} architecture. This means that it was not properly renamed.\n"
-                "Please pass the name of the layers module to the layers_rename argument."
-            ) from exc
-        try:
-            _ = get_unembed_norm(self)
-        except AttributeError as exc:
-            raise ValueError(
-                f"Could not find norm module in {repo_id} architecture. This means that it was not properly renamed.\n"
-                "Please pass the name of the norm module to the ln_final_rename argument."
-            ) from exc
-        try:
-            _ = self.lm_head
-        except AttributeError as exc:
-            raise ValueError(
-                f"Could not find lm_head module in {repo_id} architecture. This means that it was not properly renamed.\n"
-                "Please pass the name of the lm_head module to the lm_head_rename argument."
-            ) from exc
-        try:
-            _ = get_attention(self, 0)
-        except AttributeError as exc:
-            raise ValueError(
-                f"Could not find self_attn module in {repo_id} architecture. This means that it was not properly renamed.\n"
-                "Please pass the name of the self_attn module to the attn_rename argument."
-            ) from exc
-        try:
-            _ = get_mlp(self, 0)
-        except AttributeError as exc:
-            raise ValueError(
-                f"Could not find mlp module in {repo_id} architecture. This means that it was not properly renamed.\n"
-                "Please pass the name of the mlp module to the mlp_rename argument."
-            ) from exc
