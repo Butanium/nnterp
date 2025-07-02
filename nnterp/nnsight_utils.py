@@ -189,7 +189,7 @@ def skip_layer(
     nn_model: LanguageModel, layer: int, skip_with: TraceTensor | None = None
 ):
     """
-    Skip the computation of a layer.
+    Skip the computation of a layer. If skip_with is None, the input of the layer is used as its output.
     Args:
         nn_model: The NNSight model
         layer: The layer to skip
@@ -297,8 +297,9 @@ def get_token_activations(
                 acts.append(get_activations(nn_model, layer)[:, idx].cpu().save())
             tracer.stop()
     else:
+        device = get_layer_output(nn_model, 0).device
         for layer in layers:
-            acts.append(get_activations(nn_model, layer)[:, idx])
+            acts.append(get_activations(nn_model, layer)[:, idx].to(device))
     return th.stack(acts)
 
 

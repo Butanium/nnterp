@@ -117,7 +117,7 @@ def it_repeat_prompt(
             [
                 {
                     "role": "user",
-                    "content": "I will provide you with a series of sentences. I want you to predict the next token for each sentence.",
+                    "content": "I will provide you with a series of sentences. Your task is to guess the next word in the sentence. You must answer with the next word only.",
                 },
                 {"role": "assistant", "content": "Ok."},
                 {"role": "user", "content": prompt},
@@ -126,14 +126,20 @@ def it_repeat_prompt(
         )
     else:
         if use_system_prompt:
-            chat.append(
-                {"role": "system", "content": "Guess the next word in the sentence."}
+            chat.extend(
+                [
+                    {
+                        "role": "system",
+                        "content": "The user will provide you with a sentence. Your task is to guess the next word in the sentence. You must answer with the next word only.",
+                    },
+                    {"role": "user", "content": prompt},
+                ]
             )
         else:
             chat.append(
                 {
                     "role": "user",
-                    "content": f"Guess the next word in this sentence: {prompt}",
+                    "content": f"Guess the next word in the following sentence (answer only the next word): {prompt}",
                 }
             )
         chat.append({"role": "assistant", "content": prompt if complete_prompt else ""})
