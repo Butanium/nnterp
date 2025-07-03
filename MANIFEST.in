@@ -1,0 +1,25 @@
+# Include essential files
+include README.md
+include LICENSE
+include pyproject.toml
+
+# Include the main package
+recursive-include nnterp *.py
+
+# Exclude unwanted files and directories
+exclude test.ipynb
+exclude deploy.py
+exclude CLAUDE.md
+exclude .pre-commit-config.yaml
+exclude .gitignore
+exclude uv.lock
+
+# Exclude directories
+prune tests
+prune docs
+prune .github
+prune .pytest_cache
+prune *.egg-info
+prune __pycache__
+prune .venv
+prune .git 

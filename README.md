@@ -23,8 +23,8 @@ with model.trace("Hello world"):
     # Direct layer access
     layer_0_input = model.layers_input[0].save()
     # Attention and MLP outputs
-    attn_output = model.attention_output[0].save()
-    mlp_output = model.mlp_output[0].save()
+    attn_output = model.attentions_output[0].save()
+    mlps_output = model.mlps_output[0].save()
     layer_0_output = model.layers_output[0].save()
     
     

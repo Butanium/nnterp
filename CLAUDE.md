@@ -27,7 +27,7 @@ nnterp is a mechanistic interpretability library built on top of nnsight, provid
 **StandardizedTransformer** (`standardized_transformer.py`)
 - Unified interface for different transformer architectures
 - Standardizes module naming across models (layers, attention, MLP components)
-- Provides convenient accessors: `model.layers_input[i]`, `model.attention_output[i]`, `model.mlp_output[i]`
+- Provides convenient accessors: `model.layers_input[i]`, `model.attentions_output[i]`, `model.mlps_output[i]`
 - Includes built-in steering methods via `model.steer()`
 - **Primary model loading method**: Use `StandardizedTransformer("model_name")` instead of deprecated `load_model()`
 

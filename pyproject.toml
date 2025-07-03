@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "loguru>=0.7.3",
-    "nnsight>=0.5.0dev2",
+    "nnsight>=0.5.0dev3",
 ]
 [project.optional-dependencies]
 display = ["plotly", "pandas"]
@@ -37,12 +37,21 @@ dev = [
     "ipywidgets",
     "pre-commit",
     "black",
+    "flash-attn",
+    "build",
+
 ]
 vllm = [
     "vllm",
 ]
 [project.urls]
 "Homepage" = "https://github.com/butanium/nnterp"
+
+[tool.setuptools]
+packages = ["nnterp"]
+
+[tool.setuptools.package-data]
+nnterp = ["py.typed"]
 
 [tool.black]
 line-length = 88
