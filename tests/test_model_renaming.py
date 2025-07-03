@@ -278,3 +278,147 @@ def test_renamed_model_methods(model_name):
     assert attn_output.shape == layer_input.shape
 
     print("Renamed model methods tested successfully.")
+
+
+def test_standardized_transformer_input_accessors(model_name):
+    """Test input accessor methods of StandardizedTransformer"""
+    model = StandardizedTransformer(model_name)
+    prompt = "Hello, world!"
+    
+    ignores = get_ignores(model._model)
+    with model.trace(prompt):
+        # Test input accessors
+        layer_input_accessor = model.layers_input[0].save()
+        layer_input_direct = model.model.layers[0].input.save()
+        
+        attn_input_accessor = model.attentions_input[0].save()
+        attn_input_direct = model.model.layers[0].self_attn.input.save()
+        
+        if "mlp" not in ignores:
+            mlp_input_accessor = model.mlps_input[0].save()
+            mlp_input_direct = model.model.layers[0].mlp.input.save()
+        
+    # Verify input accessors work correctly
+    assert th.allclose(layer_input_accessor, layer_input_direct), "Layer input accessor mismatch"
+    assert th.allclose(attn_input_accessor, attn_input_direct), "Attention input accessor mismatch"
+    if "mlp" not in ignores:
+        assert th.allclose(mlp_input_accessor, mlp_input_direct), "MLP input accessor mismatch"
+
+
+def test_standardized_transformer_properties(model_name):
+    """Test properties of StandardizedTransformer"""
+    model = StandardizedTransformer(model_name)
+    prompt = "Hello, world!"
+    
+    with model.trace(prompt):
+        # Test properties
+        unembed_norm = model.unembed_norm
+        assert unembed_norm is not None
+        
+        logits = model.logits.save()
+        next_token_probs = model.next_token_probs.save()
+        
+        # Test attention probabilities accessor
+        attn_probs = model.attention_probabilities[0].save()
+        assert attn_probs.shape[-2:] == attn_probs.shape[-2:]  # Should be square attention matrix
+        
+    # Verify shapes and properties
+    assert next_token_probs.shape == (logits.shape[0], logits.shape[-1])
+    assert th.allclose(next_token_probs.sum(dim=-1), th.ones(logits.shape[0]), atol=1e-5)
+
+
+def test_standardized_transformer_steer_method(model_name):
+    """Test steer method of StandardizedTransformer"""
+    model = StandardizedTransformer(model_name)
+    prompt = "Hello, world!"
+    
+    # Create a random steering vector
+    hidden_size = model.config.hidden_size
+    steering_vector = th.randn(hidden_size) * 0.1  # Small perturbation
+    
+    # Test steering single layer
+    with model.trace(prompt):
+        baseline_output = model.logits.save()
+    
+    with model.trace(prompt):
+        model.steer(layers=0, steering_vector=steering_vector, factor=1.0)
+        steered_output = model.logits.save()
+    
+    # Steered output should be different from baseline
+    assert not th.allclose(baseline_output, steered_output, atol=1e-4), "Steering should change model output"
+    
+    # Test steering multiple layers
+    with model.trace(prompt):
+        model.steer(layers=[0, 1], steering_vector=steering_vector, factor=0.5)
+        multi_steered_output = model.logits.save()
+    
+    assert not th.allclose(baseline_output, multi_steered_output, atol=1e-4), "Multi-layer steering should change output"
+    
+    # Test position-specific steering
+    num_tokens = len(model.tokenizer.encode(prompt))
+    assert num_tokens > 1, "Prompt should have multiple tokens for position testing"
+    
+    with model.trace(prompt):
+        model.steer(layers=0, steering_vector=steering_vector, positions=0)
+        pos_steered_output = model.logits.save()
+    
+    assert not th.allclose(baseline_output, pos_steered_output, atol=1e-4), "Position-specific steering should change output"
+
+
+def test_standardized_transformer_skip_methods(model_name):
+    """Test skip methods of StandardizedTransformer"""
+    model = StandardizedTransformer(model_name)
+    prompt = "Hello, world!"
+    
+    assert model.num_layers >= 2, "Model needs at least 2 layers for skip testing"
+    
+    # Test skip_layer method
+    with model.trace(prompt):
+        baseline_output = model.logits.save()
+    
+    with model.trace(prompt):
+        model.skip_layer(0)
+        skip_output = model.logits.save()
+    
+    assert not th.allclose(baseline_output, skip_output, atol=1e-4), "skip_layer should change output"
+    
+    # Test skip_layers method  
+    with model.trace(prompt):
+        model.skip_layers(0, 1)
+        skip_layers_output = model.logits.save()
+    
+    assert not th.allclose(baseline_output, skip_layers_output, atol=1e-4), "skip_layers should change output"
+    
+    # Test skip with custom tensor
+    with model.trace(prompt):
+        custom_tensor = model.layers_input[0]
+        model.skip_layer(1, skip_with=custom_tensor)
+        custom_skip_output = model.logits.save()
+    
+    assert not th.allclose(baseline_output, custom_skip_output, atol=1e-4), "skip with custom tensor should change output"
+
+
+def test_standardized_transformer_constructor_options(model_name):
+    """Test StandardizedTransformer constructor options"""
+    # Test with check_renaming=False
+    model_no_check = StandardizedTransformer(model_name, check_renaming=False)
+    assert model_no_check.num_layers > 0
+    
+    # Test with custom renaming parameters - this should still work even with wrong names
+    model_custom = StandardizedTransformer(
+        model_name, 
+        attn_rename="nonexistent_attn",  
+        check_renaming=False
+    )
+    assert model_custom.num_layers > 0
+
+
+def test_standardized_transformer_num_layers_property(model_name):
+    """Test num_layers property"""
+    model = StandardizedTransformer(model_name)
+    
+    # Test that num_layers property works
+    assert isinstance(model.num_layers, int)
+    assert model.num_layers > 0
+    assert model.num_layers == len(model.model.layers)
+    assert model.num_layers == get_num_layers(model)

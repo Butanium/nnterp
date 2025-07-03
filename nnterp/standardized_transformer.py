@@ -30,6 +30,7 @@ from .rename_utils import (
     get_ignores,
     mlp_returns_tuple,
     check_model_renaming,
+    AttentionProbabilitiesAccessor,
 )
 
 
@@ -143,19 +144,24 @@ class StandardizedTransformer(LanguageModel):
             )
             impl = "eager"
         tokenizer_kwargs = kwargs.pop("tokenizer_kwargs", {})
-        super().__init__(
-            repo_id,
-            attn_implementation=impl,
-            tokenizer_kwargs=tokenizer_kwargs,
-            trust_remote_code=trust_remote_code,
-            rename=get_rename_dict(
+        rename = get_rename_dict(
                 attn_name=attn_rename,
                 mlp_name=mlp_rename,
                 ln_final_name=ln_final_rename,
                 lm_head_name=lm_head_rename,
                 model_name=model_rename,
                 layers_name=layers_rename,
-            ),
+            )
+        user_rename = kwargs.pop("rename", None)
+        if user_rename is not None:
+            logger.info(f"Updating default rename with user-provided rename: {user_rename}")
+            rename.update(user_rename)
+        super().__init__(
+            repo_id,
+            attn_implementation=impl,
+            tokenizer_kwargs=tokenizer_kwargs,
+            trust_remote_code=trust_remote_code,
+            rename=rename,
             **kwargs,
         )
         ignores = get_ignores(self._model)
@@ -183,6 +189,7 @@ class StandardizedTransformer(LanguageModel):
         if check_renaming:
             check_model_renaming(self, repo_id, ignores, fallback_check_to_trace)
         self.num_layers = get_num_layers(self)
+        self.attention_probabilities = AttentionProbabilitiesAccessor(self)
 
     @property
     def unembed_norm(self) -> Envoy:
