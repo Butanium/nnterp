@@ -12,6 +12,10 @@ TraceTensor = Union[th.Tensor, Object]
 GetModuleOutput = Callable[[LanguageModel, int], TraceTensor]
 
 
+class DummyCache:
+    def to_legacy_cache(self):
+        return None
+
 def get_num_layers(nn_model: LanguageModel):
     """
     Get the number of layers in the model
@@ -178,8 +182,8 @@ def skip_layers(
     if skip_with is None:
         skip_with = get_layer_input(nn_model, start_layer)
     for layer in range(start_layer, end_layer):
-        get_layer(nn_model, layer).skip((skip_with,))
-    get_layer(nn_model, end_layer).skip((skip_with,))
+        get_layer(nn_model, layer).skip((skip_with, DummyCache()))
+    get_layer(nn_model, end_layer).skip((skip_with, DummyCache()))
 
 
 def get_next_token_probs(nn_model: LanguageModel) -> TraceTensor:

@@ -1,4 +1,4 @@
-from transformers import OPTForCausalLM, MixtralForCausalLM, BloomForCausalLM
+from transformers import OPTForCausalLM, MixtralForCausalLM, BloomForCausalLM, GPT2LMHeadModel
 from nnsight import Envoy
 from .nnsight_utils import TraceTensor, get_unembed_norm, get_attention, get_mlp
 from loguru import logger
@@ -108,12 +108,18 @@ class LayerAccessor:
 
         if self.io_type == IOType.INPUT:
             if self.returns_tuple:
-                module.input = (value,)
+                if len(module.input) > 1:
+                    module.input = (value, *module.input[1:])
+                else:
+                    module.input = (value,)
             else:
                 module.input = value
         else:
             if self.returns_tuple:
-                module.output = (value,)
+                if len(module.output) > 1:
+                    module.output = (value, *module.output[1:])
+                else:
+                    module.output = (value,)
             else:
                 module.output = value
 
@@ -123,14 +129,18 @@ def bloom_attention_prob_source(attention_module):
 
 
 def default_attention_prob_source(attention_module):
-    return attention_module.source.attention_interface_0.nn_functional_dropout_0
+    return attention_module.source.attention_interface_0.source.nn_functional_dropout_0
 
+def gpt2_attention_prob_source(attention_module):
+    return attention_module.source.attention_interface_0.source.module_attn_dropout_0
 
 class AttentionProbabilitiesAccessor:
     def __init__(self, model):
         self.model = model
         if isinstance(model._model, BloomForCausalLM):
             self.source_attr = bloom_attention_prob_source
+        elif isinstance(model._model, GPT2LMHeadModel):
+            self.source_attr = gpt2_attention_prob_source
         else:
             self.source_attr = default_attention_prob_source
 

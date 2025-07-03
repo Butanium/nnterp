@@ -1016,16 +1016,6 @@ wheels = [
 ]
 
 [[package]]
-name = "flash-attn"
-version = "2.8.0.post2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "einops" },
-    { name = "torch" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/32/5c/c7610beeb2fc0e70d0c09a93490bb2d07fb6c8fa1f80ef9617b0cd556d76/flash_attn-2.8.0.post2.tar.gz", hash = "sha256:b51d7015eb78f7ab2c332ec7c36681d7e97834f010b52eb4db1f118351982f58", size = 7857730, upload-time = "2025-06-15T01:39:32.219Z" }
-
-[[package]]
 name = "frozenlist"
 version = "1.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2502,7 +2492,6 @@ dependencies = [
 dev = [
     { name = "black" },
     { name = "build" },
-    { name = "flash-attn" },
     { name = "ipykernel" },
     { name = "ipywidgets" },
     { name = "myst-parser", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -2531,7 +2520,6 @@ vllm = [
 requires-dist = [
     { name = "black", marker = "extra == 'dev'" },
     { name = "build", marker = "extra == 'dev'" },
-    { name = "flash-attn", marker = "extra == 'dev'" },
     { name = "ipykernel", marker = "extra == 'dev'" },
     { name = "ipywidgets", marker = "extra == 'dev'" },
     { name = "loguru", specifier = ">=0.7.3" },
