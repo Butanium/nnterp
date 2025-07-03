@@ -228,9 +228,10 @@ with model.trace("Hello, how are you?"):
 
 - **Core**: `nnsight>=0.5.0`
 - **Visualization**: `plotly`, `pandas` (install with `[display]` extra)
-- **High-performance inference**: `vllm` (install with `[vllm]` extra)
+- **High-performance inference**: `vllm` (install with `[vllm]` extra) (NOT supported yet)
 
 # Contributing
+- Install the development environment with `make dev` or `uv sync --all-extras && uv pip install flash-attn --no-build-isolation`
 - Create a git tag with the version number `git tag vx.y.z; git push origin vx.y.z`
 - Build with `python -m build`
 - Publish with e.g. `twine upload dist/*x.y.z*`

@@ -37,9 +37,8 @@ dev = [
     "ipywidgets",
     "pre-commit",
     "black",
-    "flash-attn",
     "build",
-
+    # "flash-attn",  # Note: requires --no-build-isolation flag due to torch build dependency issue. Install with `uv pip install flash-attn --no-build-isolation`
 ]
 vllm = [
     "vllm",
