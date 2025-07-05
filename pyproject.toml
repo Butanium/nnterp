@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "loguru>=0.7.3",
-    "nnsight>=0.5.0dev3",
+    "nnsight>=0.5.0dev5",
 ]
 [project.optional-dependencies]
 display = ["plotly", "pandas"]

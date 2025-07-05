@@ -86,7 +86,7 @@ class StandardizedTransformer(LanguageModel):
             │   ├── layers
             │   │   ├── self_attn
             │   │   └── mlp
-            │   └── ln_final
+            │   └── norm
             └── lm_head
 
     In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:
