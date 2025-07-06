@@ -13,7 +13,7 @@ from nnterp.nnsight_utils import (
     get_next_token_probs,
     get_token_activations,
     collect_last_token_activations_session,
-    collect_activations_batched,
+    collect_token_activations_batched,
     compute_next_token_probs,
     get_mlp_output,
     set_layer_output,
@@ -84,10 +84,10 @@ def test_activation_collection(llama_like_model_name):
     assert acts.shape[:2] == (get_num_layers(model), len(prompts))  # Batch dimension
 
     # Test batched activation collection
-    acts_batched = collect_activations_batched(model, prompts, batch_size=1)
+    acts_batched = collect_token_activations_batched(model, prompts, batch_size=1)
     assert acts_batched.shape[:2] == (get_num_layers(model), len(prompts))
 
-    acts_batched_no_batch = collect_activations_batched(
+    acts_batched_no_batch = collect_token_activations_batched(
         model, prompts, batch_size=len(prompts)
     )
     assert th.allclose(acts, acts_batched_no_batch)

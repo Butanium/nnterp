@@ -16,6 +16,7 @@ class DummyCache:
     def to_legacy_cache(self):
         return None
 
+
 def get_num_layers(nn_model: LanguageModel):
     """
     Get the number of layers in the model
@@ -328,7 +329,7 @@ def collect_last_token_activations_session(
     return all_acts
 
 
-def collect_activations_batched(
+def collect_token_activations_batched(
     nn_model: LanguageModel,
     prompts,
     batch_size,

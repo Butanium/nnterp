@@ -160,9 +160,8 @@ def run_prompts(
 
     for i in tqdm(
         range(0, len(str_prompts), batch_size),
-        total=len(str_prompts) // batch_size + 1,
         desc="Running prompts",
-    ):
+    ):        
         batch = str_prompts[i : i + batch_size]
         probs.append(get_probs_func(nn_model, batch, remote=remote, **func_kwargs))
     probs = th.cat(probs)
