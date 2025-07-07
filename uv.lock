@@ -2456,7 +2456,7 @@ wheels = [
 
 [[package]]
 name = "nnsight"
-version = "0.5.0.dev5"
+version = "0.5.0.dev7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "accelerate" },
@@ -2471,13 +2471,13 @@ dependencies = [
     { name = "torch" },
     { name = "transformers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3a/21/f97b267e8889b99d8f33585db4e7187adee8128a5fd74ae722b656e6abd5/nnsight-0.5.0.dev5.tar.gz", hash = "sha256:92c52d340bc6d8d7e036eab4dfc5878ab0cff85d454f42bb44d2a24616506143", size = 11473463, upload-time = "2025-07-04T06:09:57.268Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5b/60/97d3b347cd8bfff8408d3b5024f87e65bd702c43c6ec94117f995ae514d7/nnsight-0.5.0.dev7.tar.gz", hash = "sha256:81868de448c036f5a59c7cec4e1ffd6d0bf096eb43f4cb3891e56aeaf9825b8b", size = 11474076, upload-time = "2025-07-07T02:24:46.829Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/69/e3/cf386aa1e62cfac3541db1637b8455e4155a6936704e4b5e3b14164b122e/nnsight-0.5.0.dev5-cp310-cp310-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:5091fb363ebe97254c69387ea7c3d79518be03fd25f70d7d02d09afa7d7ca030", size = 84692, upload-time = "2025-07-04T06:09:50.484Z" },
-    { url = "https://files.pythonhosted.org/packages/b2/68/fc3110c6d3c22dfef27f82c514d2632ac35bee28fcfeea1e6e9cdcc16054/nnsight-0.5.0.dev5-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:963ecdf96ea4d95ef577fcfbe98e3528755c6b66cd05eb6ed89c209b05b6a573", size = 84711, upload-time = "2025-07-04T06:09:51.757Z" },
-    { url = "https://files.pythonhosted.org/packages/7d/93/76b489f560d1d49c29b758807f98d32949b320f30307792fd2fd74e1b56f/nnsight-0.5.0.dev5-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:338dbc9d0269c83442c09b50bda89a0bd444d815328c082541873550123c70e9", size = 85100, upload-time = "2025-07-04T06:09:52.832Z" },
-    { url = "https://files.pythonhosted.org/packages/23/e8/4313f0c05253502086d0d976d5eb09ff90eb0fbe1a77eff3b83bbaf452a2/nnsight-0.5.0.dev5-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:34858665290862612317dfc7da68924136bda9e08898f4dae9b8fcc54109ac9a", size = 85147, upload-time = "2025-07-04T06:09:53.874Z" },
-    { url = "https://files.pythonhosted.org/packages/9e/44/847977bd4afabd710106cfa0fe13d21223d9edf1000991e6cb28108b644e/nnsight-0.5.0.dev5-cp39-cp39-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:52a43db3afcdeef3245a153878298eb3ca9aea7e8e39dc936fc1bbb48f4cb80f", size = 84456, upload-time = "2025-07-04T06:09:56.053Z" },
+    { url = "https://files.pythonhosted.org/packages/88/cc/9ec031b992ff9baa4cb4162f1803c235b7f0f646022250b3894fb4f11d0c/nnsight-0.5.0.dev7-cp310-cp310-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:0bfa6fb71f67f4c71b997b7a6586fc7fe53a6a338565887094bb1cd352fef90b", size = 84758, upload-time = "2025-07-07T02:24:38.82Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/d5/aebf07ec6f449b51aaa8e765a8d0a08d376a8da997b0ff2af901daa02408/nnsight-0.5.0.dev7-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:5de7f360e8322600e5b2387a0b7dfafe8955edc4b4ad5642d06f756f03bd87f0", size = 84772, upload-time = "2025-07-07T02:24:40.23Z" },
+    { url = "https://files.pythonhosted.org/packages/df/ee/559ec4a4848566e4f4163ad9c9b1dd62ddb82ea9fca5328f2c50e63ee3c1/nnsight-0.5.0.dev7-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:5fbd844d5fe017eb26691feb8c2dd7a44811449ebd7820e489314986c8c4835a", size = 85165, upload-time = "2025-07-07T02:24:41.584Z" },
+    { url = "https://files.pythonhosted.org/packages/8c/d0/5b3db5de9e975cfd224a40357dc15cc9e6f7724fd8863b0572414338dd01/nnsight-0.5.0.dev7-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:ff3c6195b8c1bb2d7ab5e3d6412609e268ccf804f281efa5e7dbaceab78f0f8b", size = 85203, upload-time = "2025-07-07T02:24:42.847Z" },
+    { url = "https://files.pythonhosted.org/packages/86/0c/e173556cf8b57534fad7858cd8a6f69cdb2a3d4e42c600da5706ce4a2cc3/nnsight-0.5.0.dev7-cp39-cp39-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:e0dab14f0765ba14cae5cac146a90b21364c549c8163c66debaba062f5c569a4", size = 84513, upload-time = "2025-07-07T02:24:45.468Z" },
 ]
 
 [[package]]
@@ -2518,14 +2518,14 @@ vllm = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'" },
+    { name = "black", extras = ["notebook"], marker = "extra == 'dev'" },
     { name = "build", marker = "extra == 'dev'" },
     { name = "ipykernel", marker = "extra == 'dev'" },
     { name = "ipywidgets", marker = "extra == 'dev'" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "nbsphinx", marker = "extra == 'dev'" },
-    { name = "nnsight", specifier = ">=0.5.0.dev5" },
+    { name = "nnsight", specifier = ">=0.5.0.dev7" },
     { name = "pandas", marker = "extra == 'display'" },
     { name = "plotly", marker = "extra == 'display'" },
     { name = "pre-commit", marker = "extra == 'dev'" },
