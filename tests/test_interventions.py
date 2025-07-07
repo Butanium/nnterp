@@ -159,7 +159,9 @@ def test_it_repeat_prompt(model):
         except Exception as e:
             use_system_prompt = False
 
-        it_prompt = it_repeat_prompt(model.tokenizer, use_system_prompt=use_system_prompt)
+        it_prompt = it_repeat_prompt(
+            model.tokenizer, use_system_prompt=use_system_prompt
+        )
         assert isinstance(it_prompt, TargetPrompt)
         assert it_prompt.index_to_patch == -1
         assert len(it_prompt.prompt) > 0  # Should generate some prompt

@@ -125,7 +125,9 @@ def test_prompt_run(model):
     with th.no_grad():
         tokenizer = model.tokenizer
 
-        prompt = Prompt.from_strings("The quick brown fox", {"target": "jumps"}, tokenizer)
+        prompt = Prompt.from_strings(
+            "The quick brown fox", {"target": "jumps"}, tokenizer
+        )
 
         # Define a simple probability function
         def simple_get_probs(nn_model, prompt_text):
@@ -176,7 +178,9 @@ def test_run_prompts(model):
         def custom_get_probs(nn_model, batch_prompts, **kwargs):
             return logit_lens(nn_model, batch_prompts)
 
-        result = run_prompts(model, prompts, batch_size=1, get_probs_func=custom_get_probs)
+        result = run_prompts(
+            model, prompts, batch_size=1, get_probs_func=custom_get_probs
+        )
 
         assert isinstance(result, dict)
         assert "target" in result
