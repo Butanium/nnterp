@@ -24,193 +24,202 @@ def model(model_name):
 
 def test_process_tokens_with_tokenization(model):
     """Test process_tokens_with_tokenization function."""
-    tokenizer = model.tokenizer
+    with th.no_grad():
+        tokenizer = model.tokenizer
 
-    # Test with single word
-    words = "hello"
-    tokens = process_tokens_with_tokenization(words, tokenizer)
-    assert isinstance(tokens, list)
-    assert len(tokens) > 0
+        # Test with single word
+        words = "hello"
+        tokens = process_tokens_with_tokenization(words, tokenizer)
+        assert isinstance(tokens, list)
+        assert len(tokens) > 0
 
-    # Test with list of words
-    words = ["hello", "world"]
-    tokens = process_tokens_with_tokenization(words, tokenizer)
-    assert isinstance(tokens, list)
-    assert len(tokens) >= 2  # Should have at least the original words
+        # Test with list of words
+        words = ["hello", "world"]
+        tokens = process_tokens_with_tokenization(words, tokenizer)
+        assert isinstance(tokens, list)
+        assert len(tokens) >= 2  # Should have at least the original words
 
 
 def test_prompt_from_strings(model):
     """Test Prompt.from_strings class method."""
-    tokenizer = model.tokenizer
+    with th.no_grad():
+        tokenizer = model.tokenizer
 
-    # Test with single target string
-    prompt = Prompt.from_strings("The quick brown fox", "jumps", tokenizer)
+        # Test with single target string
+        prompt = Prompt.from_strings("The quick brown fox", "jumps", tokenizer)
 
-    assert prompt.prompt == "The quick brown fox"
-    assert "target" in prompt.target_tokens
-    assert isinstance(prompt.target_tokens["target"], list)
-    assert len(prompt.target_tokens["target"]) > 0
+        assert prompt.prompt == "The quick brown fox"
+        assert "target" in prompt.target_tokens
+        assert isinstance(prompt.target_tokens["target"], list)
+        assert len(prompt.target_tokens["target"]) > 0
 
-    # Test with dictionary of targets
-    prompt = Prompt.from_strings(
-        "Hello world", {"greeting": "hello", "object": "world"}, tokenizer
-    )
+        # Test with dictionary of targets
+        prompt = Prompt.from_strings(
+            "Hello world", {"greeting": "hello", "object": "world"}, tokenizer
+        )
 
-    assert "greeting" in prompt.target_tokens
-    assert "object" in prompt.target_tokens
-    assert isinstance(prompt.target_tokens["greeting"], list)
-    assert isinstance(prompt.target_tokens["object"], list)
+        assert "greeting" in prompt.target_tokens
+        assert "object" in prompt.target_tokens
+        assert isinstance(prompt.target_tokens["greeting"], list)
+        assert isinstance(prompt.target_tokens["object"], list)
 
 
 def test_prompt_get_target_probs(model):
     """Test Prompt.get_target_probs method."""
-    tokenizer = model.tokenizer
+    with th.no_grad():
+        tokenizer = model.tokenizer
 
-    prompt = Prompt.from_strings(
-        "The quick brown fox", {"target": "jumps", "animal": "fox"}, tokenizer
-    )
+        prompt = Prompt.from_strings(
+            "The quick brown fox", {"target": "jumps", "animal": "fox"}, tokenizer
+        )
 
-    # Create mock probabilities tensor (batch_size, layers, vocab_size)
-    vocab_size = model.config.vocab_size
-    mock_probs = th.rand(1, 3, vocab_size)  # 1 prompt, 3 layers, vocab_size
+        # Create mock probabilities tensor (batch_size, layers, vocab_size)
+        vocab_size = model.config.vocab_size
+        mock_probs = th.rand(1, 3, vocab_size)  # 1 prompt, 3 layers, vocab_size
 
-    target_probs = prompt.get_target_probs(mock_probs)
+        target_probs = prompt.get_target_probs(mock_probs)
 
-    assert "target" in target_probs
-    assert "animal" in target_probs
-    assert target_probs["target"].shape == (1, 3)  # batch_size, layers
-    assert target_probs["animal"].shape == (1, 3)
+        assert "target" in target_probs
+        assert "animal" in target_probs
+        assert target_probs["target"].shape == (1, 3)  # batch_size, layers
+        assert target_probs["animal"].shape == (1, 3)
 
-    # Test with specific layer
-    layer_probs = prompt.get_target_probs(mock_probs, layer=1)
-    assert target_probs["target"].shape == (
-        1,
-        3,
-    )  # Still all layers since we didn't specify layer in the call
+        # Test with specific layer
+        layer_probs = prompt.get_target_probs(mock_probs, layer=1)
+        assert target_probs["target"].shape == (
+            1,
+            3,
+        )  # Still all layers since we didn't specify layer in the call
 
 
 def test_prompt_has_no_collisions(model):
     """Test Prompt.has_no_collisions method."""
-    tokenizer = model.tokenizer
+    with th.no_grad():
+        tokenizer = model.tokenizer
 
-    # Create a prompt that likely has no collisions
-    prompt = Prompt.from_strings(
-        "Hello world",
-        {"greeting": "hello", "punctuation": ".", "greeting2": "hello"},
-        tokenizer,
-    )
+        # Create a prompt that likely has no collisions
+        prompt = Prompt.from_strings(
+            "Hello world",
+            {"greeting": "hello", "punctuation": ".", "greeting2": "hello"},
+            tokenizer,
+        )
 
-    # Test basic collision detection
-    # Note: This might return True or False depending on tokenizer
-    result = prompt.has_no_collisions()
-    assert isinstance(result, bool)
-    assert not result
+        # Test basic collision detection
+        # Note: This might return True or False depending on tokenizer
+        result = prompt.has_no_collisions()
+        assert isinstance(result, bool)
+        assert not result
 
-    # Test with ignored targets
-    result = prompt.has_no_collisions(ignore_targets="greeting")
-    assert isinstance(result, bool)
-    assert result
+        # Test with ignored targets
+        result = prompt.has_no_collisions(ignore_targets="greeting")
+        assert isinstance(result, bool)
+        assert result
 
-    result = prompt.has_no_collisions(ignore_targets=["greeting", "punctuation"])
-    assert isinstance(result, bool)
-    assert result
+        result = prompt.has_no_collisions(ignore_targets=["greeting", "punctuation"])
+        assert isinstance(result, bool)
+        assert result
 
 
 def test_prompt_run(model):
     """Test Prompt.run method."""
-    tokenizer = model.tokenizer
+    with th.no_grad():
+        tokenizer = model.tokenizer
 
-    prompt = Prompt.from_strings("The quick brown fox", {"target": "jumps"}, tokenizer)
+        prompt = Prompt.from_strings("The quick brown fox", {"target": "jumps"}, tokenizer)
 
-    # Define a simple probability function
-    def simple_get_probs(nn_model, prompt_text):
-        # Use logit_lens for testing
-        return logit_lens(nn_model, prompt_text)
+        # Define a simple probability function
+        def simple_get_probs(nn_model, prompt_text):
+            # Use logit_lens for testing
+            return logit_lens(nn_model, prompt_text)
 
-    result = prompt.run(model, simple_get_probs)
+        result = prompt.run(model, simple_get_probs)
 
-    assert isinstance(result, dict)
-    assert "target" in result
-    assert isinstance(result["target"], th.Tensor)
+        assert isinstance(result, dict)
+        assert "target" in result
+        assert isinstance(result["target"], th.Tensor)
 
 
 def test_next_token_probs_unsqueeze(model):
     """Test next_token_probs_unsqueeze function."""
-    prompt = "Hello world"
+    with th.no_grad():
+        prompt = "Hello world"
 
-    probs = next_token_probs_unsqueeze(model, prompt)
+        probs = next_token_probs_unsqueeze(model, prompt)
 
-    assert isinstance(probs, th.Tensor)
-    assert probs.dim() == 3  # Should have 3 dimensions after unsqueeze
-    assert probs.shape[0] == 1  # Batch size
-    assert probs.shape[1] == 1  # Number of layers
-    assert probs.shape[2] == model.config.vocab_size
+        assert isinstance(probs, th.Tensor)
+        assert probs.dim() == 3  # Should have 3 dimensions after unsqueeze
+        assert probs.shape[0] == 1  # Batch size
+        assert probs.shape[1] == 1  # Number of layers
+        assert probs.shape[2] == model.config.vocab_size
 
 
 def test_run_prompts(model):
     """Test run_prompts function."""
-    tokenizer = model.tokenizer
+    with th.no_grad():
+        tokenizer = model.tokenizer
 
-    # Create test prompts
-    prompts = [
-        Prompt.from_strings("Hello world", {"target": "!"}, tokenizer),
-        Prompt.from_strings("The quick brown", {"target": "fox"}, tokenizer),
-    ]
+        # Create test prompts
+        prompts = [
+            Prompt.from_strings("Hello world", {"target": "!"}, tokenizer),
+            Prompt.from_strings("The quick brown", {"target": "fox"}, tokenizer),
+        ]
 
-    # Test basic functionality
-    result = run_prompts(model, prompts, batch_size=2)
+        # Test basic functionality
+        result = run_prompts(model, prompts, batch_size=2)
 
-    assert isinstance(result, dict)
-    assert "target" in result
-    assert isinstance(result["target"], th.Tensor)
-    assert result["target"].shape[0] == len(prompts)  # Number of prompts
+        assert isinstance(result, dict)
+        assert "target" in result
+        assert isinstance(result["target"], th.Tensor)
+        assert result["target"].shape[0] == len(prompts)  # Number of prompts
 
-    # Test with custom get_probs function
-    def custom_get_probs(nn_model, batch_prompts, **kwargs):
-        return logit_lens(nn_model, batch_prompts)
+        # Test with custom get_probs function
+        def custom_get_probs(nn_model, batch_prompts, **kwargs):
+            return logit_lens(nn_model, batch_prompts)
 
-    result = run_prompts(model, prompts, batch_size=1, get_probs_func=custom_get_probs)
+        result = run_prompts(model, prompts, batch_size=1, get_probs_func=custom_get_probs)
 
-    assert isinstance(result, dict)
-    assert "target" in result
-    assert result["target"].shape[0] == len(prompts)
+        assert isinstance(result, dict)
+        assert "target" in result
+        assert result["target"].shape[0] == len(prompts)
 
 
 def test_run_prompts_multiple_targets(model):
     """Test run_prompts with multiple targets per prompt."""
-    tokenizer = model.tokenizer
+    with th.no_grad():
+        tokenizer = model.tokenizer
 
-    prompts = [
-        Prompt.from_strings(
-            "The quick", {"animal": "fox", "adjective": "brown"}, tokenizer
-        ),
-        Prompt.from_strings(
-            "Hello beautiful world for a ",
-            {"animal": "fox", "adjective": "beautiful"},
-            tokenizer,
-        ),
-    ]
+        prompts = [
+            Prompt.from_strings(
+                "The quick", {"animal": "fox", "adjective": "brown"}, tokenizer
+            ),
+            Prompt.from_strings(
+                "Hello beautiful world for a ",
+                {"animal": "fox", "adjective": "beautiful"},
+                tokenizer,
+            ),
+        ]
 
-    result = run_prompts(model, prompts, batch_size=2)
+        result = run_prompts(model, prompts, batch_size=2)
 
-    assert isinstance(result, dict)
-    assert "animal" in result
-    assert "adjective" in result
+        assert isinstance(result, dict)
+        assert "animal" in result
+        assert "adjective" in result
 
-    # Check shapes
-    for target_name, target_probs in result.items():
-        assert isinstance(target_probs, th.Tensor)
-        assert target_probs.shape[0] == len(prompts)
+        # Check shapes
+        for target_name, target_probs in result.items():
+            assert isinstance(target_probs, th.Tensor)
+            assert target_probs.shape[0] == len(prompts)
 
 
 def test_run_prompts_single_prompt(model):
     """Test run_prompts with a single prompt."""
-    tokenizer = model.tokenizer
+    with th.no_grad():
+        tokenizer = model.tokenizer
 
-    prompt = Prompt.from_strings("Test prompt", {"target": "word"}, tokenizer)
+        prompt = Prompt.from_strings("Test prompt", {"target": "word"}, tokenizer)
 
-    result = run_prompts(model, [prompt], batch_size=1)
+        result = run_prompts(model, [prompt], batch_size=1)
 
-    assert isinstance(result, dict)
-    assert "target" in result
-    assert result["target"].shape[0] == 1
+        assert isinstance(result, dict)
+        assert "target" in result
+        assert result["target"].shape[0] == 1
