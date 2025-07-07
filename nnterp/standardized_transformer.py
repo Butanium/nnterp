@@ -1,19 +1,18 @@
 from __future__ import annotations
+import json
 from typing import Union
 from warnings import warn
 from enum import Enum
+from pathlib import Path
 import torch as th
 from nnsight import LanguageModel
 from loguru import logger
 from nnsight.intervention.envoy import Envoy
-from transformers.utils import logging
+import transformers
 
 from .nnsight_utils import (
     TraceTensor,
     get_num_layers,
-    get_layer,
-    get_attention,
-    get_mlp,
     get_logits,
     get_unembed_norm,
     project_on_vocab,
@@ -32,6 +31,44 @@ from .rename_utils import (
     check_model_renaming,
     AttentionProbabilitiesAccessor,
 )
+
+
+status_file = Path("data/status.json")
+if status_file.exists():
+    with open(status_file, "r") as f:
+        status = json.load(f)
+    if transformers.__version__ not in status:
+        # Find the closest versions above and below current transformers version
+        available_versions = list(status.keys())
+        current_version = transformers.__version__
+
+        # Sort versions to find closest matches
+        from packaging import version
+
+        sorted_versions = sorted(available_versions, key=version.parse)
+        current_parsed = version.parse(current_version)
+
+        closest_below = None
+        closest_above = None
+
+        for v in sorted_versions:
+            v_parsed = version.parse(v)
+            if v_parsed <= current_parsed:
+                closest_below = v
+            elif v_parsed > current_parsed and closest_above is None:
+                closest_above = v
+
+        logger.warning(
+            f"nnterp was not tested with Transformers version {current_version}. "
+            f"Closest below: {closest_below}, closest above: {closest_above}\n"
+            f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to {closest_above} or {closest_below} if possible or:\n"
+            f"  - run the nnterp tests with your version of transformers to ensure everything works as expected.\n  - check if the attention probabilities hook makes sense before using them by calling `model.attention_probabilities.print_source()` (prettier in a notebook)."
+        )
+        status = status[closest_above or closest_below]
+
+else:
+    logger.warning(f"Status file {status_file} not found. Can't access tested models.")
+    status = None
 
 
 def load_model(
@@ -145,16 +182,18 @@ class StandardizedTransformer(LanguageModel):
             impl = "eager"
         tokenizer_kwargs = kwargs.pop("tokenizer_kwargs", {})
         rename = get_rename_dict(
-                attn_name=attn_rename,
-                mlp_name=mlp_rename,
-                ln_final_name=ln_final_rename,
-                lm_head_name=lm_head_rename,
-                model_name=model_rename,
-                layers_name=layers_rename,
-            )
+            attn_name=attn_rename,
+            mlp_name=mlp_rename,
+            ln_final_name=ln_final_rename,
+            lm_head_name=lm_head_rename,
+            model_name=model_rename,
+            layers_name=layers_rename,
+        )
         user_rename = kwargs.pop("rename", None)
         if user_rename is not None:
-            logger.info(f"Updating default rename with user-provided rename: {user_rename}")
+            logger.info(
+                f"Updating default rename with user-provided rename: {user_rename}"
+            )
             rename.update(user_rename)
         super().__init__(
             repo_id,
@@ -164,6 +203,11 @@ class StandardizedTransformer(LanguageModel):
             rename=rename,
             **kwargs,
         )
+        if status is not None:
+            if self._model.__class__.__name__ not in status["tested_models"]:
+                logger.warning(
+                    f"{repo_id}'s architecture is not tested. This may cause unexpected behavior. It is recommended to check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()` if you plan on using it (prettier in a notebook).\nFeel free to open an issue on github (https://github.com/butanium/nnterp/issues) or run the tests yourself with a toy model if you want to add test coverage for this model."
+                )
         ignores = get_ignores(self._model)
 
         # Create accessor instances

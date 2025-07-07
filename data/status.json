@@ -1,0 +1,61 @@
+{
+  "0.4.53": {
+    "tested_classes": [
+      "BloomForCausalLM",
+      "OPTForCausalLM",
+      "GemmaForCausalLM",
+      "MistralForCausalLM",
+      "LlamaForCausalLM",
+      "Gemma3ForCausalLM",
+      "GPT2LMHeadModel",
+      "MixtralForCausalLM"
+    ],
+    "last_updated": "2025-07-07T14:14:00.058439",
+    "failed_classes": [
+      "Llama4ForCausalLM",
+      "PhimoeForCausalLM",
+      "Phi3ForCausalLM"
+    ],
+    "tested_models": {
+      "GPT2LMHeadModel": [
+        "gpt2"
+      ],
+      "BloomForCausalLM": [
+        "bigscience/bigscience-small-testing"
+      ],
+      "OPTForCausalLM": [
+        "yujiepan/opt-tiny-2layers-random"
+      ],
+      "MixtralForCausalLM": [
+        "yujiepan/mixtral-8xtiny-random"
+      ],
+      "LlamaForCausalLM": [
+        "sbintuitions/tiny-lm-chat",
+        "Maykeye/TinyLLama-v0",
+        "yujiepan/llama-3.3-tiny-random",
+        "yujiepan/llama-2-tiny-random",
+        "yujiepan/deepseek-llm-tiny-random"
+      ],
+      "Gemma3ForCausalLM": [
+        "axolotl-ai-co/gemma-3-34M"
+      ],
+      "GemmaForCausalLM": [
+        "yujiepan/gemma-tiny-random"
+      ],
+      "MistralForCausalLM": [
+        "yujiepan/mistral-tiny-random"
+      ]
+    },
+    "failed_models": {
+      "Llama4ForCausalLM": [
+        "yujiepan/llama-4-tiny-random"
+      ],
+      "Phi3ForCausalLM": [
+        "yujiepan/phi-3-tiny-random"
+      ],
+      "PhimoeForCausalLM": [
+        "yujiepan/phi-3.5-moe-tiny-random"
+      ]
+    }
+  }
+}
