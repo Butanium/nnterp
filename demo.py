@@ -481,13 +481,11 @@ print(
 #
 # `NNsight 0.5` introduces a builtin way to cache activations during the forward pass. Be careful not to call `tracer.stop()` before all the module of the cache have been accessed.
 #
-# NOTE: Broken in current dev version of `NNsight` (0.5.0dev7)
+# NOTE: Currently doesn't work with renamed names.
 
 # %%
-with nnterp_gpt2.trace("Hello"):
-    cache = nnterp_gpt2.cache(
-        modules=[layer for layer in nnterp_gpt2.layers[::2]]
-    ).save()
+with nnterp_gpt2.trace("Hello") as tracer:
+    cache = tracer.cache(modules=[layer for layer in nnterp_gpt2.layers[::2]]).save()
 
 print(cache.keys())
-print(cache["model.layers.10"].inputs)
+print(cache["model.transformer.h.10"].output)

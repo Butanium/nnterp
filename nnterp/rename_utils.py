@@ -1,15 +1,37 @@
 from enum import Enum
 from loguru import logger
-from transformers import (
-    OPTForCausalLM,
-    MixtralForCausalLM,
-    BloomForCausalLM,
-    GPT2LMHeadModel,
-)
+
 import torch as th
 from nnsight import Envoy
 from .nnsight_utils import TraceTensor, get_unembed_norm, get_attention, get_mlp
 from .utils import is_notebook, display_markdown
+
+
+# Dummy class for missing transformer architectures
+class ArchitectureNotFound:
+    pass
+
+
+# Import transformers classes one by one, assigning dummy class for missing ones
+try:
+    from transformers import OPTForCausalLM
+except ImportError:
+    OPTForCausalLM = ArchitectureNotFound
+
+try:
+    from transformers import MixtralForCausalLM
+except ImportError:
+    MixtralForCausalLM = ArchitectureNotFound
+
+try:
+    from transformers import BloomForCausalLM
+except ImportError:
+    BloomForCausalLM = ArchitectureNotFound
+
+try:
+    from transformers import GPT2LMHeadModel
+except ImportError:
+    GPT2LMHeadModel = ArchitectureNotFound
 
 
 class RenamingError(Exception):

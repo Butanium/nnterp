@@ -2486,6 +2486,7 @@ source = { editable = "." }
 dependencies = [
     { name = "loguru" },
     { name = "nnsight" },
+    { name = "transformers" },
 ]
 
 [package.optional-dependencies]
@@ -2536,6 +2537,7 @@ requires-dist = [
     { name = "sphinx-copybutton", marker = "extra == 'dev'" },
     { name = "sphinx-design", marker = "extra == 'dev'" },
     { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=2.0.0" },
+    { name = "transformers", specifier = "==4.53" },
     { name = "vllm", marker = "extra == 'vllm'" },
 ]
 provides-extras = ["display", "dev", "vllm"]

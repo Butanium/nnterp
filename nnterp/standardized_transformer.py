@@ -65,6 +65,8 @@ if status_file.exists():
             f"  - run the nnterp tests with your version of transformers to ensure everything works as expected.\n  - check if the attention probabilities hook makes sense before using them by calling `model.attention_probabilities.print_source()` (prettier in a notebook)."
         )
         status = status[closest_above or closest_below]
+    else:
+        status = status[transformers.__version__]
 
 else:
     logger.warning(f"Status file {status_file} not found. Can't access tested models.")
@@ -204,7 +206,7 @@ class StandardizedTransformer(LanguageModel):
             **kwargs,
         )
         if status is not None:
-            if self._model.__class__.__name__ not in status["tested_models"]:
+            if self._model.__class__.__name__ not in status["tested_classes"]:
                 logger.warning(
                     f"{repo_id}'s architecture is not tested. This may cause unexpected behavior. It is recommended to check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()` if you plan on using it (prettier in a notebook).\nFeel free to open an issue on github (https://github.com/butanium/nnterp/issues) or run the tests yourself with a toy model if you want to add test coverage for this model."
                 )

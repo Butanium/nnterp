@@ -249,12 +249,14 @@ with model.trace("The weather today is"):
 Here are some nice features that could be cool to have, and for which I'd be happy to accept PRs:
 - [ ] Add access to k/q/v
 - [ ] Add helpers for getting gradients
+- [ ] Add helpers for `NNsight`'s cache as it returns raw tuple outputs.
 - [ ] Fix typing
+- [ ] Add support for `vllm` when `NNsight` supports it
 
 ## Dependencies
-The `transformers` version is pinned to `0.4.53` as it's the only one that was tested for now. When a model is loaded in `StandardizedTransformer`, it will go through a series of checks to make sure that the model is still compatible.
+The `transformers` version is pinned to `4.53.x` as it's the only one that was tested for now. When a model is loaded in `StandardizedTransformer`, it will go through a series of checks to make sure that the model is still compatible.
 
-- **Core**: `nnsight>=0.5.0`, `transformers==0.4.53`
+- **Core**: `nnsight>=0.5.0`, `transformers==4.53.x`
 - **Visualization**: `plotly`, `pandas` (install with `[display]` extra)
 <!-- - **High-performance inference**: `vllm` (install with `[vllm]` extra) (NOT supported yet) -->
 
