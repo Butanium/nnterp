@@ -54,11 +54,11 @@ for layer, activation in enumerate(activations):
 For large datasets, use batched collection to optimize memory usage:
 
 ```python
-from nnterp import collect_activations_batched
+from nnterp import collect_token_activations_batched
 
 prompts = ["The quick brown fox", "jumps over the lazy dog"]
 batch_size = 2
-activations = collect_activations_batched(nn_model, prompts, batch_size)
+activations = collect_token_activations_batched(nn_model, prompts, batch_size)
 
 for layer, activation in enumerate(activations):
     print(f"Layer {layer}: {activation.shape}")
