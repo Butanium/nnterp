@@ -33,6 +33,11 @@ try:
 except ImportError:
     GPT2LMHeadModel = ArchitectureNotFound
 
+try:
+    from transformers import Qwen2MoeForCausalLM
+except ImportError:
+    Qwen2MoeForCausalLM = ArchitectureNotFound
+
 
 class RenamingError(Exception):
     """Exception raised when the renaming of modules is not properly done."""
@@ -115,9 +120,9 @@ class LayerAccessor:
         module = self.get_module(layer)
         if self.io_type is None:
             return module
-        elif self.io_type == IOType.INPUT:
+        elif self.io_type.value == "input":
             target = module.input
-        elif self.io_type == IOType.OUTPUT:
+        elif self.io_type.value == "output":
             target = module.output
         else:
             raise ValueError(f"Invalid io_type: {self.io_type}")
@@ -134,7 +139,7 @@ class LayerAccessor:
             )
         module = self.get_module(layer)
 
-        if self.io_type == IOType.INPUT:
+        if self.io_type.value == "input":
             if self.returns_tuple:
                 if len(module.input) > 1:
                     module.input = (value, *module.input[1:])
@@ -265,7 +270,7 @@ def get_ignores(model) -> list[str]:
     return ignores
 
 
-MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM,)
+MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM)
 
 
 def mlp_returns_tuple(model) -> bool:
