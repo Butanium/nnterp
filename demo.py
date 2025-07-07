@@ -168,6 +168,7 @@ with th.no_grad():
 assert not th.allclose(corr_logits, baseline_logits)
 
 sums = attn_probs_l2.sum(dim=-1)
+# last dimension is the attention of token i to all other tokens, so should sum to 1
 assert th.allclose(sums, th.ones_like(sums))
 
 # %% [markdown]
@@ -385,12 +386,15 @@ display(df)
 
 # %%
 from nnterp import StandardizedTransformer
+from traceback import print_exc
 
 nnterp_gpt2 = StandardizedTransformer("gpt2")
-
-with nnterp_gpt2.trace("My tailor is rich"):
-    l2 = nnterp_gpt2.layers_output[2]
-    l1 = nnterp_gpt2.layers_output[1]  # will fail! You need to collect l1 before l2
+try:
+    with nnterp_gpt2.trace("My tailor is rich"):
+        l2 = nnterp_gpt2.layers_output[2]
+        l1 = nnterp_gpt2.layers_output[1]  # will fail! You need to collect l1 before l2
+except Exception as e:
+    print_exc()
 
 # %% [markdown]
 # ## 2) Gradient computation
