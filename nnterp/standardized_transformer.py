@@ -1,8 +1,7 @@
 from __future__ import annotations
 import json
-from typing import Union
+from collections import defaultdict
 from warnings import warn
-from enum import Enum
 from pathlib import Path
 import torch as th
 from nnsight import LanguageModel
@@ -67,6 +66,7 @@ if status_file.exists():
         status = status[closest_above or closest_below]
     else:
         status = status[transformers.__version__]
+        status = defaultdict(list, status)
 
 else:
     logger.warning(f"Status file {status_file} not found. Can't access tested models.")
@@ -206,9 +206,17 @@ class StandardizedTransformer(LanguageModel):
             **kwargs,
         )
         if status is not None:
+            if self._model.__class__.__name__ in status["failed_test_classes"]:
+                logger.warning(
+                    f"{repo_id}'s architecture has failed tests for this transformer version. Use at your own risks. If you want to be safe use only the renaming feature of nnterp, and do not use model.layers_output and other accessors"
+                )
             if self._model.__class__.__name__ not in status["tested_classes"]:
                 logger.warning(
                     f"{repo_id}'s architecture is not tested. This may cause unexpected behavior. It is recommended to check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()` if you plan on using it (prettier in a notebook).\nFeel free to open an issue on github (https://github.com/butanium/nnterp/issues) or run the tests yourself with a toy model if you want to add test coverage for this model."
+                )
+            elif self._model.__class__.__name__ in status["failed_attn_probs_classes"]:
+                logger.warning(
+                    f"{repo_id}'s architecture has failed attention probabilities tests for this transformer version. Do not use model.attention_probabilities"
                 )
         ignores = get_ignores(self._model)
 
