@@ -1,9 +1,15 @@
-from transformers import OPTForCausalLM, MixtralForCausalLM, BloomForCausalLM, GPT2LMHeadModel
+from enum import Enum
+from loguru import logger
+from transformers import (
+    OPTForCausalLM,
+    MixtralForCausalLM,
+    BloomForCausalLM,
+    GPT2LMHeadModel,
+)
+import torch as th
 from nnsight import Envoy
 from .nnsight_utils import TraceTensor, get_unembed_norm, get_attention, get_mlp
-from loguru import logger
-from enum import Enum
-import torch as th
+from .utils import is_notebook, display_markdown
 
 
 class RenamingError(Exception):
@@ -13,7 +19,7 @@ class RenamingError(Exception):
 ATTENTION_NAMES = ["attn", "self_attention", "attention"]
 MODEL_NAMES = ["transformer", "gpt_neox", ".model.decoder"]
 LAYER_NAMES = ["h", ".decoder.layers", ".model.layers"]
-LN_NAMES = ["final_layer_norm", "ln_f", ".decoder.norm"]
+LN_NAMES = ["final_layer_norm", "ln_f", ".decoder.norm", ".model.norm"]
 LM_HEAD_NAMES = ["embed_out"]
 MLP_NAMES = ["block_sparse_moe"]
 
@@ -124,15 +130,30 @@ class LayerAccessor:
                 module.output = value
 
 
-def bloom_attention_prob_source(attention_module):
-    return attention_module.source.self_attention_dropout_0
+def bloom_attention_prob_source(attention_module, return_module_source: bool = False):
+    if return_module_source:
+        return attention_module.source
+    else:
+        return attention_module.source.self_attention_dropout_0
 
 
-def default_attention_prob_source(attention_module):
-    return attention_module.source.attention_interface_0.source.nn_functional_dropout_0
+def default_attention_prob_source(attention_module, return_module_source: bool = False):
+    if return_module_source:
+        return attention_module.source.attention_interface_0.source
+    else:
+        return (
+            attention_module.source.attention_interface_0.source.nn_functional_dropout_0
+        )
 
-def gpt2_attention_prob_source(attention_module):
-    return attention_module.source.attention_interface_0.source.module_attn_dropout_0
+
+def gpt2_attention_prob_source(attention_module, return_module_source: bool = False):
+    if return_module_source:
+        return attention_module.source.attention_interface_0.source
+    else:
+        return (
+            attention_module.source.attention_interface_0.source.module_attn_dropout_0
+        )
+
 
 class AttentionProbabilitiesAccessor:
     def __init__(self, model):
@@ -149,6 +170,63 @@ class AttentionProbabilitiesAccessor:
 
     def __setitem__(self, layer: int, value: TraceTensor):
         self.source_attr(self.model.layers[layer].self_attn).output = value
+
+    def print_source(self, layer: int = 0):
+        in_notebook = is_notebook()
+        if in_notebook:
+            markdown_text = "## Accessing attention probabilities from:\n"
+        else:
+            print("Accessing attention probabilities from:")
+
+        def print_hook_source():
+            nonlocal markdown_text
+            source = self.source_attr(self.model.layers[layer].self_attn)
+            if in_notebook:
+                markdown_text += f"```py\n{source}\n```"
+            else:
+                print(source)
+
+        warned = False
+        try:
+            with self.model.scan("a", use_cache=False):
+                print_hook_source()
+        except Exception as e:
+            logger.warning(
+                f"Error when trying to scan the model - using .trace() instead (which will dispatch the model): {e}"
+            )
+            warned = True
+            with self.model.trace("a"):
+                print_hook_source()
+        if in_notebook:
+            markdown_text += "\n\n## Full module source:\n"
+        else:
+            print("\n\nFull module source:")
+
+        def print_attn_source():
+            nonlocal markdown_text
+            source = str(
+                self.source_attr(
+                    self.model.layers[layer].self_attn, return_module_source=True
+                )
+            )
+            if in_notebook:
+                markdown_text += f"```py\n{source}\n```"
+            else:
+                print(source)
+
+        try:
+            with self.model.scan("a", use_cache=False):
+                print_attn_source()
+        except Exception as e:
+            if not warned:
+                logger.warning(
+                    f"Error when trying to scan the model - using .trace() instead (which will dispatch the model): {e}"
+                )
+            with self.model.trace("a"):
+                print_attn_source()
+
+        if in_notebook:
+            display_markdown(markdown_text)
 
 
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
@@ -249,7 +327,7 @@ def check_model_renaming(
                 "Please pass the name of the mlp module to the mlp_rename argument."
             ) from exc
     try:
-        with std_model.scan("a"):
+        with std_model.scan("a", use_cache=False):
             check_io(std_model, repo_id, ignores)
     except RenamingError as exc:
         raise exc
