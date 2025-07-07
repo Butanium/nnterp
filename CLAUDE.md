@@ -52,6 +52,8 @@ nnterp is a mechanistic interpretability library built on top of nnsight, provid
 
 ### Core Components
 
+**nnsight** `nnterp` is built on top of `nnsight`. A very important thing about `nnsight` is that interventions in a trace **MUST BE WRITTEN IN ORDER**. This means e.g. you can't access the output of a layer and then access its input / its mlp output.
+
 **StandardizedTransformer** (`standardized_transformer.py`)
 - Unified interface for different transformer architectures
 - Standardizes module naming across models (layers, attention, MLP components)
@@ -66,7 +68,7 @@ nnterp is a mechanistic interpretability library built on top of nnsight, provid
 - **Latent Prompts**: Advanced prompt manipulation with `LatentPrompt` and `run_latent_prompt()`
 
 **Utilities** (`nnsight_utils.py`)
-- Core activation collection: `get_token_activations()` and `collect_activations_batched()`
+- Core activation collection: `get_token_activations()` and `collect_token_activations_batched()`
 - Utility functions: `get_num_layers()`, `project_on_vocab()`, `get_next_token_probs()`
 
 **Prompt Management** (`prompt_utils.py`)
@@ -91,7 +93,7 @@ Test fixtures use multiple model architectures: `["Maykeye/TinyLLama-v0", "gpt2"
 
 ### Dependencies
 
-- **Core**: `nnsight>=0.5.0dev2` (the main dependency for model tracing)
+- **Core**: `nnsight` (the main dependency for model tracing)
 - **Visualization**: `plotly`, `pandas` (install with `pip install nnterp[display]`)
 - **Development**: `pytest`, `black`, `sphinx` (install with `pip install nnterp[dev]`)
 

@@ -19,7 +19,8 @@ classifiers = [
 ]
 dependencies = [
     "loguru>=0.7.3",
-    "nnsight>=0.5.0dev5",
+    "nnsight>=0.5.0dev7",
+    "transformers==0.4.53"
 ]
 [project.optional-dependencies]
 display = ["plotly", "pandas"]
@@ -36,7 +37,7 @@ dev = [
     "ipykernel",
     "ipywidgets",
     "pre-commit",
-    "black",
+    "black[notebook]",
     "build",
     # "flash-attn",  # Note: requires --no-build-isolation flag due to torch build dependency issue. Install with `uv pip install flash-attn --no-build-isolation`
 ]

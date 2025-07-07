@@ -6,10 +6,15 @@ include pyproject.toml
 # Include the main package
 recursive-include nnterp *.py
 
+# Include the status file
+include data/status.json
+
 # Exclude unwanted files and directories
 exclude test.ipynb
+exclude demo.ipynb
 exclude deploy.py
 exclude CLAUDE.md
+exclude demo.py
 exclude .pre-commit-config.yaml
 exclude .gitignore
 exclude uv.lock
