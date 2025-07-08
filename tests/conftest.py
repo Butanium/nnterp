@@ -53,6 +53,7 @@ tested_models = defaultdict(list)
 failed_models = defaultdict(list)
 fail_test_models = defaultdict(list)
 fail_attn_probs_models = defaultdict(list)
+errors = {}  # todo: use somewhere
 
 
 def pytest_runtest_makereport(item, call):
@@ -95,6 +96,7 @@ def is_available(model_name):
 
             failed_models[get_arch(model_name)].append(model_name)
             logger.warning(f"Model {model_name} unavailable: {e}")
+            errors[model_name] = {"where": "LanguageModel", "error": str(e)}
             return False
         try:
             model = StandardizedTransformer(model_name)
@@ -104,10 +106,13 @@ def is_available(model_name):
                 f"Model {model_name} can't load with StandardizedTransformer: {e}"
             )
             is_available.available[model_name] = False
+            errors[model_name] = {"where": "StandardizedTransformer", "error": str(e)}
             return False
         tested_models[model._model.__class__.__name__].append(model_name)
         is_available.available[model_name] = True
         return True
+    else:
+        return False
 
 
 is_available.available = defaultdict(lambda: None)
@@ -210,22 +215,22 @@ def _save_status(success: bool):
         json.dump(existing_data, f, indent=2)
 
 
-@pytest.fixture(params=list(set(TEST_MODELS + LLAMA_LIKE_MODELS)))
+all_models = list(filter(is_available, set(TEST_MODELS + LLAMA_LIKE_MODELS)))
+
+
+@pytest.fixture(params=all_models)
 def model_name(request):
     """Parametrized fixture providing test model names."""
-    model_name = request.param
-    if not is_available(model_name):
-        pytest.skip(f"Model {model_name} unavailable")
-    return model_name
+    return request.param
 
 
-@pytest.fixture(params=list(set(LLAMA_LIKE_MODELS)))
+all_llamas = list(filter(is_available, set(LLAMA_LIKE_MODELS)))
+
+
+@pytest.fixture(params=all_llamas)
 def llama_like_model_name(request):
     """Parametrized fixture for models with llama-like naming conventions."""
-    model_name = request.param
-    if not is_available(model_name):
-        pytest.skip(f"Model {model_name} unavailable")
-    return model_name
+    return request.param
 
 
 @pytest.fixture

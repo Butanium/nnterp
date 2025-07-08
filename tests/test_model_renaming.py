@@ -459,7 +459,6 @@ def test_standardized_transformer_properties(model_name):
             logits = model.logits.save()
             next_token_probs = model.next_token_probs.save()
 
-
         # Verify shapes and properties
         assert (
             next_token_probs.shape
