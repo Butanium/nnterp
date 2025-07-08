@@ -454,7 +454,7 @@ def test_standardized_transformer_properties(model_name):
 
         with model.trace(prompt):
             # Test properties
-            unembed_norm = model.unembed_norm
+            unembed_norm = model.norm
             assert unembed_norm is not None
             logits = model.logits.save()
             next_token_probs = model.next_token_probs.save()

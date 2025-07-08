@@ -19,7 +19,6 @@ from nnterp.nnsight_utils import (
     set_layer_output,
     skip_layers,
     skip_layer,
-    get_unembed_norm,
 )
 
 

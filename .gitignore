@@ -1,3 +1,10 @@
+# project specific
+data/test_log.json  
+data/*.old.json
+
+# general
+.junk/**
+junk**
 .claude
 *.log
 build/
@@ -10,8 +17,6 @@ __pycache__/
 .DS_STORE
 config.yaml
 .nfs*
-.junk/**
-junk**
 .env
 .venv
 # Documentation build files

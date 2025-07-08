@@ -3,6 +3,7 @@ from huggingface_hub import get_collection
 from transformers import AutoModelForCausalLM
 from tqdm.autonotebook import tqdm
 from nnsight import LanguageModel
+from loguru import logger
 import json
 import transformers
 import nnsight

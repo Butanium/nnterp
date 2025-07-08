@@ -8,6 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - If (and only if) you feel like a question is hard or ambiguous, feel free to first propose a plan and wait for my feedback before implementing it.
 - Always explain your reasoning and design choices
 
+## Communication Style
+- **Focus on assumptions, not summaries**: When completing code changes, highlight the key assumptions you made during implementation rather than listing what files were edited
+- **Assumption-driven responses**: Structure responses around design decisions and assumptions rather than mechanical descriptions of changes
+- **Example**: Instead of "I edited file X to add function Y", say "Key assumption: StandardizedTransformer failures should not update JSON since they're test-time convenience checks, not core loading capabilities"
+
 ## Code Philosophy
 - Correctness first: Ensure code is functionally correct before optimizing
 - Iterative refinement: After implementing changes, review the entire file to identify opportunities for simplification and improvement
@@ -16,7 +21,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Research Context
 You assist me - a researcher - with a research oriented library, not production systems. This context allows for specific approaches:
 - Make reasonable assumptions based on common research practices and my instructions. Avoid writting fallbacks in case something is missing. THIS IS VERY IMPORTANT as you shouldn't create bloated code!
-- State all assumptions explicitly in your responses. 
 - Fail fast philosophy: Design code to crash immediately when assumptions are violated rather than silently handling errors. This means that you should only use try/catch blocks if it explicitely benefits the code logic. No need to state this in comments. DON'T WRITE FALLBACKS FOR NON-COMMON INPUTS! Instead write asserts for you assumptions. This is very important!
         - Example: Let the code fail if apply_chat_template doesn't exist rather than adding try-catch blocks
 - Assumption hierarchy:

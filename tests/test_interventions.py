@@ -12,7 +12,6 @@ from nnterp.interventions import (
     it_repeat_prompt,
     patch_object_attn_lens,
 )
-from nnterp import StandardizedTransformer
 
 
 def test_logit_lens(model):
@@ -86,7 +85,7 @@ def test_steer(model):
 
         # Test that we can run steering without errors
         with model.trace(prompt):
-            steer(model, layers=0, steering_vector=steering_vector, factor=1.0)
+            steer(model, layers_idx=0, steering_vector=steering_vector, factor=1.0)
             output = model.lm_head.output.save()
 
         # Just check it returns something reasonable
@@ -233,7 +232,7 @@ def test_patchscope_generate(model):
         num_layers = get_num_layers(model)
         test_layers = [0, min(1, num_layers - 1)] if num_layers > 1 else [0]
         try:
-            with model.generate("a", max_length=2):
+            with model.generate("a", max_new_tokens=1):
                 pass
         except Exception as e:
             pytest.skip(f"Model does not support generate with nnsight: {e}")
