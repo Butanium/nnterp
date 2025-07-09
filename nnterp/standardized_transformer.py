@@ -1,25 +1,16 @@
 from __future__ import annotations
 import json
 from collections import defaultdict
-from warnings import warn
+from typing import Callable
+from loguru import logger
 from pathlib import Path
 import torch as th
 from nnsight import LanguageModel
-from loguru import logger
-from nnsight.intervention.envoy import Envoy
 import transformers
 
-from .nnsight_utils import (
+from .utils import (
     TraceTensor,
-    get_num_layers,
-    get_logits,
-    get_unembed_norm,
-    project_on_vocab,
-    skip_layer,
-    skip_layers,
-    get_next_token_probs,
-    GetModuleOutput,
-    get_layer_output,
+    DummyCache,
 )
 from .rename_utils import (
     get_rename_dict,
@@ -30,6 +21,8 @@ from .rename_utils import (
     check_model_renaming,
     AttentionProbabilitiesAccessor,
 )
+
+GetLayerObject = Callable[[int], TraceTensor]
 
 
 status_file = Path("data/status.json")
@@ -88,7 +81,7 @@ def load_model(
     Args:
         no_space_on_bos: If True, add_prefix_space is set to False in the tokenizer. It is useful if you want to use the tokenizer to get the first token of a word when it's not after a space.
     """
-    warn(
+    logger.warning(
         "This function is deprecated and will be removed in the future. Use nnterp.StandardizedTransformer instead."
     )
     if rename_kwargs is None:
@@ -112,6 +105,10 @@ def load_model(
             **kwargs,
         )
         return model
+
+
+def get_layer_output(model: StandardizedTransformer, layer: int) -> TraceTensor:
+    return model.layers_output[layer]
 
 
 class StandardizedTransformer(LanguageModel):
@@ -174,7 +171,7 @@ class StandardizedTransformer(LanguageModel):
                 or kwargs["config"]._attn_implementation
             )
             if impl != "eager":
-                warn(
+                logger.warning(
                     f"Attention implementation {impl} is not supported for attention pattern tracing. Please use eager attention implementation if you plan to access attention patterns."
                 )
         else:
@@ -242,24 +239,21 @@ class StandardizedTransformer(LanguageModel):
         )
         if check_renaming:
             check_model_renaming(self, repo_id, ignores, fallback_check_to_trace)
-        self.num_layers = get_num_layers(self)
+        self.num_layers = len(self.layers)
         self.attention_probabilities = AttentionProbabilitiesAccessor(self)
 
-    @property
-    def unembed_norm(self) -> Envoy:
-        return get_unembed_norm(self)
-
     def project_on_vocab(self, h: TraceTensor) -> TraceTensor:
-        return project_on_vocab(self, h)
+        h = self.norm(h)
+        return self.lm_head(h)
 
     @property
     def logits(self) -> TraceTensor:
         """Returns the lm_head output"""
-        return get_logits(self)
+        return self.output.logits
 
     @property
     def next_token_probs(self) -> TraceTensor:
-        return get_next_token_probs(self)
+        return self.logits[:, -1, :].softmax(-1)
 
     def skip_layer(self, layer: int, skip_with: TraceTensor | None = None):
         """
@@ -269,7 +263,7 @@ class StandardizedTransformer(LanguageModel):
             layer: The layer to skip
             skip_with: The input to skip the layer with. If None, the input of the layer is used.
         """
-        return skip_layer(self, layer, skip_with)
+        return self.skip_layers(layer, layer, skip_with)
 
     def skip_layers(
         self, start_layer: int, end_layer: int, skip_with: TraceTensor | None = None
@@ -282,7 +276,11 @@ class StandardizedTransformer(LanguageModel):
             end_layer: The layer to stop skipping at (inclusive)
             skip_with: The input to skip the layers with. If None, the input of start_layer is used.
         """
-        return skip_layers(self, start_layer, end_layer, skip_with)
+        if skip_with is None:
+            skip_with = self.layers_input[start_layer]
+        for layer in range(start_layer, end_layer):
+            self.layers[layer].skip((skip_with, DummyCache()))
+        self.layers[end_layer].skip((skip_with, DummyCache()))
 
     def steer(
         self,
@@ -290,7 +288,7 @@ class StandardizedTransformer(LanguageModel):
         steering_vector: th.Tensor,
         factor: float = 1,
         positions: int | list[int] | th.Tensor | None = None,
-        get_module: GetModuleOutput = get_layer_output,
+        get_layer_object_to_steer: GetLayerObject | None = None,
     ):
         """
         Steer the hidden states of a layer using a steering vector.
@@ -300,12 +298,14 @@ class StandardizedTransformer(LanguageModel):
             steering_vector: The steering vector to apply
             factor: The factor to multiply the steering vector by
             positions: The position to steer. If None, all positions are steered.
-            get_module: Function to get the module output to steer
+            get_layer_object_to_steer: Function that given a layer index, returns the object to steer in the model's. Default to model.layers_output[layer]
         """
+        if get_layer_object_to_steer is None:
+            get_layer_object_to_steer = self.layers_output
         if isinstance(layers, int):
             layers = [layers]
         for layer in layers:
-            layer_device = get_layer_output(self, layer).device
-            get_module(self, layer)[:, positions] += factor * steering_vector.to(
-                layer_device
-            )
+            layer_device = get_layer_object_to_steer(layer).device
+            get_layer_object_to_steer(layer)[
+                :, positions
+            ] += factor * steering_vector.to(layer_device)

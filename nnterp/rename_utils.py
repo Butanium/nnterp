@@ -3,7 +3,7 @@ from loguru import logger
 
 import torch as th
 from nnsight import Envoy
-from .nnsight_utils import TraceTensor, get_unembed_norm, get_attention, get_mlp
+from .nnsight_utils import TraceTensor
 from .utils import is_notebook, display_markdown
 
 
@@ -45,8 +45,8 @@ class RenamingError(Exception):
 
 ATTENTION_NAMES = ["attn", "self_attention", "attention"]
 MODEL_NAMES = ["transformer", "gpt_neox", ".model.decoder"]
-LAYER_NAMES = ["h", ".decoder.layers", ".model.layers"]
-LN_NAMES = ["final_layer_norm", "ln_f", ".decoder.norm", ".model.norm"]
+LAYER_NAMES = ["h", ".decoder.layers", ".model.layers", ".language_model.layers"]
+LN_NAMES = ["final_layer_norm", "ln_f", ".decoder.norm", ".model.norm", ".language_model.norm"]
 LM_HEAD_NAMES = ["embed_out"]
 MLP_NAMES = ["block_sparse_moe"]
 
@@ -95,7 +95,7 @@ class IOType(Enum):
 
 
 class LayerAccessor:
-    """I/O accessor that inherits from ModuleAccessor and provides input/output access with setter"""
+    """I/O accessor that provides input/output access with setter"""
 
     def __init__(
         self,
@@ -155,6 +155,9 @@ class LayerAccessor:
                     module.output = (value,)
             else:
                 module.output = value
+
+    def __call__(self, layer: int) -> TraceTensor | Envoy:
+        return self[layer]
 
 
 def bloom_attention_prob_source(attention_module, return_module_source: bool = False):
@@ -324,7 +327,7 @@ def check_model_renaming(
             "Please pass the name of the layers module to the layers_rename argument."
         ) from exc
     try:
-        _ = get_unembed_norm(std_model)
+        _ = std_model.norm
     except AttributeError as exc:
         raise RenamingError(
             f"Could not find norm module in {repo_id} architecture. This means that it was not properly renamed.\n"
@@ -339,7 +342,7 @@ def check_model_renaming(
         ) from exc
     if "attention" not in ignores:
         try:
-            _ = get_attention(std_model, 0)
+            _ = std_model.layers[0].self_attn
         except AttributeError as exc:
             raise RenamingError(
                 f"Could not find self_attn module in {repo_id} architecture. This means that it was not properly renamed.\n"
@@ -347,7 +350,7 @@ def check_model_renaming(
             ) from exc
     if "mlp" not in ignores:
         try:
-            _ = get_mlp(std_model, 0)
+            _ = std_model.layers[0].mlp
         except AttributeError as exc:
             raise RenamingError(
                 f"Could not find mlp module in {repo_id} architecture. This means that it was not properly renamed.\n"

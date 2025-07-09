@@ -1,4 +1,9 @@
 import sys
+from typing import Union
+import torch as th
+from nnsight.intervention.tracing.globals import Object
+
+TraceTensor = Union[th.Tensor, Object]
 
 
 def is_notebook():
@@ -17,3 +22,8 @@ def display_markdown(text: str):
     from IPython.display import display, Markdown
 
     display(Markdown(text))
+
+
+class DummyCache:
+    def to_legacy_cache(self):
+        return None

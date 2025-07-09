@@ -1,20 +1,25 @@
 from __future__ import annotations
 
+from typing import Union, Callable
+import torch as th
+from torch.utils.data import DataLoader
+
 from nnsight import LanguageModel
 from nnsight.intervention.envoy import Envoy
 from nnsight.intervention.tracing.globals import Object
+from .utils import TraceTensor, DummyCache
+from .standardized_transformer import StandardizedTransformer
 
-import torch as th
-from torch.utils.data import DataLoader
-from typing import Union, Callable
-
-TraceTensor = Union[th.Tensor, Object]
 GetModuleOutput = Callable[[LanguageModel, int], TraceTensor]
 
 
-class DummyCache:
-    def to_legacy_cache(self):
-        return None
+def get_layers(model: LanguageModel) -> list[Envoy]:
+    """
+    Get the layers of the model
+    """
+    if isinstance(model, StandardizedTransformer):
+        return model.layers
+    return model.model.layers
 
 
 def get_num_layers(nn_model: LanguageModel):
@@ -25,7 +30,7 @@ def get_num_layers(nn_model: LanguageModel):
     Returns:
         The number of layers in the model
     """
-    return len(nn_model.model.layers)
+    return len(get_layers(nn_model))
 
 
 def get_layer(nn_model: LanguageModel, layer: int) -> Envoy:
@@ -37,7 +42,7 @@ def get_layer(nn_model: LanguageModel, layer: int) -> Envoy:
     Returns:
         The Envoy for the layer
     """
-    return nn_model.model.layers[layer]
+    return get_layers(nn_model)[layer]
 
 
 def get_layer_input(nn_model: LanguageModel, layer: int) -> Union[int, Object]:
@@ -74,7 +79,7 @@ def get_attention(nn_model: LanguageModel, layer: int) -> Envoy:
     Returns:
         The Envoy for the attention module of the layer
     """
-    return nn_model.model.layers[layer].self_attn
+    return get_layer(nn_model, layer).self_attn
 
 
 def get_attention_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
@@ -111,7 +116,7 @@ def get_logits(nn_model: LanguageModel) -> TraceTensor:
     Returns:
         The Proxy for the logits of the model
     """
-    return nn_model.lm_head.output
+    return nn_model.output.logits
 
 
 def get_unembed_norm(nn_model: LanguageModel) -> Envoy:
@@ -122,6 +127,8 @@ def get_unembed_norm(nn_model: LanguageModel) -> Envoy:
     Returns:
         The Envoy for the last layer norm of the model
     """
+    if isinstance(nn_model, StandardizedTransformer):
+        return nn_model.norm
     return nn_model.model.norm
 
 
@@ -145,7 +152,7 @@ def project_on_vocab(nn_model: LanguageModel, h: TraceTensor) -> TraceTensor:
     Returns:
         The Proxy for the hidden states projected on the vocabulary
     """
-    ln_out = nn_model.model.norm(h)
+    ln_out = get_unembed_norm(nn_model)(h)
     return nn_model.lm_head(ln_out)
 
 

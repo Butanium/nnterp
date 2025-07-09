@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from contextlib import nullcontext
 from dataclasses import dataclass
 import torch as th
-from warnings import warn
+from loguru import logger
 from .nnsight_utils import (
     get_layer_output,
     get_next_token_probs,
@@ -308,7 +307,7 @@ def patchscope_generate(
     if isinstance(prompts, str):
         prompts = [prompts]
     if len(prompts) > max_batch_size:
-        warn(
+        logger.warning(
             f"Number of prompts ({len(prompts)}) exceeds max_batch_size ({max_batch_size}). This may cause memory errors."
         )
     hiddens = get_token_activations(nn_model, prompts, remote=remote, layers=layers)
