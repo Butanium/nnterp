@@ -118,12 +118,11 @@ class StandardizedTransformer(LanguageModel):
     The model structure is organized as follows::
 
         StandardizedTransformer
-            ├── model
-            │   ├── layers
-            │   │   ├── self_attn
-            │   │   └── mlp
-            │   └── norm
-            └── lm_head
+        ├── layers
+        │   ├── self_attn
+        │   └── mlp
+        ├── norm
+        └── lm_head
 
     In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:
 
@@ -147,6 +146,9 @@ class StandardizedTransformer(LanguageModel):
         layers_rename (str, optional): Extra module name to rename to ``layers``.
         check_renaming (bool, optional): If True, the renaming of modules is validated.
             Defaults to True.
+        allow_dispatch (bool, optional): If True, allows using trace() to dispatch the model
+            when scan() fails during renaming checks. Defaults to True. You should set this to false
+            if you plan to use the model remotely.
     """
 
     def __init__(
@@ -160,7 +162,7 @@ class StandardizedTransformer(LanguageModel):
         model_rename: str | None = None,
         layers_rename: str | None = None,
         check_renaming: bool = True,
-        fallback_check_to_trace: bool = True,
+        allow_dispatch: bool = True,
         **kwargs,
     ):
         kwargs.setdefault("device_map", "auto")
@@ -238,9 +240,10 @@ class StandardizedTransformer(LanguageModel):
             returns_tuple=mlp_returns_tuple(self._model),
         )
         if check_renaming:
-            check_model_renaming(self, repo_id, ignores, fallback_check_to_trace)
+            check_model_renaming(self, repo_id, ignores, allow_dispatch)
         self.num_layers = len(self.layers)
         self.attention_probabilities = AttentionProbabilitiesAccessor(self)
+        self.attention_probabilities.check_source()
 
     def project_on_vocab(self, h: TraceTensor) -> TraceTensor:
         h = self.norm(h)

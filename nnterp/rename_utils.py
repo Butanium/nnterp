@@ -4,7 +4,7 @@ from loguru import logger
 import torch as th
 from nnsight import Envoy
 from .nnsight_utils import TraceTensor
-from .utils import is_notebook, display_markdown
+from .utils import is_notebook, display_markdown, try_with_scan
 
 
 # Dummy class for missing transformer architectures
@@ -46,7 +46,13 @@ class RenamingError(Exception):
 ATTENTION_NAMES = ["attn", "self_attention", "attention"]
 MODEL_NAMES = ["transformer", "gpt_neox", ".model.decoder"]
 LAYER_NAMES = ["h", ".decoder.layers", ".model.layers", ".language_model.layers"]
-LN_NAMES = ["final_layer_norm", "ln_f", ".decoder.norm", ".model.norm", ".language_model.norm"]
+LN_NAMES = [
+    "final_layer_norm",
+    "ln_f",
+    ".decoder.norm",
+    ".model.norm",
+    ".language_model.norm",
+]
 LM_HEAD_NAMES = ["embed_out"]
 MLP_NAMES = ["block_sparse_moe"]
 
@@ -201,7 +207,10 @@ class AttentionProbabilitiesAccessor:
     def __setitem__(self, layer: int, value: TraceTensor):
         self.source_attr(self.model.layers[layer].self_attn).output = value
 
-    def print_source(self, layer: int = 0):
+    def check_source(self, layer: int = 0):
+        raise NotImplementedError("Not implemented")
+
+    def print_source(self, layer: int = 0, allow_dispatch: bool = True):
         in_notebook = is_notebook()
         if in_notebook:
             markdown_text = "## Accessing attention probabilities from:\n"
@@ -216,17 +225,14 @@ class AttentionProbabilitiesAccessor:
             else:
                 print(source)
 
-        warned = False
-        try:
-            with self.model.scan("a", use_cache=False):
-                print_hook_source()
-        except Exception as e:
-            logger.warning(
-                f"Error when trying to scan the model - using .trace() instead (which will dispatch the model): {e}"
-            )
-            warned = True
-            with self.model.trace("a"):
-                print_hook_source()
+        used_scan = try_with_scan(
+            self.model,
+            print_hook_source,
+            RenamingError(
+                "Can't access attention probabilities. It is most likely not yet supported for this architecture and transformers version."
+            ),
+            allow_dispatch=allow_dispatch,
+        )
         if in_notebook:
             markdown_text += "\n\n## Full module source:\n"
         else:
@@ -244,16 +250,15 @@ class AttentionProbabilitiesAccessor:
             else:
                 print(source)
 
-        try:
-            with self.model.scan("a", use_cache=False):
-                print_attn_source()
-        except Exception as e:
-            if not warned:
-                logger.warning(
-                    f"Error when trying to scan the model - using .trace() instead (which will dispatch the model): {e}"
-                )
-            with self.model.trace("a"):
-                print_attn_source()
+        try_with_scan(
+            self.model,
+            print_attn_source,
+            RenamingError(
+                "Can't access attention probabilities. It is most likely not yet supported for this architecture and transformers version."
+            ),
+            allow_dispatch=allow_dispatch,
+            warn_if_scan_fails=used_scan,
+        )
 
         if in_notebook:
             display_markdown(markdown_text)
@@ -310,7 +315,7 @@ def check_io(std_model, repo_id: str, ignores: list[str]):
 
 
 def check_model_renaming(
-    std_model, repo_id: str, ignores: list[str], fallback_check_to_trace: bool
+    std_model, repo_id: str, ignores: list[str], allow_dispatch: bool
 ):
     try:
         _ = std_model.model
@@ -362,11 +367,11 @@ def check_model_renaming(
     except RenamingError as exc:
         raise exc
     except Exception as exc:
-        if fallback_check_to_trace:
+        if allow_dispatch:
             logger.warning(
                 f"Could not check the IO of {repo_id} using .scan(). Because error below. "
                 "Will try again using .trace(), which will dispatch the model. "
-                "If you don't want the model to be dispatched, initialize the model with fallback_check_to_trace=False.\n"
+                "If you don't want the model to be dispatched, initialize the model with allow_dispatch=False.\n"
                 f"Error: {exc}"
             )
             with std_model.trace("a"):
@@ -374,6 +379,6 @@ def check_model_renaming(
         else:
             logger.warning(
                 f"Could not check the IO of {repo_id} using .scan(). Because error below. "
-                "Skipping IO checking as fallback_check_to_trace=False was passed.\n"
+                "Skipping IO checking as allow_dispatch=False was passed.\n"
                 f"Error: {exc}"
             )
