@@ -57,6 +57,4 @@ html_theme_options = {
 }
 
 # Hide empty left sidebar on all pages
-html_sidebars = {
-    '**': []
-}
+html_sidebars = {"**": []}

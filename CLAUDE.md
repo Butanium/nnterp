@@ -13,6 +13,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Assumption-driven responses**: Structure responses around design decisions and assumptions rather than mechanical descriptions of changes
 - **Example**: Instead of "I edited file X to add function Y", say "Key assumption: StandardizedTransformer failures should not update JSON since they're test-time convenience checks, not core loading capabilities"
 
+## Sphinx Documentation Guidelines
+- **IMPORTANT: Respect nnsight execution order**: ALL code examples must access components in forward pass order (layers_output[1] before layers_output[2], attention before layer output of same layer, etc.)
+- **Use demo.py tone**: Keep explanations factual and concise, avoid verbose language like "core philosophy" or "research-first design"
+- **nnterp is for transformers**: Describe it as a nnsight wrapper specifically for transformer models, not general mechanistic interpretability
+
 ## Code Philosophy
 - Correctness first: Ensure code is functionally correct before optimizing
 - Iterative refinement: After implementing changes, review the entire file to identify opportunities for simplification and improvement

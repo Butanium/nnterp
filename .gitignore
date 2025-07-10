@@ -1,5 +1,5 @@
 # project specific
-data/test_log.json  
+data/test_log* 
 data/*.old.json
 
 # general

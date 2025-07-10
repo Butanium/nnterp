@@ -9,6 +9,8 @@
 # Similar to [`transformer_lens`](https://github.com/TransformerLensOrg/TransformerLens), `nnterp` provides a standardized interface for all transformer models.
 # The main difference is that `nnterp` still uses the huggingface implementation under the hood through `NNsight`, while transformer_lens uses its own implementation of the transformer architecture. However, each transformer implementation has its own quirks, such that `transformer_lens` is not able to support all models, and can sometimes have significant difference with the huggingface implementation.
 #
+# Note that `nnterp` doesn't support all models either, since `NNsight` itself doesn't support all architectures. Additionally, because different models use different naming conventions, `nnterp` doesn't support all HuggingFace models, but it does support a good portion of them. When a model is loaded in `nnterp`, automatic tests are performed to verify that the model has been correctly renamed and that `nnterp`'s hooks return the expected shapes. This means that even if an architecture hasn't been officially tested, the simple fact that it loads successfully indicates it's probably working correctly.
+#
 # The way it's implemented is based on the `NNsight` built-in renaming feature, to make all models look like the llama naming convention, without having to write `model.model`, namely:
 # ```ocaml
 # StandardizedTransformer
@@ -143,7 +145,7 @@ with nnterp_gpt2.trace("The weather today is"):
 # %% [markdown]
 # ## 4. Attention Probabilities
 #
-# For models that support it, you can access attention probabilities directly:
+# For models that support it, you can access attention probabilities directly. You can check if a model supports it by calling `model.supports_attention_probabilities`.
 
 # %%
 nnterp_gpt2.tokenizer.padding_side = (
