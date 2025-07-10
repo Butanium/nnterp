@@ -5,6 +5,7 @@ from typing import Callable
 from loguru import logger
 from pathlib import Path
 import torch as th
+from torch import Size
 from nnsight import LanguageModel
 import transformers
 
@@ -20,6 +21,7 @@ from .rename_utils import (
     mlp_returns_tuple,
     check_model_renaming,
     AttentionProbabilitiesAccessor,
+    RenamingError,
 )
 
 GetLayerObject = Callable[[int], TraceTensor]
@@ -144,11 +146,12 @@ class StandardizedTransformer(LanguageModel):
         lm_head_rename (str, optional): Extra module name to rename to ``lm_head``.
         model_rename (str, optional): Extra module name to rename to ``model``.
         layers_rename (str, optional): Extra module name to rename to ``layers``.
-        check_renaming (bool, optional): If True, the renaming of modules is validated.
+        check_renaming (bool, default True): If True, the renaming of modules is validated.
             Defaults to True.
-        allow_dispatch (bool, optional): If True, allows using trace() to dispatch the model
+        allow_dispatch (bool, default True): If True, allows using trace() to dispatch the model
             when scan() fails during renaming checks. Defaults to True. You should set this to false
             if you plan to use the model remotely.
+        check_attn_probs_with_trace (bool, default True): If True, the model will be dispatched and a test will ensure that the attention probabilities returned sum to 1.
     """
 
     def __init__(
@@ -163,6 +166,7 @@ class StandardizedTransformer(LanguageModel):
         layers_rename: str | None = None,
         check_renaming: bool = True,
         allow_dispatch: bool = True,
+        check_attn_probs_with_trace: bool = True,
         **kwargs,
     ):
         kwargs.setdefault("device_map", "auto")
@@ -239,11 +243,21 @@ class StandardizedTransformer(LanguageModel):
             IOType.OUTPUT,
             returns_tuple=mlp_returns_tuple(self._model),
         )
+        self.num_layers = len(self.layers)
         if check_renaming:
             check_model_renaming(self, repo_id, ignores, allow_dispatch)
-        self.num_layers = len(self.layers)
         self.attention_probabilities = AttentionProbabilitiesAccessor(self)
-        self.attention_probabilities.check_source()
+        if check_renaming:
+            try:
+                self.attention_probabilities.check_source(
+                    allow_dispatch=allow_dispatch,
+                    use_trace=check_attn_probs_with_trace,
+                )
+            except RenamingError as e:
+                logger.error(
+                    f"Attention probabilities is not available for {repo_id} architecture. Disabling it. Error:\n{e}"
+                )
+                self.attention_probabilities.disable()
 
     def project_on_vocab(self, h: TraceTensor) -> TraceTensor:
         h = self.norm(h)
@@ -253,6 +267,10 @@ class StandardizedTransformer(LanguageModel):
     def logits(self) -> TraceTensor:
         """Returns the lm_head output"""
         return self.output.logits
+
+    @property
+    def input_size(self) -> Size:
+        return self.inputs[1]["input_ids"].shape
 
     @property
     def next_token_probs(self) -> TraceTensor:

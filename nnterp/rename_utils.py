@@ -39,6 +39,33 @@ except ImportError:
     Qwen2MoeForCausalLM = ArchitectureNotFound
 
 
+ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head"]
+HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
+
+
+def text_config(model):
+    cfg = model.config
+    if "text_config" in cfg:
+        cfg = getattr(cfg, "text_config")
+    return cfg
+
+
+def get_num_attention_heads(model):
+    cfg = text_config(model)
+    for attn_head_key in ATTN_HEAD_CONFIG_KEYS:
+        if attn_head_key in cfg:
+            return getattr(cfg, attn_head_key)
+    raise ValueError(f"No attn head config key found in {model}")
+
+
+def get_hidden_size(model):
+    cfg = text_config(model)
+    for hidden_size_key in HIDDEN_SIZE_CONFIG_KEYS:
+        if hidden_size_key in cfg:
+            return getattr(cfg, hidden_size_key)
+    raise ValueError(f"No hidden size config key found in {model}")
+
+
 class RenamingError(Exception):
     """Exception raised when the renaming of modules is not properly done."""
 
@@ -200,15 +227,53 @@ class AttentionProbabilitiesAccessor:
             self.source_attr = gpt2_attention_prob_source
         else:
             self.source_attr = default_attention_prob_source
+        self.enabled = True
+
+    def disable(self):
+        self.enabled = False
 
     def __getitem__(self, layer: int) -> TraceTensor:
+        if not self.enabled:
+            raise RenamingError("Attention probabilities are disabled for this model.")
         return self.source_attr(self.model.layers[layer].self_attn).output
 
     def __setitem__(self, layer: int, value: TraceTensor):
+        if not self.enabled:
+            raise RenamingError("Attention probabilities are disabled for this model.")
         self.source_attr(self.model.layers[layer].self_attn).output = value
 
-    def check_source(self, layer: int = 0):
-        raise NotImplementedError("Not implemented")
+    def check_source(
+        self, layer: int = 0, allow_dispatch: bool = True, use_trace: bool = True
+    ):
+
+        def test_prob_source():
+            batch_size, seq_len = self.model.input_size
+            num_heads = get_num_attention_heads(self.model)
+            probs = self[layer]
+            self[layer] = probs / 2
+            if probs.shape != (batch_size, num_heads, seq_len, seq_len):
+                raise RenamingError(
+                    f"Attention probabilities have shape {probs.shape} != {(batch_size, num_heads, seq_len, seq_len)} (batch_size, n_head, seq_len, seq_len) in {self.model.repo_id} architecture. This means it's not properly initialized."
+                )
+            if probs.device != th.device("meta"):
+                sum_last = probs.sum(dim=-1)
+                if not th.allclose(sum_last, th.ones_like(sum_last)):
+                    raise RenamingError("Attention probabilities do not sum to 1.")
+
+        if use_trace:
+            with self.model.trace(th.tensor([[0, 1, 1]])):
+                test_prob_source()
+            return
+
+        try_with_scan(
+            self.model,
+            test_prob_source,
+            RenamingError(
+                "Can't access attention probabilities. It is most likely not yet supported for this architecture and transformers version."
+            ),
+            allow_dispatch=allow_dispatch,
+            errors_to_raise=(RenamingError,),
+        )
 
     def print_source(self, layer: int = 0, allow_dispatch: bool = True):
         in_notebook = is_notebook()
@@ -286,99 +351,106 @@ def mlp_returns_tuple(model) -> bool:
 
 
 def check_io(std_model, repo_id: str, ignores: list[str]):
-    if not isinstance(std_model.layers_input[0], th.Tensor):
+    batch_size, seq_len = std_model.input_size
+    hidden_size = get_hidden_size(std_model)
+    layer_input = std_model.layers_input[0]
+    if not isinstance(layer_input, th.Tensor):
         raise ValueError(
-            f"layers_input[0] is not a tensor in {repo_id} architecture. Found type {type(std_model.layers_input[0])}. This means it's not properly initialized."
+            f"layers_input[0] is not a tensor in {repo_id} architecture. Found type {type(layer_input)}. This means it's not properly initialized."
+        )
+    if layer_input.shape != (batch_size, seq_len, hidden_size):
+        raise ValueError(
+            f"layers_input[0] has shape {layer_input.shape} != {(batch_size, seq_len, hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
         )
     if "attention" not in ignores:
-        if not isinstance(std_model.attentions_input[0], th.Tensor):
+        attention_input = std_model.attentions_input[0]
+        attention_output = std_model.attentions_output[0]
+        if not isinstance(attention_input, th.Tensor):
             raise ValueError(
-                f"attentions_input[0] is not a tensor in {repo_id} architecture. Found type {type(std_model.attentions_input[0])}. This means it's not properly initialized."
+                f"attentions_input[0] is not a tensor in {repo_id} architecture. Found type {type(attention_input)}. This means it's not properly initialized."
             )
-        if not isinstance(std_model.attentions_output[0], th.Tensor):
+        if attention_input.shape != (batch_size, seq_len, hidden_size):
             raise ValueError(
-                f"attentions_output[0] is not a tensor in {repo_id} architecture. Found type {type(std_model.attentions_output[0])}. This means it's not properly initialized."
+                f"attentions_input[0] has shape {attention_input.shape} != {(batch_size, seq_len, hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
+            )
+        if not isinstance(attention_output, th.Tensor):
+            raise ValueError(
+                f"attentions_output[0] is not a tensor in {repo_id} architecture. Found type {type(attention_output)}. This means it's not properly initialized."
+            )
+        if attention_output.shape != (
+            batch_size,
+            seq_len,
+            hidden_size,
+        ):
+            raise ValueError(
+                f"attentions_output[0] has shape {attention_output.shape} != {(batch_size, seq_len, hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
             )
     if "mlp" not in ignores:
-        if not isinstance(std_model.mlps_input[0], th.Tensor):
+        mlp_input = std_model.mlps_input[0]
+        mlp_output = std_model.mlps_output[0]
+        if not isinstance(mlp_input, th.Tensor):
             raise ValueError(
-                f"mlps_input[0] is not a tensor in {repo_id} architecture. Found type {type(std_model.mlps_input[0])}. This means it's not properly initialized."
+                f"mlps_input[0] is not a tensor in {repo_id} architecture. Found type {type(mlp_input)}. This means it's not properly initialized."
             )
-        if not isinstance(std_model.mlps_output[0], th.Tensor):
+        if mlp_input.shape != (batch_size, seq_len, std_model.config.hidden_size):
             raise ValueError(
-                f"mlps_output[0] is not a tensor in {repo_id} architecture. Found type {type(std_model.mlps_output[0])}. This means it's not properly initialized."
+                f"mlps_input[0] has shape {mlp_input.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
             )
-    if not isinstance(std_model.layers_output[0], th.Tensor):
+        if not isinstance(mlp_output, th.Tensor):
+            raise ValueError(
+                f"mlps_output[0] is not a tensor in {repo_id} architecture. Found type {type(mlp_output)}. This means it's not properly initialized."
+            )
+        if mlp_output.shape != (batch_size, seq_len, std_model.config.hidden_size):
+            raise ValueError(
+                f"mlps_output[0] has shape {mlp_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
+            )
+    layer_output = std_model.layers_output[0]
+    if not isinstance(layer_output, th.Tensor):
         raise ValueError(
-            f"layers_output[0] is not a tensor in {repo_id} architecture. Found type {type(std_model.layers_output[0])}. This means it's not properly initialized."
+            f"layers_output[0] is not a tensor in {repo_id} architecture. Found type {type(layer_output)}. This means it's not properly initialized."
+        )
+    if layer_output.shape != (batch_size, seq_len, std_model.config.hidden_size):
+        raise ValueError(
+            f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
         )
 
 
 def check_model_renaming(
     std_model, repo_id: str, ignores: list[str], allow_dispatch: bool
 ):
-    try:
-        _ = std_model.model
-    except AttributeError as exc:
-        raise RenamingError(
-            f"Could not find model module in {repo_id} architecture. This means that it was not properly renamed.\n"
-            "Please pass the name of the model module to the model_rename argument."
-        ) from exc
-    try:
-        _ = std_model.layers, std_model.layers[0]
-    except AttributeError as exc:
+
+    if not hasattr(std_model, "layers"):
         raise RenamingError(
             f"Could not find layers module in {repo_id} architecture. This means that it was not properly renamed.\n"
             "Please pass the name of the layers module to the layers_rename argument."
-        ) from exc
-    try:
-        _ = std_model.norm
-    except AttributeError as exc:
+        )
+    if not hasattr(std_model, "norm"):
         raise RenamingError(
             f"Could not find norm module in {repo_id} architecture. This means that it was not properly renamed.\n"
             "Please pass the name of the norm module to the ln_final_rename argument."
-        ) from exc
-    try:
-        _ = std_model.lm_head
-    except AttributeError as exc:
+        )
+    if not hasattr(std_model, "lm_head"):
         raise RenamingError(
             f"Could not find lm_head module in {repo_id} architecture. This means that it was not properly renamed.\n"
             "Please pass the name of the lm_head module to the lm_head_rename argument."
-        ) from exc
+        )
     if "attention" not in ignores:
-        try:
-            _ = std_model.layers[0].self_attn
-        except AttributeError as exc:
+        if not hasattr(std_model.layers[0], "self_attn"):
             raise RenamingError(
                 f"Could not find self_attn module in {repo_id} architecture. This means that it was not properly renamed.\n"
                 "Please pass the name of the self_attn module to the attn_rename argument."
-            ) from exc
+            )
     if "mlp" not in ignores:
-        try:
-            _ = std_model.layers[0].mlp
-        except AttributeError as exc:
+        if not hasattr(std_model.layers[0], "mlp"):
             raise RenamingError(
                 f"Could not find mlp module in {repo_id} architecture. This means that it was not properly renamed.\n"
                 "Please pass the name of the mlp module to the mlp_rename argument."
-            ) from exc
-    try:
-        with std_model.scan("a", use_cache=False):
-            check_io(std_model, repo_id, ignores)
-    except RenamingError as exc:
-        raise exc
-    except Exception as exc:
-        if allow_dispatch:
-            logger.warning(
-                f"Could not check the IO of {repo_id} using .scan(). Because error below. "
-                "Will try again using .trace(), which will dispatch the model. "
-                "If you don't want the model to be dispatched, initialize the model with allow_dispatch=False.\n"
-                f"Error: {exc}"
             )
-            with std_model.trace("a"):
-                check_io(std_model, repo_id, ignores)
-        else:
-            logger.warning(
-                f"Could not check the IO of {repo_id} using .scan(). Because error below. "
-                "Skipping IO checking as allow_dispatch=False was passed.\n"
-                f"Error: {exc}"
-            )
+
+    try_with_scan(
+        std_model,
+        lambda: check_io(std_model, repo_id, ignores),
+        RenamingError(f"Could not check the IO of {repo_id}"),
+        allow_dispatch,
+        errors_to_raise=(RenamingError,),
+    )

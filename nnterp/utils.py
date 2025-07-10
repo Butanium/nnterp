@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 from loguru import logger
 from typing import Union
@@ -36,6 +38,7 @@ def try_with_scan(
     error_to_throw: Exception,
     allow_dispatch: bool,
     warn_if_scan_fails: bool = True,
+    errors_to_raise: tuple[type[Exception], ...] | type[Exception] | None = None,
 ):
     """
     Attempt to execute a function using model.scan(), falling back to model.trace() if needed.
@@ -51,17 +54,26 @@ def try_with_scan(
         allow_dispatch (bool): Whether to allow fallback to .trace() if .scan() fails
         warn_if_scan_fails (bool, optional): Whether to log warnings when scan fails.
             Defaults to True.
+        errors_to_raise (tuple, optional): Tuple of exception types that should be raised
+            immediately if encountered during scan, without fallback to trace.
 
     Returns:
         bool: True if scan succeeded, False if trace was used instead
     """
 
     try:
-        with model.scan("a", use_cache=False):
+        with model.scan(th.tensor([[0, 1, 1]]), use_cache=False) as tracer:
             function()
+            tracer.stop()
         return True
     except Exception as e:
-        if not allow_dispatch:
+        if (
+            errors_to_raise
+            and errors_to_raise is not None
+            and isinstance(e, errors_to_raise)
+        ):
+            raise e
+        if not allow_dispatch and not model.dispatched:
             logger.error("Scan failed and trace() fallback is disabled")
             raise error_to_throw from e
         if warn_if_scan_fails:
@@ -69,8 +81,9 @@ def try_with_scan(
                 "Error when trying to scan the model - using .trace() instead (which will dispatch the model)..."
             )
         try:
-            with model.trace("a"):
+            with model.trace(th.tensor([[0, 1, 1]])) as tracer:
                 function()
+                tracer.stop()
         except Exception as e2:
             raise error_to_throw from e2
         logger.warning(
