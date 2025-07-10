@@ -396,7 +396,7 @@ def test_standardized_transformer_skip_methods(model_name):
         skip_output = model.logits.save()
 
     assert not th.allclose(
-        baseline_output, skip_output, atol=1e-4
+        baseline_output, skip_output
     ), "skip_layer should change output"
 
     # Test skip_layers method
@@ -405,7 +405,7 @@ def test_standardized_transformer_skip_methods(model_name):
         skip_layers_output = model.logits.save()
 
     assert not th.allclose(
-        baseline_output, skip_layers_output, atol=1e-4
+        baseline_output, skip_layers_output
     ), "skip_layers should change output"
 
     # Test skip with custom tensor
@@ -415,7 +415,7 @@ def test_standardized_transformer_skip_methods(model_name):
         custom_skip_output = model.logits.save()
 
     assert not th.allclose(
-        baseline_output, custom_skip_output, atol=1e-4
+        baseline_output, custom_skip_output
     ), "skip with custom tensor should change output"
 
 

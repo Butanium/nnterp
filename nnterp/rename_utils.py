@@ -54,7 +54,7 @@ HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
 MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM, DbrxForCausalLM)
 
 # Alternative names for LLM layers
-ATTENTION_NAMES = ["attn", "self_attention", "attention"]
+ATTENTION_NAMES = ["attn", "self_attention", "attention", "norm_attn_norm"]
 MODEL_NAMES = ["transformer", "gpt_neox", ".model.decoder"]
 LAYER_NAMES = [
     "h",
@@ -66,6 +66,7 @@ LAYER_NAMES = [
 LN_NAMES = [
     "final_layer_norm",
     "ln_f",
+    "norm_f",
     ".decoder.norm",
     ".model.norm",
     ".language_model.norm",

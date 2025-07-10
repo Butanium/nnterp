@@ -253,15 +253,15 @@ class StandardizedTransformer(LanguageModel):
                     allow_dispatch=allow_dispatch,
                     use_trace=check_attn_probs_with_trace,
                 )
-            except RenamingError as e:
+            except Exception as e:
                 logger.error(
                     f"Attention probabilities is not available for {repo_id} architecture. Disabling it. Error:\n{e}"
                 )
                 self.attention_probabilities.disable()
 
-    def project_on_vocab(self, h: TraceTensor) -> TraceTensor:
-        h = self.norm(h)
-        return self.lm_head(h)
+    @property
+    def attn_probs_available(self) -> bool:
+        return self.attention_probabilities.enabled
 
     @property
     def logits(self) -> TraceTensor:
@@ -330,3 +330,7 @@ class StandardizedTransformer(LanguageModel):
             get_layer_object_to_steer(layer)[
                 :, positions
             ] += factor * steering_vector.to(layer_device)
+
+    def project_on_vocab(self, h: TraceTensor) -> TraceTensor:
+        h = self.norm(h)
+        return self.lm_head(h)
