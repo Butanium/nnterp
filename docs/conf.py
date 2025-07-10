@@ -42,7 +42,7 @@ html_context = {
 
 
 html_theme_options = {
-    "show_nav_level": 2,
+    "show_nav_level": 3,
     "navbar_end": ["theme-switcher"],
     "navbar_align": "left",
     "icon_links": [
@@ -54,4 +54,9 @@ html_theme_options = {
     ],
     "show_prev_next": False,
     "pygments_dark_style": "monokai",
+}
+
+# Hide empty left sidebar on all pages
+html_sidebars = {
+    '**': []
 }
