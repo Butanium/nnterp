@@ -69,7 +69,6 @@ def pytest_runtest_makereport(item, call):
             "error": error_message,
             "error_traceback": formatted_tb,
             "timestamp": datetime.datetime.now().isoformat(),
-            "call_excinfo": str(call.excinfo),
         }
     )
 
