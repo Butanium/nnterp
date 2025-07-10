@@ -157,8 +157,8 @@ def _update_status(prev_status: dict, success: bool, config):
     new_status = prev_status.get(TRANSFORMERS_VERSION, {})
 
     defaults = {
+        "available_classes": [],
         "tested_models": {},
-        "tested_classes": [],
         "failed_models": {},
         "failed_classes": [],
         "failed_test_models": {},
@@ -180,7 +180,7 @@ def _update_status(prev_status: dict, success: bool, config):
 
     failed_models = get_failed_models_from_status(test_loading_status)
 
-    update_model_data(config._tested_models, "tested_models", "tested_classes")
+    update_model_data(config._tested_models, "tested_models", "available_classes")
     update_model_data(failed_models, "failed_models", "failed_classes")
     update_model_data(
         config._fail_test_models, "failed_test_models", "failed_test_classes"
@@ -191,8 +191,8 @@ def _update_status(prev_status: dict, success: bool, config):
         "failed_attn_probs_classes",
     )
     new_status["all_tests_passed"] = success
-    new_status["tested_classes"] = sorted(
-        set(new_status["tested_classes"])
+    new_status["available_classes"] = sorted(
+        set(new_status["available_classes"])
         - set(new_status["failed_classes"])
         - set(new_status["failed_test_classes"])
     )
