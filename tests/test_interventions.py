@@ -85,7 +85,7 @@ def test_steer(model):
 
         # Test that we can run steering without errors
         with model.trace(prompt):
-            steer(model, layers_idx=0, steering_vector=steering_vector, factor=1.0)
+            steer(model, layers=0, steering_vector=steering_vector, factor=1.0)
             output = model.lm_head.output.save()
 
         # Just check it returns something reasonable

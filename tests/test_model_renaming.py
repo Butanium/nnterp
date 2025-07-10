@@ -21,7 +21,7 @@ from contextlib import nullcontext
 
 def get_layer_test(model_name, model, renamed, i):
     if renamed:
-        return model.model.layers[i]
+        return model.layers[i]
     elif model_name in ["gpt2", "bigscience/bigscience-small-testing"]:
         return model.transformer.h[i]
     elif model_name == "Maykeye/TinyLLama-v0":
@@ -38,7 +38,7 @@ def get_layer_test(model_name, model, renamed, i):
 
 def get_norm_test(model_name, model, renamed):
     if renamed:
-        return model.model.norm
+        return model.norm
     elif model_name in ["gpt2", "bigscience/bigscience-small-testing"]:
         return model.transformer.ln_f
     elif model_name == "Maykeye/TinyLLama-v0":
@@ -54,7 +54,9 @@ def get_norm_test(model_name, model, renamed):
 
 
 def get_num_layers_test(model_name, model, renamed):
-    if renamed or model_name == "Maykeye/TinyLLama-v0":
+    if renamed:
+        return len(model.layers)
+    elif model_name == "Maykeye/TinyLLama-v0":
         return len(model.model.layers)
     elif model_name in ["gpt2", "bigscience/bigscience-small-testing"]:
         return len(model.transformer.h)
@@ -202,16 +204,14 @@ def test_standardized_transformer_methods(model_name):
             layer_output_accessor = model.layers_output[0].save()
             layer_output_direct = model.model.layers[0].output[0].save()
 
-            # Test model-level methods
-            logits = model.logits.save()
-            logits_direct = model.lm_head.output.save()
-
             # Test token probability methods
             next_probs = model.next_token_probs.save()
 
             # Test project_on_vocab with layer output
             projected = model.project_on_vocab(layer_output_accessor).save()
-            logits_output = model.output.logits.save()
+            # Test model-level methods
+            logits = model.logits.save()
+            logits_direct = model.output.logits.save()
 
         # Verify accessor and direct access give same results
     assert th.allclose(
@@ -237,7 +237,6 @@ def test_standardized_transformer_methods(model_name):
     assert layer_input_accessor.shape == layer_output_accessor.shape
     assert logits.shape[-1] == model.config.vocab_size
     assert next_probs.shape == (logits.shape[0], logits.shape[2])
-    assert logits_output.shape == projected.shape
     if "mlp" not in ignores:
         assert mlps_output_accessor.shape == layer_output_accessor.shape
     assert attn_output_accessor.shape == layer_input_accessor.shape
@@ -276,14 +275,13 @@ def test_renamed_model_methods(model_name):
                 mlps_output = mlps_output.save()
             layer_output = get_layer_output(model, 0).save()
 
-            # Test model-level methods
-            logits = get_logits(model).save()
-
             # Test token probability methods
             next_probs = get_next_token_probs(model).save()
 
             # Test project_on_vocab with layer output
             projected = project_on_vocab(model, layer_output).save()
+            # Test model-level methods
+            logits = get_logits(model).save()
             logits_output = model.output.logits.save()
 
         assert next_probs.shape[-1] == model.config.vocab_size
@@ -456,8 +454,8 @@ def test_standardized_transformer_properties(model_name):
             # Test properties
             unembed_norm = model.norm
             assert unembed_norm is not None
-            logits = model.logits.save()
             next_token_probs = model.next_token_probs.save()
+            logits = model.logits.save()
 
         # Verify shapes and properties
         assert (
