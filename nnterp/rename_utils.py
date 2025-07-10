@@ -12,7 +12,6 @@ class ArchitectureNotFound:
     pass
 
 
-# Import transformers classes one by one, assigning dummy class for missing ones
 try:
     from transformers import OPTForCausalLM
 except ImportError:
@@ -37,10 +36,42 @@ try:
     from transformers import Qwen2MoeForCausalLM
 except ImportError:
     Qwen2MoeForCausalLM = ArchitectureNotFound
+try:
+    from transformers import DbrxForCausalLM
+except ImportError:
+    DbrxForCausalLM = ArchitectureNotFound
 
 
+class RenamingError(Exception):
+    """Exception raised when the renaming of modules is not properly done."""
+
+
+# Configuration keys for getting the number of attention heads and hidden size
 ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head"]
 HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
+
+# Models that return a tuple for the mlp output
+MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM, DbrxForCausalLM)
+
+# Alternative names for LLM layers
+ATTENTION_NAMES = ["attn", "self_attention", "attention"]
+MODEL_NAMES = ["transformer", "gpt_neox", ".model.decoder"]
+LAYER_NAMES = [
+    "h",
+    "blocks",
+    ".decoder.layers",
+    ".model.layers",
+    ".language_model.layers",
+]
+LN_NAMES = [
+    "final_layer_norm",
+    "ln_f",
+    ".decoder.norm",
+    ".model.norm",
+    ".language_model.norm",
+]
+LM_HEAD_NAMES = ["embed_out"]
+MLP_NAMES = ["block_sparse_moe", "ffn"]
 
 
 def text_config(model):
@@ -64,24 +95,6 @@ def get_hidden_size(model):
         if hidden_size_key in cfg:
             return getattr(cfg, hidden_size_key)
     raise ValueError(f"No hidden size config key found in {model}")
-
-
-class RenamingError(Exception):
-    """Exception raised when the renaming of modules is not properly done."""
-
-
-ATTENTION_NAMES = ["attn", "self_attention", "attention"]
-MODEL_NAMES = ["transformer", "gpt_neox", ".model.decoder"]
-LAYER_NAMES = ["h", ".decoder.layers", ".model.layers", ".language_model.layers"]
-LN_NAMES = [
-    "final_layer_norm",
-    "ln_f",
-    ".decoder.norm",
-    ".model.norm",
-    ".language_model.norm",
-]
-LM_HEAD_NAMES = ["embed_out"]
-MLP_NAMES = ["block_sparse_moe"]
 
 
 def get_rename_dict(
@@ -341,9 +354,6 @@ def get_ignores(model) -> list[str]:
         logger.warning(message)
         ignores.append("mlp")
     return ignores
-
-
-MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM)
 
 
 def mlp_returns_tuple(model) -> bool:

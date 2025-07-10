@@ -101,7 +101,8 @@
             "yujiepan/hunyuan-moe-tiny-random",
             "yujiepan/mpt-tiny-random",
             "yujiepan/falcon-new-tiny-random",
-            "yujiepan/jamba-1.5-tiny-random"
+            "yujiepan/jamba-1.5-tiny-random",
+            "yujiepan/phi-4-flash-tiny-random"
         ],
         "cant_load_with_AutoModelForCausalLM": [
             "yujiepan/tiny-random-swin-patch4-window7-224",
@@ -135,7 +136,8 @@
             "yujiepan/phi-4-multimodal-tiny-random",
             "yujiepan/minicpm4-tiny-random",
             "yujiepan/minimax-m1-tiny-random",
-            "yujiepan/hunyuan-moe-tiny-random"
+            "yujiepan/hunyuan-moe-tiny-random",
+            "yujiepan/phi-4-flash-tiny-random"
         ],
         "cant_forward": [
             "yujiepan/mpt-tiny-random",

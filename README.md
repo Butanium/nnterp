@@ -2,7 +2,7 @@
 
 **A unified interface for all transformer models that puts best `NNsight` practices for LLMs in everyone's hands.**
 
-Built on top of [nnsight](https://github.com/ndif-team/nnsight), `nnterp` provides a standardized interface for mechanistic interpretability research across all transformer architectures. Unlike `transformer_lens` which reimplements transformers, `nnterp` preserves the original HuggingFace implementations while solving the naming convention chaos through intelligent renaming.
+Built on top of [NNsight](https://github.com/ndif-team/nnsight), `nnterp` provides a standardized interface for mechanistic interpretability research across all transformer architectures. Unlike `transformer_lens` which reimplements transformers, `nnterp` preserves the original HuggingFace implementations while solving the naming convention chaos through intelligent renaming.
 
 ## Why nnterp?
 
@@ -264,7 +264,7 @@ The `transformers` version is pinned to `4.53.x` as it's the only one that was t
 
 ## Opening an issue
 Before opening an issue, make sure that:
-- You have a MWE (minimal working example) that reproduces the issue, and if possible, the equivalent code using `NNsight.LanguageModel`. If the nnsight MWE also fails, please open an issue on the [nnsight repository](https://github.com/ndif-team/nnsight/issues/).
+- You have a MWE (minimal working example) that reproduces the issue, and if possible, the equivalent code using `NNsight.LanguageModel`. If the NNsight MWE also fails, please open an issue on the [NNsight repository](https://github.com/ndif-team/nnsight/issues/).
 
 ## Development
 - Install the development environment with `make dev` or `uv sync --all-extras && uv pip install flash-attn --no-build-isolation`

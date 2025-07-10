@@ -135,8 +135,10 @@ def pytest_sessionfinish(session, exitstatus):
     log_folder = PROJECT_ROOT / "data" / "test_logs"
     log_folder.mkdir(exist_ok=True)
 
-    timestamp = int(time.time())
-    log_entry_file = log_folder / f"{timestamp}.json"
+    file_name = str(int(time.time()))
+    if session.config._has_deselected:
+        file_name += "_partial"
+    log_entry_file = log_folder / f"{file_name}.json"
     print(f"Saving log entry to {log_entry_file}")
 
     log_entry = {
