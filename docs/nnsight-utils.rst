@@ -18,7 +18,7 @@ Setup
    # Load model with proper renaming
    model = LanguageModel(
        "gpt2", 
-       rename=dict(transformer="model", h="layers", ln_f="norm", attn="self_attn")
+       rename=dict(transformer="model", h="layers", ln_f="ln_final", attn="self_attn")
    )
 
 Layer Access
@@ -80,6 +80,6 @@ These functions work with NNsight models that have been renamed to use llama/gem
 
 - ``model.layers`` (not ``transformer.h``)
 - ``layers[i].self_attn`` (not ``layers[i].attn``)
-- ``model.norm`` (not ``ln_f``)
+- ``model.ln_final`` (not ``ln_f``)
 
 For other architectures, use ``StandardizedTransformer`` which handles renaming automatically.

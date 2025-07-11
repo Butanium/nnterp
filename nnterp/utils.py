@@ -27,9 +27,17 @@ def display_markdown(text: str):
     display(Markdown(text))
 
 
+def display_source(source: str):
+    display_markdown(f"```py\n{source}\n```")
+
+
 class DummyCache:
     def to_legacy_cache(self):
         return None
+
+
+def dummy_inputs():
+    return {"input_ids": th.tensor([[0, 1, 1]])}
 
 
 def try_with_scan(
@@ -62,7 +70,7 @@ def try_with_scan(
     """
 
     try:
-        with model.scan(th.tensor([[0, 1, 1]]), use_cache=False) as tracer:
+        with model.scan(dummy_inputs(), use_cache=False) as tracer:
             function()
             tracer.stop()
         return True
@@ -81,7 +89,7 @@ def try_with_scan(
                 "Error when trying to scan the model - using .trace() instead (which will dispatch the model)..."
             )
         try:
-            with model.trace(th.tensor([[0, 1, 1]])) as tracer:
+            with model.trace(dummy_inputs()) as tracer:
                 function()
                 tracer.stop()
         except Exception as e2:

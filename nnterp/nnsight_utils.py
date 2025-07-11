@@ -128,7 +128,7 @@ def get_unembed_norm(nn_model: LanguageModel) -> Envoy:
         The Envoy for the last layer norm of the model
     """
     if isinstance(nn_model, StandardizedTransformer):
-        return nn_model.norm
+        return nn_model.ln_final
     return nn_model.model.norm
 
 

@@ -1,10 +1,12 @@
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import Enum
 from loguru import logger
 
 import torch as th
 from nnsight import Envoy
 from .nnsight_utils import TraceTensor
-from .utils import is_notebook, display_markdown, try_with_scan
+from .utils import is_notebook, display_markdown, try_with_scan, dummy_inputs
 
 
 # Dummy class for missing transformer architectures
@@ -41,9 +43,41 @@ try:
 except ImportError:
     DbrxForCausalLM = ArchitectureNotFound
 
+try:
+    from transformers import GPTJForCausalLM
+except ImportError:
+    GPTJForCausalLM = ArchitectureNotFound
+
 
 class RenamingError(Exception):
     """Exception raised when the renaming of modules is not properly done."""
+
+
+class AttnProbFunction(ABC):
+    @abstractmethod
+    def get_attention_prob_source(
+        self, attention_module, return_module_source: bool = False
+    ):
+        """
+        Get the attention probabilities source for a given attention module. If return_module_source is True,
+        return the full module source from where the attention probabilities are computed.
+        """
+        pass
+
+    def __call__(self, attention_module, return_module_source: bool = False):
+        return self.get_attention_prob_source(attention_module, return_module_source)
+
+
+@dataclass
+class RenameConfig:
+    attn_name: str | list[str] | None = None
+    mlp_name: str | list[str] | None = None
+    ln_final_name: str | list[str] | None = None
+    lm_head_name: str | list[str] | None = None
+    model_name: str | list[str] | None = None
+    layers_name: str | list[str] | None = None
+    mlp_returns_tuple: bool | None = None
+    attn_prob_source: AttnProbFunction | None = None
 
 
 # Configuration keys for getting the number of attention heads and hidden size
@@ -52,6 +86,8 @@ HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
 
 # Models that return a tuple for the mlp output
 MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM, DbrxForCausalLM)
+# Models with no mlp module
+IGNORE_MLP_MODELS = (OPTForCausalLM,)
 
 # Alternative names for LLM layers
 ATTENTION_NAMES = ["attn", "self_attention", "attention", "norm_attn_norm"]
@@ -67,9 +103,10 @@ LN_NAMES = [
     "final_layer_norm",
     "ln_f",
     "norm_f",
-    ".decoder.norm",
-    ".model.norm",
-    ".language_model.norm",
+    "norm",
+    ".decoder.ln_final",
+    ".model.ln_final",
+    ".language_model.ln_final",
 ]
 LM_HEAD_NAMES = ["embed_out"]
 MLP_NAMES = ["block_sparse_moe", "ffn"]
@@ -82,55 +119,55 @@ def text_config(model):
     return cfg
 
 
-def get_num_attention_heads(model):
+def get_num_attention_heads(model, raise_error: bool = True):
     cfg = text_config(model)
     for attn_head_key in ATTN_HEAD_CONFIG_KEYS:
         if attn_head_key in cfg:
             return getattr(cfg, attn_head_key)
-    raise ValueError(f"No attn head config key found in {model}")
+    if raise_error:
+        raise ValueError(f"No attn head config key found in {model}")
+    return None
 
 
-def get_hidden_size(model):
+def get_hidden_size(model, raise_error: bool = True):
     cfg = text_config(model)
     for hidden_size_key in HIDDEN_SIZE_CONFIG_KEYS:
         if hidden_size_key in cfg:
             return getattr(cfg, hidden_size_key)
-    raise ValueError(f"No hidden size config key found in {model}")
+    if raise_error:
+        raise ValueError(f"No hidden size config key found in {model}")
+    return None
 
 
 def get_rename_dict(
-    attn_name: str | list[str] | None = None,
-    mlp_name: str | list[str] | None = None,
-    ln_final_name: str | list[str] | None = None,
-    lm_head_name: str | list[str] | None = None,
-    model_name: str | list[str] | None = None,
-    layers_name: str | list[str] | None = None,
+    rename_config: RenameConfig | None = None,
 ) -> dict[str, str]:
+    rename_dict = {}
+    if rename_config is not None:
 
-    rename_dict = (
-        {name: "self_attn" for name in ATTENTION_NAMES}
-        | {name: "model" for name in MODEL_NAMES}
+        def update_rename_dict(renaming: str, value: str | list[str] | None):
+            if value is not None:
+                if isinstance(value, str):
+                    rename_dict[value] = renaming
+                else:
+                    for name in value:
+                        rename_dict[name] = renaming
+
+        update_rename_dict("model", rename_config.model_name)
+        update_rename_dict("layers", rename_config.layers_name)
+        update_rename_dict("self_attn", rename_config.attn_name)
+        update_rename_dict("mlp", rename_config.mlp_name)
+        update_rename_dict("ln_final", rename_config.ln_final_name)
+        update_rename_dict("lm_head", rename_config.lm_head_name)
+
+    rename_dict.update(
+        {name: "model" for name in MODEL_NAMES}
         | {name: "layers" for name in LAYER_NAMES}
-        | {name: "norm" for name in LN_NAMES}
-        | {name: "lm_head" for name in LM_HEAD_NAMES}
+        | {name: "self_attn" for name in ATTENTION_NAMES}
         | {name: "mlp" for name in MLP_NAMES}
+        | {name: "ln_final" for name in LN_NAMES}
+        | {name: "lm_head" for name in LM_HEAD_NAMES}
     )
-
-    def update_rename_dict(renaming: str, value: str | list[str] | None):
-        if value is not None:
-            if isinstance(value, str):
-                rename_dict[value] = renaming
-            else:
-                for name in value:
-                    rename_dict[name] = renaming
-
-    update_rename_dict("self_attn", attn_name)
-    update_rename_dict("mlp", mlp_name)
-    update_rename_dict("norm", ln_final_name)
-    update_rename_dict("lm_head", lm_head_name)
-    update_rename_dict("model", model_name)
-    update_rename_dict("layers", layers_name)
-
     return rename_dict
 
 
@@ -232,13 +269,24 @@ def gpt2_attention_prob_source(attention_module, return_module_source: bool = Fa
         )
 
 
+def gptj_attention_prob_source(attention_module, return_module_source: bool = False):
+    if return_module_source:
+        return attention_module.source.self__attn_0.source
+    else:
+        return attention_module.source.self__attn_0.source.self_attn_dropout_0
+
+
 class AttentionProbabilitiesAccessor:
-    def __init__(self, model):
+    def __init__(self, model, rename_config: RenameConfig | None = None):
         self.model = model
-        if isinstance(model._model, BloomForCausalLM):
+        if rename_config is not None and rename_config.attn_prob_source is not None:
+            self.source_attr = rename_config.attn_prob_source
+        elif isinstance(model._model, BloomForCausalLM):
             self.source_attr = bloom_attention_prob_source
         elif isinstance(model._model, GPT2LMHeadModel):
             self.source_attr = gpt2_attention_prob_source
+        elif isinstance(model._model, GPTJForCausalLM):
+            self.source_attr = gptj_attention_prob_source
         else:
             self.source_attr = default_attention_prob_source
         self.enabled = True
@@ -275,7 +323,7 @@ class AttentionProbabilitiesAccessor:
                     raise RenamingError("Attention probabilities do not sum to 1.")
 
         if use_trace:
-            with self.model.trace(th.tensor([[0, 1, 1]])):
+            with self.model.trace(dummy_inputs()):
                 test_prob_source()
             return
 
@@ -343,9 +391,6 @@ class AttentionProbabilitiesAccessor:
             display_markdown(markdown_text)
 
 
-IGNORE_MLP_MODELS = (OPTForCausalLM,)
-
-
 def get_ignores(model) -> list[str]:
     ignores = []
     if isinstance(model, IGNORE_MLP_MODELS):
@@ -357,36 +402,38 @@ def get_ignores(model) -> list[str]:
     return ignores
 
 
-def mlp_returns_tuple(model) -> bool:
+def mlp_returns_tuple(model, rename_config: RenameConfig | None = None) -> bool:
+    if rename_config is not None and rename_config.mlp_returns_tuple is not None:
+        return rename_config.mlp_returns_tuple
     return isinstance(model, MLP_RETURNS_TUPLE_MODELS)
 
 
-def check_io(std_model, repo_id: str, ignores: list[str]):
+def check_io(std_model, model_name: str, ignores: list[str]):
     batch_size, seq_len = std_model.input_size
     hidden_size = get_hidden_size(std_model)
     layer_input = std_model.layers_input[0]
     if not isinstance(layer_input, th.Tensor):
         raise ValueError(
-            f"layers_input[0] is not a tensor in {repo_id} architecture. Found type {type(layer_input)}. This means it's not properly initialized."
+            f"layers_input[0] is not a tensor in {model_name} architecture. Found type {type(layer_input)}. This means it's not properly initialized."
         )
     if layer_input.shape != (batch_size, seq_len, hidden_size):
         raise ValueError(
-            f"layers_input[0] has shape {layer_input.shape} != {(batch_size, seq_len, hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
+            f"layers_input[0] has shape {layer_input.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
         )
     if "attention" not in ignores:
         attention_input = std_model.attentions_input[0]
         attention_output = std_model.attentions_output[0]
         if not isinstance(attention_input, th.Tensor):
             raise ValueError(
-                f"attentions_input[0] is not a tensor in {repo_id} architecture. Found type {type(attention_input)}. This means it's not properly initialized."
+                f"attentions_input[0] is not a tensor in {model_name} architecture. Found type {type(attention_input)}. This means it's not properly initialized."
             )
         if attention_input.shape != (batch_size, seq_len, hidden_size):
             raise ValueError(
-                f"attentions_input[0] has shape {attention_input.shape} != {(batch_size, seq_len, hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
+                f"attentions_input[0] has shape {attention_input.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
             )
         if not isinstance(attention_output, th.Tensor):
             raise ValueError(
-                f"attentions_output[0] is not a tensor in {repo_id} architecture. Found type {type(attention_output)}. This means it's not properly initialized."
+                f"attentions_output[0] is not a tensor in {model_name} architecture. Found type {type(attention_output)}. This means it's not properly initialized."
             )
         if attention_output.shape != (
             batch_size,
@@ -394,74 +441,74 @@ def check_io(std_model, repo_id: str, ignores: list[str]):
             hidden_size,
         ):
             raise ValueError(
-                f"attentions_output[0] has shape {attention_output.shape} != {(batch_size, seq_len, hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
+                f"attentions_output[0] has shape {attention_output.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
             )
     if "mlp" not in ignores:
         mlp_input = std_model.mlps_input[0]
         mlp_output = std_model.mlps_output[0]
         if not isinstance(mlp_input, th.Tensor):
             raise ValueError(
-                f"mlps_input[0] is not a tensor in {repo_id} architecture. Found type {type(mlp_input)}. This means it's not properly initialized."
+                f"mlps_input[0] is not a tensor in {model_name} architecture. Found type {type(mlp_input)}. This means it's not properly initialized."
             )
         if mlp_input.shape != (batch_size, seq_len, std_model.config.hidden_size):
             raise ValueError(
-                f"mlps_input[0] has shape {mlp_input.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
+                f"mlps_input[0] has shape {mlp_input.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
             )
         if not isinstance(mlp_output, th.Tensor):
             raise ValueError(
-                f"mlps_output[0] is not a tensor in {repo_id} architecture. Found type {type(mlp_output)}. This means it's not properly initialized."
+                f"mlps_output[0] is not a tensor in {model_name} architecture. Found type {type(mlp_output)}. This means it's not properly initialized."
             )
         if mlp_output.shape != (batch_size, seq_len, std_model.config.hidden_size):
             raise ValueError(
-                f"mlps_output[0] has shape {mlp_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
+                f"mlps_output[0] has shape {mlp_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
             )
     layer_output = std_model.layers_output[0]
     if not isinstance(layer_output, th.Tensor):
         raise ValueError(
-            f"layers_output[0] is not a tensor in {repo_id} architecture. Found type {type(layer_output)}. This means it's not properly initialized."
+            f"layers_output[0] is not a tensor in {model_name} architecture. Found type {type(layer_output)}. This means it's not properly initialized."
         )
     if layer_output.shape != (batch_size, seq_len, std_model.config.hidden_size):
         raise ValueError(
-            f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {repo_id} architecture. This means it's not properly initialized."
+            f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
         )
 
 
 def check_model_renaming(
-    std_model, repo_id: str, ignores: list[str], allow_dispatch: bool
+    std_model, model_name: str, ignores: list[str], allow_dispatch: bool
 ):
 
     if not hasattr(std_model, "layers"):
         raise RenamingError(
-            f"Could not find layers module in {repo_id} architecture. This means that it was not properly renamed.\n"
+            f"Could not find layers module in {model_name} architecture. This means that it was not properly renamed.\n"
             "Please pass the name of the layers module to the layers_rename argument."
         )
-    if not hasattr(std_model, "norm"):
+    if not hasattr(std_model, "ln_final"):
         raise RenamingError(
-            f"Could not find norm module in {repo_id} architecture. This means that it was not properly renamed.\n"
-            "Please pass the name of the norm module to the ln_final_rename argument."
+            f"Could not find ln_final module in {model_name} architecture. This means that it was not properly renamed.\n"
+            "Please pass the name of the ln_final module to the ln_final_rename argument."
         )
     if not hasattr(std_model, "lm_head"):
         raise RenamingError(
-            f"Could not find lm_head module in {repo_id} architecture. This means that it was not properly renamed.\n"
+            f"Could not find lm_head module in {model_name} architecture. This means that it was not properly renamed.\n"
             "Please pass the name of the lm_head module to the lm_head_rename argument."
         )
     if "attention" not in ignores:
         if not hasattr(std_model.layers[0], "self_attn"):
             raise RenamingError(
-                f"Could not find self_attn module in {repo_id} architecture. This means that it was not properly renamed.\n"
+                f"Could not find self_attn module in {model_name} architecture. This means that it was not properly renamed.\n"
                 "Please pass the name of the self_attn module to the attn_rename argument."
             )
     if "mlp" not in ignores:
         if not hasattr(std_model.layers[0], "mlp"):
             raise RenamingError(
-                f"Could not find mlp module in {repo_id} architecture. This means that it was not properly renamed.\n"
+                f"Could not find mlp module in {model_name} architecture. This means that it was not properly renamed.\n"
                 "Please pass the name of the mlp module to the mlp_rename argument."
             )
 
     try_with_scan(
         std_model,
-        lambda: check_io(std_model, repo_id, ignores),
-        RenamingError(f"Could not check the IO of {repo_id}"),
+        lambda: check_io(std_model, model_name, ignores),
+        RenamingError(f"Could not check the IO of {model_name}"),
         allow_dispatch,
         errors_to_raise=(RenamingError,),
     )

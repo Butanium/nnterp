@@ -12,7 +12,7 @@ Different transformer models use different naming conventions. nnterp standardiz
    ├── layers
    │   ├── self_attn
    │   └── mlp
-   ├── norm
+   ├── ln_final
    └── lm_head
 
 Loading Models
@@ -78,7 +78,7 @@ Use saved activations:
 Built-in Methods
 ----------------
 
-Project to vocabulary (apply unembed norm and lm_head to an activation):
+Project to vocabulary (apply unembed ln_final and lm_head to an activation):
 
 .. code-block:: python
 

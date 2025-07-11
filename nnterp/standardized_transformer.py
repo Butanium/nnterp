@@ -5,6 +5,7 @@ from typing import Callable
 from loguru import logger
 from pathlib import Path
 import torch as th
+from torch.nn import Module
 from torch import Size
 from nnsight import LanguageModel
 import transformers
@@ -22,6 +23,9 @@ from .rename_utils import (
     check_model_renaming,
     AttentionProbabilitiesAccessor,
     RenamingError,
+    get_num_attention_heads,
+    get_hidden_size,
+    RenameConfig,
 )
 
 GetLayerObject = Callable[[int], TraceTensor]
@@ -68,47 +72,6 @@ else:
     status = None
 
 
-def load_model(
-    model_name: str,
-    trust_remote_code=False,
-    no_space_on_bos=False,
-    rename_kwargs=None,
-    use_tl=False,
-    **kwargs_,
-):
-    """
-    Load a model into nnsight. If use_tl is True, a TransformerLens model is loaded.
-    Default device is "auto" and default torch_dtype is th.float16.
-
-    Args:
-        no_space_on_bos: If True, add_prefix_space is set to False in the tokenizer. It is useful if you want to use the tokenizer to get the first token of a word when it's not after a space.
-    """
-    logger.warning(
-        "This function is deprecated and will be removed in the future. Use nnterp.StandardizedTransformer instead."
-    )
-    if rename_kwargs is None:
-        rename_kwargs = {}
-    kwargs = dict(torch_dtype=th.bfloat16, trust_remote_code=trust_remote_code)
-    if use_tl:
-        raise ValueError("TransformerLens is no longer supported as of nnterp v1.0.0")
-    else:
-        kwargs["device_map"] = "auto"
-        tokenizer_kwargs = kwargs_.pop("tokenizer_kwargs", {})
-        if no_space_on_bos:
-            tokenizer_kwargs.update(
-                dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
-            )
-        kwargs.update(kwargs_)
-        rename_modules_dict = get_rename_dict(**rename_kwargs)
-        model = StandardizedTransformer(
-            model_name,
-            tokenizer_kwargs=tokenizer_kwargs,
-            rename=rename_modules_dict,
-            **kwargs,
-        )
-        return model
-
-
 def get_layer_output(model: StandardizedTransformer, layer: int) -> TraceTensor:
     return model.layers_output[layer]
 
@@ -123,7 +86,7 @@ class StandardizedTransformer(LanguageModel):
         ├── layers
         │   ├── self_attn
         │   └── mlp
-        ├── norm
+        ├── ln_final
         └── lm_head
 
     In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:
@@ -140,33 +103,29 @@ class StandardizedTransformer(LanguageModel):
         repo_id (str): Hugging Face repository ID or path of the model to load.
         trust_remote_code (bool, optional): If True, remote code will be trusted when
             loading the model. Defaults to False.
-        attn_rename (str, optional): Extra module name to rename to ``self_attn``.
-        mlp_rename (str, optional): Extra module name to rename to ``mlp``.
-        ln_final_rename (str, optional): Extra module name to rename to ``ln_final``.
-        lm_head_rename (str, optional): Extra module name to rename to ``lm_head``.
-        model_rename (str, optional): Extra module name to rename to ``model``.
-        layers_rename (str, optional): Extra module name to rename to ``layers``.
         check_renaming (bool, default True): If True, the renaming of modules is validated.
             Defaults to True.
         allow_dispatch (bool, default True): If True, allows using trace() to dispatch the model
             when scan() fails during renaming checks. Defaults to True. You should set this to false
             if you plan to use the model remotely.
         check_attn_probs_with_trace (bool, default True): If True, the model will be dispatched and a test will ensure that the attention probabilities returned sum to 1.
+        mlp_returns_tuple (bool, default False): Set to true if your model returns a tuple from the mlp. This is the case for most MoEs.
+        attn_rename (str, optional): Extra module name to rename to ``self_attn``.
+        mlp_rename (str, optional): Extra module name to rename to ``mlp``.
+        ln_final_rename (str, optional): Extra module name to rename to ``ln_final``.
+        lm_head_rename (str, optional): Extra module name to rename to ``lm_head``.
+        model_rename (str, optional): Extra module name to rename to ``model``.
+        layers_rename (str, optional): Extra module name to rename to ``layers``.
     """
 
     def __init__(
         self,
-        repo_id: str,
+        model: str | Module,
         trust_remote_code: bool = False,
-        attn_rename: str | None = None,
-        mlp_rename: str | None = None,
-        ln_final_rename: str | None = None,
-        lm_head_rename: str | None = None,
-        model_rename: str | None = None,
-        layers_rename: str | None = None,
         check_renaming: bool = True,
         allow_dispatch: bool = True,
         check_attn_probs_with_trace: bool = True,
+        rename_config: RenameConfig | None = None,
         **kwargs,
     ):
         kwargs.setdefault("device_map", "auto")
@@ -186,14 +145,7 @@ class StandardizedTransformer(LanguageModel):
             )
             impl = "eager"
         tokenizer_kwargs = kwargs.pop("tokenizer_kwargs", {})
-        rename = get_rename_dict(
-            attn_name=attn_rename,
-            mlp_name=mlp_rename,
-            ln_final_name=ln_final_rename,
-            lm_head_name=lm_head_rename,
-            model_name=model_rename,
-            layers_name=layers_rename,
-        )
+        rename = get_rename_dict(rename_config=rename_config)
         user_rename = kwargs.pop("rename", None)
         if user_rename is not None:
             logger.info(
@@ -201,25 +153,29 @@ class StandardizedTransformer(LanguageModel):
             )
             rename.update(user_rename)
         super().__init__(
-            repo_id,
+            model,
             attn_implementation=impl,
             tokenizer_kwargs=tokenizer_kwargs,
             trust_remote_code=trust_remote_code,
             rename=rename,
             **kwargs,
         )
+        if isinstance(model, str):
+            model_name = model
+        else:
+            model_name = model.__class__.__name__
         if status is not None:
             if self._model.__class__.__name__ in status["failed_test_classes"]:
                 logger.warning(
-                    f"{repo_id}'s architecture has failed tests for this transformer version. Use at your own risks. If you want to be safe use only the renaming feature of nnterp, and do not use model.layers_output and other accessors"
+                    f"{model_name}'s architecture has failed tests for this transformer version. Use at your own risks. If you want to be safe use only the renaming feature of nnterp, and do not use model.layers_output and other accessors"
                 )
             if self._model.__class__.__name__ not in status["tested_classes"]:
                 logger.warning(
-                    f"{repo_id}'s architecture is not tested. This may cause unexpected behavior. It is recommended to check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()` if you plan on using it (prettier in a notebook).\nFeel free to open an issue on github (https://github.com/butanium/nnterp/issues) or run the tests yourself with a toy model if you want to add test coverage for this model."
+                    f"{model_name}'s architecture is not tested. This may cause unexpected behavior. It is recommended to check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()` if you plan on using it (prettier in a notebook).\nFeel free to open an issue on github (https://github.com/butanium/nnterp/issues) or run the tests yourself with a toy model if you want to add test coverage for this model."
                 )
             elif self._model.__class__.__name__ in status["failed_attn_probs_classes"]:
                 logger.warning(
-                    f"{repo_id}'s architecture has failed attention probabilities tests for this transformer version. Do not use model.attention_probabilities"
+                    f"{model_name}'s architecture has failed attention probabilities tests for this transformer version. Do not use model.attention_probabilities"
                 )
         ignores = get_ignores(self._model)
 
@@ -241,12 +197,18 @@ class StandardizedTransformer(LanguageModel):
             self,
             "mlp",
             IOType.OUTPUT,
-            returns_tuple=mlp_returns_tuple(self._model),
+            returns_tuple=mlp_returns_tuple(self._model, rename_config),
         )
+        
         self.num_layers = len(self.layers)
+        self.num_heads = get_num_attention_heads(self._model, raise_error=False)
+        self.hidden_size = get_hidden_size(self._model, raise_error=False)
+
         if check_renaming:
-            check_model_renaming(self, repo_id, ignores, allow_dispatch)
-        self.attention_probabilities = AttentionProbabilitiesAccessor(self)
+            check_model_renaming(self, model_name, ignores, allow_dispatch)
+        self.attention_probabilities = AttentionProbabilitiesAccessor(
+            self, rename_config=rename_config
+        )
         if check_renaming:
             try:
                 self.attention_probabilities.check_source(
@@ -255,7 +217,7 @@ class StandardizedTransformer(LanguageModel):
                 )
             except Exception as e:
                 logger.error(
-                    f"Attention probabilities is not available for {repo_id} architecture. Disabling it. Error:\n{e}"
+                    f"Attention probabilities is not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
                 self.attention_probabilities.disable()
 
@@ -264,13 +226,13 @@ class StandardizedTransformer(LanguageModel):
         return self.attention_probabilities.enabled
 
     @property
+    def input_size(self) -> Size:
+        return self.inputs[1]["input_ids"].shape
+
+    @property
     def logits(self) -> TraceTensor:
         """Returns the lm_head output"""
         return self.output.logits
-
-    @property
-    def input_size(self) -> Size:
-        return self.inputs[1]["input_ids"].shape
 
     @property
     def next_token_probs(self) -> TraceTensor:
@@ -332,5 +294,5 @@ class StandardizedTransformer(LanguageModel):
             ] += factor * steering_vector.to(layer_device)
 
     def project_on_vocab(self, h: TraceTensor) -> TraceTensor:
-        h = self.norm(h)
+        h = self.ln_final(h)
         return self.lm_head(h)
