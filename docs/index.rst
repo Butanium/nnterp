@@ -41,6 +41,7 @@ Quick example:
    basic-usage
    interventions
    advanced-features
+   adding-model-support
    nnsight-utils
 
 .. toctree::

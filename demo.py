@@ -17,7 +17,7 @@
 # ├── layers
 # │   ├── self_attn
 # │   └── mlp
-# ├── norm
+# ├── ln_final
 # └── lm_head
 # ```
 
@@ -35,7 +35,7 @@ print(AutoModelForCausalLM.from_pretrained("gpt2"))
 from nnsight import LanguageModel
 
 model = LanguageModel(
-    "gpt2", rename=dict(transformer="model", h="layers", ln_f="norm", attn="self_attn")
+    "gpt2", rename=dict(transformer="model", h="layers", ln_f="ln_final", attn="self_attn")
 )
 print(model)
 # Access the attn module as if it was a llama model
@@ -180,7 +180,7 @@ assert th.allclose(sums, th.ones_like(sums))
 nnterp_gpt2.attention_probabilities.print_source()  # pretty markdown display in a notebook
 
 # %% [markdown]
-# ## 5. Activation Collection
+# ## 5. Specific Token Activation Collection
 #
 # `nnterp` provides utilities for collecting activations efficiently:
 
@@ -363,6 +363,195 @@ plot_topk_tokens(
 df = prompts_to_df(prompts, demo_model.tokenizer)
 print("\nPrompts DataFrame:")
 display(df)
+
+# %% [markdown]
+# # Advanced usage
+
+# %% [markdown]
+# ## Adding support for new models
+#
+# Sometime, your model might not be supported yet by nnterp. In this case, you'll be able to use a `RenameConfig` to properly initialize your model.
+#
+# In this section, I'll show you the steps I took to add support for the `gpt2` to `nnterp`.
+
+# %% [markdown]
+# ###  Renaming a module not automatically renamed
+#
+# Let's say that you load a `gpt2` model that is a bit special: every module is called "super_module" instead of "module".
+#
+# First, let's build such a model:
+
+# %%
+from transformers import AutoModelForCausalLM
+
+model = AutoModelForCausalLM.from_pretrained("gpt2")
+for layer in model.transformer.h:
+    layer.super_mlp = layer.mlp
+    delattr(layer, "mlp")
+    layer.super_attn = layer.attn
+    delattr(layer, "attn")
+model.transformer.super_h = model.transformer.h
+delattr(model.transformer, "h")
+# Let's keep the final layer norm as is
+# model.transformer.super_ln_f = model.transformer.ln_f
+# delattr(model.transformer, "ln_f")
+model.super_transformer = model.transformer
+delattr(model, "transformer")
+print(model)
+
+# %% [markdown]
+# now if we try to use nnterp, the renaming check automatically performed will fail:
+
+# %%
+from nnterp import StandardizedTransformer
+from traceback import print_exc 
+
+try:
+    StandardizedTransformer(model)
+except Exception as e:
+    print_exc()
+
+# %% [markdown]
+# `nnterp` can't find the layers because they're located under `super_transformer`, that nnterp doesn't know about. We have 2 choices in this case:
+# 1. Rename `super_transformer` to `model` and `super_h` to `layers` such that it matches the `model.model.layers` Llama architecture and let `nnterp` do the rest.
+# 2. Rename `super_transformer.super_h` directly to `layers`, matching the StandardizedTransformer architecture.
+#
+# Let's try the second option first. And let's not forget that we still need to rename
+#
+# In order to do that we can instantiate a `StandardizedTransformer` with a `RenameConfig` with the correct aliases provided.
+
+# %%
+from nnterp.rename_utils import RenameConfig
+
+rename_cfg = RenameConfig(
+    layers_name=".super_transformer.super_h",
+    attn_name="super_attn",
+    mlp_name="super_mlp",
+)
+try:
+    StandardizedTransformer(model, rename_config=rename_cfg)
+except Exception as e:
+    print_exc()
+
+# %% [markdown]
+# We're still getting an error because `nnterp` doesn't find the `ln_f`. This is because `nnterp` will automatically rename the `ln_f` to `ln_final`, but fails to rename `model.ln_final` to `ln_final`. Again, we can either rename `super_transformer` to `model` or directly rename `super_transformer.ln_f` to `ln_final`.
+#
+# ⚠️ The code will still fail, because our "super_gpt2" model can't run its forward pass as we deleted its modules.
+
+# %%
+rename_cfg = RenameConfig(
+    model_name="super_transformer",
+    layers_name="super_h",
+    attn_name="super_attn",
+    mlp_name="super_mlp",
+    ln_final_name=".super_transformer.ln_f",
+)
+from transformers import AutoConfig
+
+try:
+    StandardizedTransformer(
+        model, rename_config=rename_cfg, config=AutoConfig.from_pretrained("gpt2")
+    )
+except Exception as e:
+    print_exc()
+
+# %% [markdown]
+# ## Adding attention probabilities support
+
+# %% [markdown]
+# To access the attention probabilities, `nnterp` uses the `NNsight` ability to hook on most intermediate variables of the forward pass. This is very architecture dependent, as even 2 equivalent models, if they use different names for the intermediate variables, will need different hooks.
+#
+# As I'm writing this tutorial, I'm adding support for attention probabilities for `GPTJ` models.
+
+# %%
+from nnterp import StandardizedTransformer
+gptj = StandardizedTransformer("yujiepan/gptj-tiny-random")
+
+# %% [markdown]
+# As you can see, when you load a model,`nnterp` will automatically test if the attention probabilities hook is working and returns a tensor of shape `(batch_size, num_heads, seq_len, seq_len)` where the last dimension sums to 1. In this case, the test failed and `nnterp` logs the error.
+#
+# Now let's look at the `yujiepan/gptj-tiny-random` forward pass and try to understand where are the attention probabilities computed
+
+# %%
+from nnterp.utils import display_source
+
+display_source(gptj.attentions[0].source)
+
+# %% [markdown]
+# Lines 60-61:
+# ```py
+#                                 60     # compute self-attention: V x Softmax(QK^T)
+#  self__attn_0                -> 61     attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
+#  ```
+# ⚠️ Be careful! if you set the hook here, you'll be able to successfully access the attention probabilities, but not to edit them! ⚠️
+#
+# We need to check the source of `self__attn_0` to see where `attn_weights` is used. In order to access a deeper variable like this, we have to actually run the model with `trace` or `scan`. I'd advise to start with `scan` first, but switch to `trace` if you encounter an error.
+
+# %%
+with gptj.scan("a"):
+    display_source(gptj.attentions[0].source.self__attn_0.source)
+
+# %% [markdown]
+# Here, line 20-24:
+# ```py
+#  self_attn_dropout_0     -> 20     attn_weights = self.attn_dropout(attn_weights)
+#                             21 
+#                             22     # Mask heads if we want to
+#                             23     if head_mask is not None:
+#                             24         attn_weights = attn_weights * head_mask
+# ```
+#
+# In the current `NNsight` version, the results of operators like `*` are not hooked. But even if they were, I'd be careful to use line 24 here, as it's inside a `if` statement. Therefore, we'll use `self_attn_dropout_0` instead.
+#
+# Note that we could also look at `torch_matmul_1` input and edit the value here. However, this looks less robust to me as it assumes this is the only place where `attn_weights` is used.
+
+# %%
+import torch as th
+with gptj.scan(th.tensor([[1, 2, 3]])):
+    print(gptj.attentions[0].source.self__attn_0.source.self_attn_dropout_0.output.shape)
+
+# %% [markdown]
+# Nice! The shape looks good. Now we can initialize our model with the right RenameConfig, and let `nnterp` run the tests for us.
+#
+# To do this, we'll need to create a `AttnProbFunction` and implement the `get_attention_prob_source` method.
+
+# %%
+from nnterp.rename_utils import AttnProbFunction, RenameConfig
+
+
+class GPTJAttnProbFunction(AttnProbFunction):
+
+    def get_attention_prob_source(
+        self, attention_module, return_module_source: bool = False
+    ):
+        if return_module_source:
+            # in this case, return source of the module from where the attention probabilities are computed
+            return attention_module.source.self__attn_0.source
+        else:
+            # in this case, return the attention probabilities hook
+            return attention_module.source.self__attn_0.source.self_attn_dropout_0
+
+
+gptj = StandardizedTransformer(
+    "yujiepan/gptj-tiny-random",
+    rename_config=RenameConfig(attn_prob_source=GPTJAttnProbFunction()),
+)
+
+with gptj.trace("Hello world!"):
+    batch_size, seq_len = gptj.input_size
+    attn_probs = gptj.attention_probabilities[0].save()
+    print(f"attn_probs.shape: {attn_probs.shape}")
+    assert attn_probs.shape == (batch_size, gptj.num_heads, seq_len, seq_len)
+    gptj.attention_probabilities[0] = attn_probs / 2
+    corrupt_logits = gptj.logits.save()
+
+with gptj.trace("Hello world!"):
+    clean_logits = gptj.logits.save()
+
+assert gptj.attention_probabilities.enabled
+assert not th.allclose(clean_logits, corrupt_logits)
+summed_attn_probs = attn_probs.sum(dim=-1)
+assert th.allclose(summed_attn_probs, th.ones_like(summed_attn_probs))
 
 # %% [markdown]
 # ## Summary
