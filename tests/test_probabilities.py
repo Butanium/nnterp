@@ -1,5 +1,6 @@
 import torch as th
 from nnterp import StandardizedTransformer
+import pytest
 
 
 def test_print_attn_probabilities_source(model_name):
@@ -17,6 +18,8 @@ def test_access_attn_probabilities(model_name):
         model = StandardizedTransformer(
             model_name, tokenizer_kwargs=dict(padding_side="right")
         )
+        if not model.attn_probs_available:
+            pytest.fail("Attention probabilities are not available for this model")
         prompts = ["Hello, world!", "The quick brown fox jumps"]
         with model.trace(prompts):
             attn_probs = model.attention_probabilities[0].save()
@@ -41,6 +44,8 @@ def test_edit_attn_probabilities(model_name):
         model = StandardizedTransformer(
             model_name, tokenizer_kwargs=dict(padding_side="right")
         )
+        if not model.attn_probs_available:
+            pytest.fail("Attention probabilities are not available for this model")
         prompts = ["Hello, world!", "The quick brown fox jumps"]
         with model.trace(prompts):
             # knocking out the first token

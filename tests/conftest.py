@@ -7,7 +7,6 @@ from pathlib import Path
 import time
 
 import pytest
-import transformers
 from _pytest.outcomes import Skipped
 from loguru import logger
 from nnterp import StandardizedTransformer
@@ -30,6 +29,7 @@ def pytest_configure(config):
     """Initialise per-session flags on the config object."""
     config._has_deselected = False
     config._errors = defaultdict(dict)
+    config._skips = defaultdict(dict)
     config._fail_test_models = defaultdict(list)
     config._fail_attn_probs_models = defaultdict(list)
     config._tested_models = defaultdict(list)
@@ -61,11 +61,14 @@ def pytest_runtest_makereport(item, call):
     is_skip = call.excinfo.errisinstance(Skipped)
     formatted_tb = str(call.excinfo.getrepr(style="long", chain=True))
     error_message = call.excinfo.exconly()
-    config._errors[arch].setdefault(model_name, []).append(
+    if is_skip:
+        lst = config._skips[arch].setdefault(model_name, [])
+    else:
+        lst = config._errors[arch].setdefault(model_name, [])
+    lst.append(
         {
             "test_name": item.name,
             "test_file": item.path.name,
-            "skipped": is_skip,
             "error": error_message,
             "error_traceback": formatted_tb,
             "timestamp": datetime.datetime.now().isoformat(),
@@ -117,12 +120,12 @@ def pytest_sessionfinish(session, exitstatus):
                 logger.warning(f"Error loading {data_file}: {e}")
 
     try:
-        existing_data = _update_status(existing_data, success, config)
+        existing_data = _update_status(existing_data, config)
     except Exception as e:
         if existing_data == {}:
             raise e
         logger.warning(f"Error updating status: {e}")
-        existing_data = _update_status({}, success, config)
+        existing_data = _update_status({}, config)
 
     if not is_partial:
         with open(data_file, "w") as f:
@@ -146,68 +149,39 @@ def pytest_sessionfinish(session, exitstatus):
         "transformers_version": TRANSFORMERS_VERSION,
         "nnsight_version": NNSIGHT_VERSION,
         "errors": dict(config._errors),
-        "status": existing_data[TRANSFORMERS_VERSION],
+        "status": existing_data.get(TRANSFORMERS_VERSION, {}).get(NNSIGHT_VERSION, {}),
     }
 
     with open(log_entry_file, "w") as f:
         json.dump(log_entry, f, indent=2)
 
 
-def _update_status(prev_status: dict, success: bool, config):
-    new_status = prev_status.get(TRANSFORMERS_VERSION, {})
-
-    defaults = {
-        "available_classes": [],
-        "tested_models": {},
-        "failed_models": {},
-        "failed_classes": [],
-        "failed_test_models": {},
-        "failed_test_classes": [],
-        "failed_attn_probs_models": {},
-        "failed_attn_probs_classes": [],
+def _update_status(prev_status: dict, config):
+    nnsight_unavailable_models = get_failed_models_from_status(load_test_loading_status())
+    transformers_section = prev_status.setdefault(TRANSFORMERS_VERSION, {})
+    new_status = {
+        "fully_available_models": {},
+        "no_probs_available_models": {},
+        "failed_test_models": config._fail_test_models,
+        "failed_attn_probs_models": config._fail_attn_probs_models,
+        "nnsight_unavailable_models": nnsight_unavailable_models,
+        "ran_tests_on": config._tested_models,
     }
-    for key, default_value in defaults.items():
-        new_status.setdefault(key, default_value)
-
-    def update_model_data(models_dict, status_models_key, status_classes_key):
-        for model_class in models_dict:
-            new_status[status_classes_key].append(model_class)
-            model_list = new_status[status_models_key].setdefault(model_class, [])
-            model_list.extend(models_dict[model_class])
-            new_status[status_models_key][model_class] = list(dict.fromkeys(model_list))
-
-    test_loading_status = load_test_loading_status()
-
-    failed_models = get_failed_models_from_status(test_loading_status)
-
-    update_model_data(config._tested_models, "tested_models", "available_classes")
-    update_model_data(failed_models, "failed_models", "failed_classes")
-    update_model_data(
-        config._fail_test_models, "failed_test_models", "failed_test_classes"
-    )
-    update_model_data(
-        config._fail_attn_probs_models,
-        "failed_attn_probs_models",
-        "failed_attn_probs_classes",
-    )
-    new_status["all_tests_passed"] = success
-    new_status["available_classes"] = sorted(
-        set(new_status["available_classes"])
-        - set(new_status["failed_classes"])
-        - set(new_status["failed_test_classes"])
-    )
-    new_status["failed_classes"] = sorted(set(new_status["failed_classes"]))
-    new_status["failed_test_classes"] = sorted(set(new_status["failed_test_classes"]))
-    new_status["failed_attn_probs_classes"] = sorted(
-        set(new_status["failed_attn_probs_classes"])
-    )
-
-    # Incorporate test loading status data if available
-    if TRANSFORMERS_VERSION in test_loading_status:
-        new_status["loading_status"] = test_loading_status[TRANSFORMERS_VERSION]
+    all_failed_tests_models = sum(config._fail_test_models.values(), [])
+    all_failed_attn_probs_models = sum(config._fail_attn_probs_models.values(), [])
+    all_nnsight_unavailable_models = sum(nnsight_unavailable_models.values(), [])
+    all_non_probs_fails = set(all_failed_tests_models + all_nnsight_unavailable_models)
+    all_fails = all_non_probs_fails | set(all_failed_attn_probs_models)
+    for model_class in config._tested_models:
+        fully_available = set(config._tested_models[model_class]) - all_fails
+        if fully_available:
+            new_status["fully_available_models"][model_class] = list(fully_available)
+        available_no_probs = set(config._tested_models[model_class]) - all_non_probs_fails - fully_available
+        if available_no_probs:
+            new_status["no_probs_available_models"][model_class] = list(available_no_probs)
 
     new_status["last_updated"] = datetime.datetime.now().isoformat()
-    prev_status[TRANSFORMERS_VERSION] = new_status
+    transformers_section[NNSIGHT_VERSION] = new_status
     return prev_status
 
 

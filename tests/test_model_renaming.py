@@ -38,7 +38,7 @@ def get_layer_test(model_name, model, renamed, i):
 
 def get_norm_test(model_name, model, renamed):
     if renamed:
-        return model.norm
+        return model.ln_final
     elif model_name in ["gpt2", "bigscience/bigscience-small-testing"]:
         return model.transformer.ln_f
     elif model_name == "Maykeye/TinyLLama-v0":
@@ -154,7 +154,7 @@ def test_renaming_forward(model_name, model_type):
         if not isinstance(renamed_model._model, OPTForCausalLM):
             renamed_model.model.layers[0].mlp
             renamed_model.mlps[0]
-        renamed_model.model.norm
+        renamed_model.model.ln_final
         renamed_model.lm_head
 
         prompt = "Hello, world!"
@@ -452,7 +452,7 @@ def test_standardized_transformer_properties(model_name):
 
         with model.trace(prompt):
             # Test properties
-            unembed_norm = model.norm
+            unembed_norm = model.ln_final
             assert unembed_norm is not None
             next_token_probs = model.next_token_probs.save()
             logits = model.logits.save()

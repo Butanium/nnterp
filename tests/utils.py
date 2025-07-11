@@ -1,15 +1,18 @@
 from loguru import logger
 from functools import lru_cache
+from collections import defaultdict
 import json
+
 from tqdm.autonotebook import tqdm
 import torch as th
 import transformers
-from transformers import AutoModelForCausalLM
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.configuration_utils import PretrainedConfig
 from huggingface_hub import get_collection
 import nnsight
 from nnsight import LanguageModel
 from nnterp import StandardizedTransformer
+from nnterp.utils import dummy_inputs
 
 
 TRANSFORMERS_VERSION = transformers.__version__
@@ -135,7 +138,7 @@ def test_model_availability(model_name):
         return ("available_hf", "cant_load_with_LanguageModel")
 
     try:
-        with nn_model.trace(th.tensor([[1]])):
+        with nn_model.trace(dummy_inputs()):
             pass
     except Exception as e:
         return ("available_hf", "cant_trace_with_LanguageModel")
@@ -307,8 +310,6 @@ def get_available_llama_models():
 
 def get_failed_models_from_status(test_status):
     """Extract failed models grouped by architecture from test_loading_status.json."""
-    from collections import defaultdict
-
     failed_models = defaultdict(list)
     nnsight_status = test_status.get(NNSIGHT_VERSION, {})
     unavailable_models = nnsight_status.get("unavailable_nn_models", [])
