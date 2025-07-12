@@ -36,7 +36,8 @@
           "yujiepan/llama-3.2-tiny-random",
           "yujiepan/meta-llama-3.1-tiny-random",
           "yujiepan/meta-llama-3.2-tiny-random",
-          "yujiepan/meta-llama-3-tiny-random"
+          "yujiepan/meta-llama-3-tiny-random",
+          "authentrics/toy_llm"
         ],
         "BloomForCausalLM": [
           "yujiepan/bloom-tiny-random"
@@ -224,7 +225,8 @@
           "yujiepan/llama-3-tiny-random",
           "yujiepan/deepseek-llm-tiny-random",
           "yujiepan/llama-2-tiny-3layers-random",
-          "yujiepan/llama-2-tiny-random"
+          "yujiepan/llama-2-tiny-random",
+          "authentrics/toy_llm"
         ],
         "BloomForCausalLM": [
           "yujiepan/bloom-tiny-random"
@@ -299,7 +301,8 @@
           "yujiepan/mamba-tiny-random"
         ]
       },
-      "last_updated": "2025-07-12T00:58:02.710359"
+      "last_updated": "2025-07-12T02:07:41.989084",
+      "failed_intervention_models": {}
     }
   }
 }
