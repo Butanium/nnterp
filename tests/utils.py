@@ -1,6 +1,7 @@
 from loguru import logger
 from functools import lru_cache
 from collections import defaultdict
+import copy
 import json
 
 from tqdm.autonotebook import tqdm
@@ -353,6 +354,48 @@ def requires_trust_remote_code(model_name):
     if "_auto_map" in config or "auto_map" in config:
         return True
     return False
+
+
+def merge_partial_status(
+    prev_status: dict, new_status: dict, tested_models: defaultdict
+) -> dict:
+    """Merge partial test results into existing status by updating only the tested models."""
+    merged = copy.deepcopy(prev_status)
+    print(tested_models)
+    # raise Exception("stop")
+    # Remove tested models from previous categories
+    for category in new_status:
+        for arch in tested_models:
+            if category == "nnsight_unavailable_models":
+                continue
+            if category in merged and arch in merged[category]:
+                merged[category][arch] = [
+                    m for m in merged[category][arch] if m not in tested_models[arch]
+                ]
+
+                merged[category][arch] = list(
+                    dict.fromkeys(
+                        merged[category][arch] + new_status[category].get(arch, [])
+                    )
+                )
+
+                if not merged[category][arch]:
+                    del merged[category][arch]
+            else:
+
+                if category not in merged:
+                    merged[category] = {}
+                # print(
+                #     "=" * 10 + f"\n{merged=}\n\n{category=}\n\n{arch=}\n\n{new_status=}"
+                # )
+                if arch in new_status[category]:
+                    merged[category][arch] = new_status[category][arch]
+
+    # Overwrite nnsight_unavailable_models (as it's external)
+    if "nnsight_unavailable_models" in new_status:
+        merged["nnsight_unavailable_models"] = new_status["nnsight_unavailable_models"]
+
+    return merged
 
 
 if __name__ == "__main__":

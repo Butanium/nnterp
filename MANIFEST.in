@@ -20,8 +20,10 @@ exclude .pre-commit-config.yaml
 exclude .gitignore
 exclude uv.lock
 
+# Include tests directory
+recursive-include tests *.py
+
 # Exclude directories
-prune tests
 prune docs
 prune .github
 prune .pytest_cache

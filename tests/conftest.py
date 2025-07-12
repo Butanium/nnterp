@@ -20,9 +20,39 @@ from .utils import (
     load_test_loading_status,
     NNSIGHT_VERSION,
     TRANSFORMERS_VERSION,
+    merge_partial_status,
 )
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+
+
+def pytest_addoption(parser):
+    """Add custom command line options to pytest."""
+    parser.addoption(
+        "--model-names",
+        action="store",
+        nargs="*",
+        help="If provided, only run tests for the given model names.",
+    )
+
+
+def pytest_generate_tests(metafunc):
+    """Dynamically parametrize tests based on command line options."""
+    if "model_name" in metafunc.fixturenames or "llama_like_model_name" in metafunc.fixturenames:
+        model_names = metafunc.config.getoption("model_names")
+        if model_names is not None:
+            all_models = model_names
+            llama_like_models = [m for m in get_available_llama_models() if m in all_models]
+        else:
+            all_models = get_all_available_models()
+            llama_like_models = get_available_llama_models()
+
+    if "model_name" in metafunc.fixturenames:
+        metafunc.parametrize("model_name", all_models)
+
+    if "llama_like_model_name" in metafunc.fixturenames:
+        params = llama_like_models if llama_like_models else [pytest.param(None, marks=pytest.mark.skip(reason="No llama-like models available"))]
+        metafunc.parametrize("llama_like_model_name", params)
 
 
 def pytest_configure(config):
@@ -32,7 +62,9 @@ def pytest_configure(config):
     config._skips = defaultdict(dict)
     config._fail_test_models = defaultdict(list)
     config._fail_attn_probs_models = defaultdict(list)
+    config._fail_intervention_models = defaultdict(list)
     config._tested_models = defaultdict(list)
+    config._is_model_specific = config.getoption("model_names") is not None
 
 
 def pytest_runtest_makereport(item, call):
@@ -83,6 +115,10 @@ def pytest_runtest_makereport(item, call):
                 f"Model {model_name} failed the attention probabilities test"
             )
             config._fail_attn_probs_models[arch].append(model_name)
+    elif item.path.name == "test_interventions.py":
+        if model_name not in config._fail_intervention_models[arch]:
+            logger.warning(f"Model {model_name} failed the intervention test")
+            config._fail_intervention_models[arch].append(model_name)
     elif model_name not in config._fail_test_models[arch]:
         logger.warning(f"Model {model_name} failed a test")
         config._fail_test_models[arch].append(model_name)
@@ -122,7 +158,7 @@ def pytest_sessionfinish(session, exitstatus):
     try:
         existing_data = _update_status(existing_data, config)
     except Exception as e:
-        if existing_data == {}:
+        if existing_data == {} or config._is_model_specific:
             raise e
         logger.warning(f"Error updating status: {e}")
         existing_data = _update_status({}, config)
@@ -157,41 +193,71 @@ def pytest_sessionfinish(session, exitstatus):
 
 
 def _update_status(prev_status: dict, config):
-    nnsight_unavailable_models = get_failed_models_from_status(load_test_loading_status())
+    nnsight_unavailable_models = get_failed_models_from_status(
+        load_test_loading_status()
+    )
     transformers_section = prev_status.setdefault(TRANSFORMERS_VERSION, {})
+    prev_nnsight_status = transformers_section.get(NNSIGHT_VERSION, {})
     new_status = {
         "fully_available_models": {},
         "no_probs_available_models": {},
+        "no_intervention_available_models": {},
         "failed_test_models": config._fail_test_models,
         "failed_attn_probs_models": config._fail_attn_probs_models,
+        "failed_intervention_models": config._fail_intervention_models,
         "nnsight_unavailable_models": nnsight_unavailable_models,
         "ran_tests_on": config._tested_models,
     }
     all_failed_tests_models = sum(config._fail_test_models.values(), [])
     all_failed_attn_probs_models = sum(config._fail_attn_probs_models.values(), [])
+    all_failed_intervention_models = sum(config._fail_intervention_models.values(), [])
     all_nnsight_unavailable_models = sum(nnsight_unavailable_models.values(), [])
-    all_non_probs_fails = set(all_failed_tests_models + all_nnsight_unavailable_models)
-    all_fails = all_non_probs_fails | set(all_failed_attn_probs_models)
+    all_general_fails = set(all_failed_tests_models + all_nnsight_unavailable_models)
+    all_fails = (
+        all_general_fails
+        | set(all_failed_attn_probs_models)
+        | set(all_failed_intervention_models)
+    )
     for model_class in config._tested_models:
         fully_available = set(config._tested_models[model_class]) - all_fails
         if fully_available:
             new_status["fully_available_models"][model_class] = list(fully_available)
-        available_no_probs = set(config._tested_models[model_class]) - all_non_probs_fails - fully_available
+        available_no_probs = (
+            set(config._tested_models[model_class])
+            - all_general_fails
+            - fully_available
+        )
         if available_no_probs:
-            new_status["no_probs_available_models"][model_class] = list(available_no_probs)
+            new_status["no_probs_available_models"][model_class] = list(
+                available_no_probs
+            )
+        available_no_intervention = (
+            set(config._tested_models[model_class])
+            - all_general_fails
+            - fully_available
+        )
+        if available_no_intervention:
+            new_status["no_intervention_available_models"][model_class] = list(
+                available_no_intervention
+            )
+
+    if config._is_model_specific:
+        new_status = merge_partial_status(
+            prev_nnsight_status, new_status, config._tested_models
+        )
 
     new_status["last_updated"] = datetime.datetime.now().isoformat()
     transformers_section[NNSIGHT_VERSION] = new_status
     return prev_status
 
 
-@pytest.fixture(params=get_all_available_models())
+@pytest.fixture
 def model_name(request):
     """Parametrized fixture providing test model names."""
     return request.param
 
 
-@pytest.fixture(params=get_available_llama_models())
+@pytest.fixture
 def llama_like_model_name(request):
     """Parametrized fixture for models with llama-like naming conventions."""
     return request.param

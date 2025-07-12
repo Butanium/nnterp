@@ -1,6 +1,4 @@
-import pytest
 import torch as th
-from nnterp import StandardizedTransformer
 from nnterp.prompt_utils import (
     Prompt,
     run_prompts,
@@ -8,18 +6,6 @@ from nnterp.prompt_utils import (
     next_token_probs_unsqueeze,
 )
 from nnterp.interventions import logit_lens
-
-
-@pytest.fixture(
-    params=["Maykeye/TinyLLama-v0", "gpt2", "bigscience/bigscience-small-testing"]
-)
-def model_name(request):
-    return request.param
-
-
-@pytest.fixture
-def model(model_name):
-    return StandardizedTransformer(model_name)
 
 
 def test_process_tokens_with_tokenization(model):
