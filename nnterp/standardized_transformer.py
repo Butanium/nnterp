@@ -8,11 +8,11 @@ import torch as th
 from torch.nn import Module
 from torch import Size
 from nnsight import LanguageModel
-import transformers
 
 from .utils import (
     TraceTensor,
     DummyCache,
+    warn_about_status,
 )
 from .rename_utils import (
     get_rename_dict,
@@ -22,54 +22,12 @@ from .rename_utils import (
     mlp_returns_tuple,
     check_model_renaming,
     AttentionProbabilitiesAccessor,
-    RenamingError,
     get_num_attention_heads,
     get_hidden_size,
     RenameConfig,
 )
 
 GetLayerObject = Callable[[int], TraceTensor]
-
-
-status_file = Path("data/status.json")
-if status_file.exists():
-    with open(status_file, "r") as f:
-        status = json.load(f)
-    if transformers.__version__ not in status:
-        # Find the closest versions above and below current transformers version
-        available_versions = list(status.keys())
-        current_version = transformers.__version__
-
-        # Sort versions to find closest matches
-        from packaging import version
-
-        sorted_versions = sorted(available_versions, key=version.parse)
-        current_parsed = version.parse(current_version)
-
-        closest_below = None
-        closest_above = None
-
-        for v in sorted_versions:
-            v_parsed = version.parse(v)
-            if v_parsed <= current_parsed:
-                closest_below = v
-            elif v_parsed > current_parsed and closest_above is None:
-                closest_above = v
-
-        logger.warning(
-            f"nnterp was not tested with Transformers version {current_version}. "
-            f"Closest below: {closest_below}, closest above: {closest_above}\n"
-            f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to {closest_above} or {closest_below} if possible or:\n"
-            f"  - run the nnterp tests with your version of transformers to ensure everything works as expected.\n  - check if the attention probabilities hook makes sense before using them by calling `model.attention_probabilities.print_source()` (prettier in a notebook)."
-        )
-        status = status[closest_above or closest_below]
-    else:
-        status = status[transformers.__version__]
-        status = defaultdict(list, status)
-
-else:
-    logger.warning(f"Status file {status_file} not found. Can't access tested models.")
-    status = None
 
 
 def get_layer_output(model: StandardizedTransformer, layer: int) -> TraceTensor:
@@ -164,19 +122,7 @@ class StandardizedTransformer(LanguageModel):
             model_name = model
         else:
             model_name = model.__class__.__name__
-        if status is not None:
-            if self._model.__class__.__name__ in status["failed_test_classes"]:
-                logger.warning(
-                    f"{model_name}'s architecture has failed tests for this transformer version. Use at your own risks. If you want to be safe use only the renaming feature of nnterp, and do not use model.layers_output and other accessors"
-                )
-            if self._model.__class__.__name__ not in status["tested_classes"]:
-                logger.warning(
-                    f"{model_name}'s architecture is not tested. This may cause unexpected behavior. It is recommended to check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()` if you plan on using it (prettier in a notebook).\nFeel free to open an issue on github (https://github.com/butanium/nnterp/issues) or run the tests yourself with a toy model if you want to add test coverage for this model."
-                )
-            elif self._model.__class__.__name__ in status["failed_attn_probs_classes"]:
-                logger.warning(
-                    f"{model_name}'s architecture has failed attention probabilities tests for this transformer version. Do not use model.attention_probabilities"
-                )
+
         ignores = get_ignores(self._model)
 
         # Create accessor instances
@@ -199,7 +145,7 @@ class StandardizedTransformer(LanguageModel):
             IOType.OUTPUT,
             returns_tuple=mlp_returns_tuple(self._model, rename_config),
         )
-        
+
         self.num_layers = len(self.layers)
         self.num_heads = get_num_attention_heads(self._model, raise_error=False)
         self.hidden_size = get_hidden_size(self._model, raise_error=False)
@@ -220,6 +166,7 @@ class StandardizedTransformer(LanguageModel):
                     f"Attention probabilities is not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
                 self.attention_probabilities.disable()
+        warn_about_status(model_name, self._model, model_name)
 
     @property
     def attn_probs_available(self) -> bool:

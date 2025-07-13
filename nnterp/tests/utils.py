@@ -3,6 +3,7 @@ from functools import lru_cache
 from collections import defaultdict
 import copy
 import json
+import importlib.resources
 
 from tqdm.autonotebook import tqdm
 import torch as th
@@ -18,7 +19,9 @@ from nnterp.utils import dummy_inputs
 
 TRANSFORMERS_VERSION = transformers.__version__
 NNSIGHT_VERSION = nnsight.__version__
-
+test_loading_status_path = importlib.resources.files("nnterp.data").joinpath(
+    "test_loading_status.json"
+)
 
 # Models with llama-like naming conventions
 LLAMA_LIKE_MODELS = [
@@ -60,17 +63,20 @@ def get_all_toy_models():
     ]
 
 
-def get_all_test_models():
+def get_all_test_models(class_names=None) -> list[str]:
     """Get all models used in tests: both collection models and hardcoded ones."""
     collection_models = get_all_toy_models()
     hardcoded_models = TEST_MODELS + LLAMA_LIKE_MODELS
-    return list(dict.fromkeys(collection_models + hardcoded_models))
+    all_models = list(dict.fromkeys(collection_models + hardcoded_models))
+    if class_names is not None:
+        all_models = [m for m in all_models if get_arch(m) in class_names]
+    return all_models
 
 
 def load_test_loading_status():
     """Load the test loading status for current transformers/nnsight versions."""
     try:
-        with open("data/test_loading_status.json", "r") as f:
+        with test_loading_status_path.open("r") as f:
             full_status = json.load(f)
     except FileNotFoundError:
         full_status = {}
@@ -95,14 +101,14 @@ def load_test_loading_status():
 def save_test_loading_status(transformers_status):
     """Save the test loading status dict for current transformers version."""
     try:
-        with open("data/test_loading_status.json", "r") as f:
+        with test_loading_status_path.open("r") as f:
             full_status = json.load(f)
     except FileNotFoundError:
         full_status = {}
 
     full_status.setdefault(TRANSFORMERS_VERSION, {}).update(transformers_status)
 
-    with open("data/test_loading_status.json", "w") as f:
+    with open(test_loading_status_path, "w") as f:
         json.dump(full_status, f, indent=4)
     return full_status
 
@@ -280,33 +286,30 @@ def is_available(model_name, test_status):
     return True, test_status
 
 
-def get_all_available_models():
-    """Get all available models using fast status-based filtering."""
+def get_available_models(model_names):
+    if not model_names:
+        return []
     test_status = load_test_loading_status()
-    all_models = list(set(TEST_MODELS + get_all_toy_models() + LLAMA_LIKE_MODELS))
     available_models = []
 
-    for model in all_models:
+    for model in model_names:
         available, test_status = is_available(model, test_status)
         if available:
             available_models.append(model)
 
     save_test_loading_status(test_status)
     return available_models
+
+
+def get_all_available_models():
+    """Get all available models using fast status-based filtering."""
+    all_models = list(set(TEST_MODELS + get_all_toy_models() + LLAMA_LIKE_MODELS))
+    return get_available_models(all_models)
 
 
 def get_available_llama_models():
     """Get available models with llama-like naming conventions."""
-    test_status = load_test_loading_status()
-    available_models = []
-
-    for model in LLAMA_LIKE_MODELS:
-        available, test_status = is_available(model, test_status)
-        if available:
-            available_models.append(model)
-
-    save_test_loading_status(test_status)
-    return available_models
+    return get_available_models(LLAMA_LIKE_MODELS)
 
 
 def get_failed_models_from_status(test_status):
@@ -361,18 +364,17 @@ def merge_partial_status(
 ) -> dict:
     """Merge partial test results into existing status by updating only the tested models."""
     merged = copy.deepcopy(prev_status)
-    print(tested_models)
-    # raise Exception("stop")
-    # Remove tested models from previous categories
+
     for category in new_status:
         for arch in tested_models:
             if category == "nnsight_unavailable_models":
                 continue
             if category in merged and arch in merged[category]:
+                # Remove tested models from previous categories
                 merged[category][arch] = [
                     m for m in merged[category][arch] if m not in tested_models[arch]
                 ]
-
+                # Add new models
                 merged[category][arch] = list(
                     dict.fromkeys(
                         merged[category][arch] + new_status[category].get(arch, [])
@@ -385,9 +387,6 @@ def merge_partial_status(
 
                 if category not in merged:
                     merged[category] = {}
-                # print(
-                #     "=" * 10 + f"\n{merged=}\n\n{category=}\n\n{arch=}\n\n{new_status=}"
-                # )
                 if arch in new_status[category]:
                     merged[category][arch] = new_status[category][arch]
 

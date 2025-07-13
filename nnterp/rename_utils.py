@@ -312,11 +312,13 @@ class AttentionProbabilitiesAccessor:
             batch_size, seq_len = self.model.input_size
             num_heads = get_num_attention_heads(self.model)
             probs = self[layer]
-            self[layer] = probs / 2
             if probs.shape != (batch_size, num_heads, seq_len, seq_len):
                 raise RenamingError(
                     f"Attention probabilities have shape {probs.shape} != {(batch_size, num_heads, seq_len, seq_len)} (batch_size, n_head, seq_len, seq_len) in {self.model.repo_id} architecture. This means it's not properly initialized."
                 )
+            rnd = th.randn_like(probs).abs()
+            rnd = rnd / rnd.sum(dim=-1, keepdim=True)
+            self[layer] = rnd
             if probs.device != th.device("meta"):
                 sum_last = probs.sum(dim=-1)
                 if not th.allclose(sum_last, th.ones_like(sum_last)):
@@ -325,6 +327,14 @@ class AttentionProbabilitiesAccessor:
         if use_trace:
             with self.model.trace(dummy_inputs()):
                 test_prob_source()
+                corr_logits = self.model.logits.save()
+            with self.model.trace(dummy_inputs()):
+                clean_logits = self.model.logits.save()
+
+            if th.allclose(corr_logits, clean_logits):
+                raise RenamingError(
+                    "Attention probabilities are not properly initialized: changing the attention probabilities should change the logits."
+                )
             return
 
         try_with_scan(

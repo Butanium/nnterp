@@ -3,6 +3,7 @@
 import datetime
 import json
 from collections import defaultdict
+import importlib.resources
 from pathlib import Path
 import time
 
@@ -14,16 +15,19 @@ from nnsight import LanguageModel
 
 from .utils import (
     get_all_available_models,
+    get_available_models,
     get_arch,
     get_available_llama_models,
+    get_all_test_models,
     get_failed_models_from_status,
     load_test_loading_status,
     NNSIGHT_VERSION,
     TRANSFORMERS_VERSION,
+    LLAMA_LIKE_MODELS,
     merge_partial_status,
 )
 
-PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+PROJECT_ROOT = Path(str(importlib.resources.files("nnterp")))
 
 
 def pytest_addoption(parser):
@@ -31,18 +35,42 @@ def pytest_addoption(parser):
     parser.addoption(
         "--model-names",
         action="store",
-        nargs="*",
+        nargs="+",
         help="If provided, only run tests for the given model names.",
+    )
+    parser.addoption(
+        "--class-names",
+        action="store",
+        nargs="+",
+        help="If provided, only run tests for the given class names.",
+    )
+    parser.addoption(
+        "--save-test-logs",
+        action="store_true",
+        help="Save test logs to the data/test_logs directory.",
     )
 
 
 def pytest_generate_tests(metafunc):
     """Dynamically parametrize tests based on command line options."""
-    if "model_name" in metafunc.fixturenames or "llama_like_model_name" in metafunc.fixturenames:
+    if (
+        "model_name" in metafunc.fixturenames
+        or "llama_like_model_name" in metafunc.fixturenames
+    ):
         model_names = metafunc.config.getoption("model_names")
-        if model_names is not None:
-            all_models = model_names
-            llama_like_models = [m for m in get_available_llama_models() if m in all_models]
+        class_names = metafunc.config.getoption("class_names")
+        if model_names is not None or class_names is not None:
+            all_models = []
+            if model_names is not None:
+                all_models = get_available_models(model_names)
+            if class_names is not None:
+                all_models += get_all_test_models(class_names)
+
+            if not all_models:
+                raise ValueError(f"No models available in NNsight from {model_names}")
+            llama_like_models = get_available_models(
+                [m for m in LLAMA_LIKE_MODELS if m in all_models]
+            )
         else:
             all_models = get_all_available_models()
             llama_like_models = get_available_llama_models()
@@ -51,7 +79,16 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("model_name", all_models)
 
     if "llama_like_model_name" in metafunc.fixturenames:
-        params = llama_like_models if llama_like_models else [pytest.param(None, marks=pytest.mark.skip(reason="No llama-like models available"))]
+        params = (
+            llama_like_models
+            if llama_like_models
+            else [
+                pytest.param(
+                    None,
+                    marks=pytest.mark.skip(reason="No llama-like models available"),
+                )
+            ]
+        )
         metafunc.parametrize("llama_like_model_name", params)
 
 
@@ -64,7 +101,11 @@ def pytest_configure(config):
     config._fail_attn_probs_models = defaultdict(list)
     config._fail_intervention_models = defaultdict(list)
     config._tested_models = defaultdict(list)
-    config._is_model_specific = config.getoption("model_names") is not None
+    config._is_model_specific = (
+        config.getoption("model_names") is not None
+        or config.getoption("class_names") is not None
+    )
+    config._save_test_logs = config.getoption("save_test_logs")
 
 
 def pytest_runtest_makereport(item, call):
@@ -143,17 +184,17 @@ def pytest_sessionfinish(session, exitstatus):
     """Hook called after whole test session finishes."""
     success = exitstatus == 0
     config = session.config
-    is_partial = not config._is_full_run or config._has_deselected
+    is_partial = not config._is_full_run or config._has_deselected or not success
     existing_data = {}
     if not is_partial:
-        data_file = PROJECT_ROOT / "data" / "status.json"
-        data_file.parent.mkdir(exist_ok=True)
-        if data_file.exists():
+        status_file = PROJECT_ROOT / "data" / "status.json"
+        status_file.parent.mkdir(exist_ok=True)
+        if status_file.exists():
             try:
-                with open(data_file, "r") as f:
+                with open(status_file, "r") as f:
                     existing_data = json.load(f)
             except json.JSONDecodeError as e:
-                logger.warning(f"Error loading {data_file}: {e}")
+                logger.warning(f"Error loading {status_file}: {e}")
 
     try:
         existing_data = _update_status(existing_data, config)
@@ -164,32 +205,35 @@ def pytest_sessionfinish(session, exitstatus):
         existing_data = _update_status({}, config)
 
     if not is_partial:
-        with open(data_file, "w") as f:
+        with open(status_file, "w") as f:
             json.dump(existing_data, f, indent=2)
         print(
-            f"\nModels tested during this session: {config._tested_models}, saving to {data_file}"
+            f"\nModels tested during this session: {config._tested_models}, saving to {status_file}"
         )
 
-    log_folder = PROJECT_ROOT / "data" / "test_logs"
-    log_folder.mkdir(exist_ok=True)
+    if config._save_test_logs:
+        log_folder = PROJECT_ROOT / "data" / "test_logs"
+        log_folder.mkdir(exist_ok=True)
 
-    file_name = str(int(time.time()))
-    if session.config._has_deselected:
-        file_name += "_partial"
-    log_entry_file = log_folder / f"{file_name}.json"
-    print(f"Saving log entry to {log_entry_file}")
+        file_name = str(int(time.time()))
+        if session.config._has_deselected:
+            file_name += "_partial"
+        log_entry_file = log_folder / f"{file_name}.json"
+        print(f"Saving log entry to {log_entry_file}")
 
-    log_entry = {
-        "is_full_run": session.config._is_full_run,
-        "has_deselected": session.config._has_deselected,
-        "transformers_version": TRANSFORMERS_VERSION,
-        "nnsight_version": NNSIGHT_VERSION,
-        "errors": dict(config._errors),
-        "status": existing_data.get(TRANSFORMERS_VERSION, {}).get(NNSIGHT_VERSION, {}),
-    }
+        log_entry = {
+            "is_full_run": session.config._is_full_run,
+            "has_deselected": session.config._has_deselected,
+            "transformers_version": TRANSFORMERS_VERSION,
+            "nnsight_version": NNSIGHT_VERSION,
+            "errors": dict(config._errors),
+            "status": existing_data.get(TRANSFORMERS_VERSION, {}).get(
+                NNSIGHT_VERSION, {}
+            ),
+        }
 
-    with open(log_entry_file, "w") as f:
-        json.dump(log_entry, f, indent=2)
+        with open(log_entry_file, "w") as f:
+            json.dump(log_entry, f, indent=2)
 
 
 def _update_status(prev_status: dict, config):
@@ -221,23 +265,20 @@ def _update_status(prev_status: dict, config):
     for model_class in config._tested_models:
         fully_available = set(config._tested_models[model_class]) - all_fails
         if fully_available:
-            new_status["fully_available_models"][model_class] = list(fully_available)
+            new_status["fully_available_models"][model_class] = sorted(fully_available)
         available_no_probs = (
-            set(config._tested_models[model_class])
-            - all_general_fails
-            - fully_available
+            set(new_status["failed_attn_probs_models"][model_class]) - all_general_fails
         )
         if available_no_probs:
-            new_status["no_probs_available_models"][model_class] = list(
+            new_status["no_probs_available_models"][model_class] = sorted(
                 available_no_probs
             )
         available_no_intervention = (
-            set(config._tested_models[model_class])
+            set(new_status["failed_intervention_models"][model_class])
             - all_general_fails
-            - fully_available
         )
         if available_no_intervention:
-            new_status["no_intervention_available_models"][model_class] = list(
+            new_status["no_intervention_available_models"][model_class] = sorted(
                 available_no_intervention
             )
 

@@ -336,7 +336,10 @@ def test_standardized_transformer_steer_method(model_name):
         prompt = "Hello, world!"
 
         # Create a random steering vector
-        hidden_size = model.config.hidden_size
+        hidden_size = model.hidden_size
+        if hidden_size is None:
+            pytest.fail(f"Model {model_name} has no hidden size")
+
         steering_vector = th.randn(hidden_size) * 0.1  # Small perturbation
 
     # Test steering single layer
@@ -433,22 +436,15 @@ def test_standardized_transformer_constructor_options(model_name):
         assert model_custom.num_layers > 0
 
 
-def test_standardized_transformer_num_layers_property(model_name):
-    """Test num_layers property"""
-    model = StandardizedTransformer(model_name)
-
-    # Test that num_layers property works
-    assert isinstance(model.num_layers, int)
-    assert model.num_layers > 0
-    assert model.num_layers == len(model.model.layers)
-    assert model.num_layers == get_num_layers(model)
-
-
 def test_standardized_transformer_properties(model_name):
     """Test properties of StandardizedTransformer"""
     with th.no_grad():
         model = StandardizedTransformer(model_name)
         prompt = ["a", "b b b b b"]
+        if model.hidden_size is None:
+            pytest.fail(f"Model {model_name} has no hidden size")
+        if model.num_heads is None:
+            pytest.fail(f"Model {model_name} has no num_heads")
 
         with model.trace(prompt):
             # Test properties
