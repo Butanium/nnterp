@@ -873,7 +873,7 @@ name = "exceptiongroup"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88", size = 29749, upload-time = "2025-05-10T17:42:51.123Z" }
 wheels = [
@@ -1297,7 +1297,7 @@ name = "importlib-metadata"
 version = "8.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zipp" },
+    { name = "zipp", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/76/66/650a33bd90f786193e4de4b3ad86ea60b53c89b669a5c7be931fac31cdb0/importlib_metadata-8.7.0.tar.gz", hash = "sha256:d13b81ad223b890aa16c5471f2ac3056cf76c5f10f82d6f9292f0b415f389000", size = 56641, upload-time = "2025-04-27T15:29:01.736Z" }
 wheels = [
@@ -2395,8 +2395,8 @@ wheels = [
 
 [[package]]
 name = "nnsight"
-version = "0.5.0.dev7"
-source = { registry = "https://pypi.org/simple" }
+version = "0.5.0.dev8"
+source = { git = "https://github.com/ndif-team/nnsight?rev=0.5#3ca5e52583d99a75fc94977e9ed90ee99840db24" }
 dependencies = [
     { name = "accelerate" },
     { name = "astor" },
@@ -2409,14 +2409,6 @@ dependencies = [
     { name = "toml" },
     { name = "torch" },
     { name = "transformers" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5b/60/97d3b347cd8bfff8408d3b5024f87e65bd702c43c6ec94117f995ae514d7/nnsight-0.5.0.dev7.tar.gz", hash = "sha256:81868de448c036f5a59c7cec4e1ffd6d0bf096eb43f4cb3891e56aeaf9825b8b", size = 11474076, upload-time = "2025-07-07T02:24:46.829Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/cc/9ec031b992ff9baa4cb4162f1803c235b7f0f646022250b3894fb4f11d0c/nnsight-0.5.0.dev7-cp310-cp310-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:0bfa6fb71f67f4c71b997b7a6586fc7fe53a6a338565887094bb1cd352fef90b", size = 84758, upload-time = "2025-07-07T02:24:38.82Z" },
-    { url = "https://files.pythonhosted.org/packages/2e/d5/aebf07ec6f449b51aaa8e765a8d0a08d376a8da997b0ff2af901daa02408/nnsight-0.5.0.dev7-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:5de7f360e8322600e5b2387a0b7dfafe8955edc4b4ad5642d06f756f03bd87f0", size = 84772, upload-time = "2025-07-07T02:24:40.23Z" },
-    { url = "https://files.pythonhosted.org/packages/df/ee/559ec4a4848566e4f4163ad9c9b1dd62ddb82ea9fca5328f2c50e63ee3c1/nnsight-0.5.0.dev7-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:5fbd844d5fe017eb26691feb8c2dd7a44811449ebd7820e489314986c8c4835a", size = 85165, upload-time = "2025-07-07T02:24:41.584Z" },
-    { url = "https://files.pythonhosted.org/packages/8c/d0/5b3db5de9e975cfd224a40357dc15cc9e6f7724fd8863b0572414338dd01/nnsight-0.5.0.dev7-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:ff3c6195b8c1bb2d7ab5e3d6412609e268ccf804f281efa5e7dbaceab78f0f8b", size = 85203, upload-time = "2025-07-07T02:24:42.847Z" },
-    { url = "https://files.pythonhosted.org/packages/86/0c/e173556cf8b57534fad7858cd8a6f69cdb2a3d4e42c600da5706ce4a2cc3/nnsight-0.5.0.dev7-cp39-cp39-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:e0dab14f0765ba14cae5cac146a90b21364c549c8163c66debaba062f5c569a4", size = 84513, upload-time = "2025-07-07T02:24:45.468Z" },
 ]
 
 [[package]]
@@ -2467,7 +2459,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "nbsphinx", marker = "extra == 'dev'" },
-    { name = "nnsight", specifier = ">=0.5.0.dev7" },
+    { name = "nnsight", git = "https://github.com/ndif-team/nnsight?rev=0.5" },
     { name = "pandas", marker = "extra == 'display'" },
     { name = "plotly", marker = "extra == 'display'" },
     { name = "pre-commit", marker = "extra == 'dev'" },

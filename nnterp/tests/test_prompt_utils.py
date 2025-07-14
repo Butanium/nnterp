@@ -11,17 +11,15 @@ from nnterp.interventions import logit_lens
 def test_process_tokens_with_tokenization(model):
     """Test get_first_tokens function."""
     with th.no_grad():
-        tokenizer = model.tokenizer
-
         # Test with single word
         words = "hello"
-        tokens = get_first_tokens(words, tokenizer)
+        tokens = get_first_tokens(words, model)
         assert isinstance(tokens, list)
         assert len(tokens) > 0
 
         # Test with list of words
         words = ["hello", "world"]
-        tokens = get_first_tokens(words, tokenizer)
+        tokens = get_first_tokens(words, model)
         assert isinstance(tokens, list)
         assert len(tokens) >= 2  # Should have at least the original words
 
@@ -29,10 +27,9 @@ def test_process_tokens_with_tokenization(model):
 def test_prompt_from_strings(model):
     """Test Prompt.from_strings class method."""
     with th.no_grad():
-        tokenizer = model.tokenizer
 
         # Test with single target string
-        prompt = Prompt.from_strings("The quick brown fox", "jumps", tokenizer)
+        prompt = Prompt.from_strings("The quick brown fox", "jumps", model)
 
         assert prompt.prompt == "The quick brown fox"
         assert "target" in prompt.target_tokens
@@ -41,7 +38,7 @@ def test_prompt_from_strings(model):
 
         # Test with dictionary of targets
         prompt = Prompt.from_strings(
-            "Hello world", {"greeting": "hello", "object": "world"}, tokenizer
+            "Hello world", {"greeting": "hello", "object": "world"}, model
         )
 
         assert "greeting" in prompt.target_tokens
@@ -53,10 +50,9 @@ def test_prompt_from_strings(model):
 def test_prompt_get_target_probs(model):
     """Test Prompt.get_target_probs method."""
     with th.no_grad():
-        tokenizer = model.tokenizer
 
         prompt = Prompt.from_strings(
-            "The quick brown fox", {"target": "jumps", "animal": "fox"}, tokenizer
+            "The quick brown fox", {"target": "jumps", "animal": "fox"}, model
         )
 
         # Create mock probabilities tensor (batch_size, layers, vocab_size)
@@ -81,17 +77,14 @@ def test_prompt_get_target_probs(model):
 def test_prompt_has_no_collisions(model):
     """Test Prompt.has_no_collisions method."""
     with th.no_grad():
-        tokenizer = model.tokenizer
-
         # Create a prompt that likely has no collisions
         prompt = Prompt.from_strings(
             "Hello world",
             {"greeting": "hello", "punctuation": ".", "greeting2": "hello"},
-            tokenizer,
+            model,
         )
 
         # Test basic collision detection
-        # Note: This might return True or False depending on tokenizer
         result = prompt.has_no_collisions()
         assert isinstance(result, bool)
         assert not result
@@ -109,10 +102,8 @@ def test_prompt_has_no_collisions(model):
 def test_prompt_run(model):
     """Test Prompt.run method."""
     with th.no_grad():
-        tokenizer = model.tokenizer
-
         prompt = Prompt.from_strings(
-            "The quick brown fox", {"target": "jumps"}, tokenizer
+            "The quick brown fox", {"target": "jumps"}, model
         )
 
         # Define a simple probability function
@@ -144,12 +135,10 @@ def test_next_token_probs_unsqueeze(model):
 def test_run_prompts(model):
     """Test run_prompts function."""
     with th.no_grad():
-        tokenizer = model.tokenizer
-
         # Create test prompts
         prompts = [
-            Prompt.from_strings("Hello world", {"target": "!"}, tokenizer),
-            Prompt.from_strings("The quick brown", {"target": "fox"}, tokenizer),
+            Prompt.from_strings("Hello world", {"target": "!"}, model),
+            Prompt.from_strings("The quick brown", {"target": "fox"}, model),
         ]
 
         # Test basic functionality
@@ -176,16 +165,14 @@ def test_run_prompts(model):
 def test_run_prompts_multiple_targets(model):
     """Test run_prompts with multiple targets per prompt."""
     with th.no_grad():
-        tokenizer = model.tokenizer
-
         prompts = [
             Prompt.from_strings(
-                "The quick", {"animal": "fox", "adjective": "brown"}, tokenizer
+                "The quick", {"animal": "fox", "adjective": "brown"}, model
             ),
             Prompt.from_strings(
                 "Hello beautiful world for a ",
                 {"animal": "fox", "adjective": "beautiful"},
-                tokenizer,
+                model,
             ),
         ]
 
@@ -204,9 +191,7 @@ def test_run_prompts_multiple_targets(model):
 def test_run_prompts_single_prompt(model):
     """Test run_prompts with a single prompt."""
     with th.no_grad():
-        tokenizer = model.tokenizer
-
-        prompt = Prompt.from_strings("Test prompt", {"target": "word"}, tokenizer)
+        prompt = Prompt.from_strings("Test prompt", {"target": "word"}, model)
 
         result = run_prompts(model, [prompt], batch_size=1)
 

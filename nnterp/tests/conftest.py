@@ -100,6 +100,7 @@ def pytest_configure(config):
     config._fail_test_models = defaultdict(list)
     config._fail_attn_probs_models = defaultdict(list)
     config._fail_intervention_models = defaultdict(list)
+    config._fail_prompt_utils_models = defaultdict(list)
     config._tested_models = defaultdict(list)
     config._is_model_specific = (
         config.getoption("model_names") is not None
@@ -246,30 +247,34 @@ def _update_status(prev_status: dict, config):
         "fully_available_models": {},
         "no_probs_available_models": {},
         "no_intervention_available_models": {},
+        "no_prompt_utils_available_models": {},
         "failed_test_models": config._fail_test_models,
         "failed_attn_probs_models": config._fail_attn_probs_models,
         "failed_intervention_models": config._fail_intervention_models,
+        "failed_prompt_utils_models": config._fail_prompt_utils_models,
         "nnsight_unavailable_models": nnsight_unavailable_models,
         "ran_tests_on": config._tested_models,
     }
     all_failed_tests_models = sum(config._fail_test_models.values(), [])
     all_failed_attn_probs_models = sum(config._fail_attn_probs_models.values(), [])
     all_failed_intervention_models = sum(config._fail_intervention_models.values(), [])
+    all_failed_prompt_utils_models = sum(config._fail_prompt_utils_models.values(), [])
     all_nnsight_unavailable_models = sum(nnsight_unavailable_models.values(), [])
     all_general_fails = set(all_failed_tests_models + all_nnsight_unavailable_models)
     all_fails = (
         all_general_fails
         | set(all_failed_attn_probs_models)
         | set(all_failed_intervention_models)
+        | set(all_failed_prompt_utils_models)
     )
     for model_class in config._tested_models:
         fully_available = set(config._tested_models[model_class]) - all_fails
-        if fully_available:
+        if len(fully_available) > 0:
             new_status["fully_available_models"][model_class] = sorted(fully_available)
         available_no_probs = (
             set(new_status["failed_attn_probs_models"][model_class]) - all_general_fails
         )
-        if available_no_probs:
+        if len(available_no_probs) > 0:
             new_status["no_probs_available_models"][model_class] = sorted(
                 available_no_probs
             )
@@ -277,10 +282,17 @@ def _update_status(prev_status: dict, config):
             set(new_status["failed_intervention_models"][model_class])
             - all_general_fails
         )
-        if available_no_intervention:
+        if len(available_no_intervention) > 0:
             new_status["no_intervention_available_models"][model_class] = sorted(
                 available_no_intervention
             )
+        available_no_prompt_utils = (
+            set(new_status["failed_prompt_utils_models"][model_class])
+            - all_general_fails
+        )
+        if len(available_no_prompt_utils) > 0:
+            new_status["no_prompt_utils_available_models"][model_class] = sorted(
+                available_no_prompt_utils)
 
     if config._is_model_specific:
         new_status = merge_partial_status(

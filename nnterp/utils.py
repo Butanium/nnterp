@@ -88,8 +88,9 @@ else:
             action = "downgrade"
         else:
             action = None
+        tf_message = ""
         if action:
-            tf_message = f"You could also {action} to transformers {tf_closest_above}, for which NNsight {NNSIGHT_VERSION} was tested. Otherwise, consider:\n"
+            tf_message = f"You could also {action} to transformers {tf_closest_above}, for which NNsight {NNSIGHT_VERSION} was tested."
 
         available_versions = list(transformers_status.keys())
         current_version = NNSIGHT_VERSION
@@ -102,7 +103,9 @@ else:
             f"Closest below: {closest_below}, closest above: {closest_above}\n"
             f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to NNsight {closest_above or closest_below} if possible.\n"
             + tf_message
-            + "  - run the nnterp tests with your version of transformers to ensure everything works as expected using `python -m nnterp run_tests` to update the status file locally.\n  - check if the attention probabilities hook makes sense before using them by calling `model.attention_probabilities.print_source()` (prettier in a notebook).\n"
+            + "Otherwise, consider:\n"
+            "  - run the nnterp tests with your version of transformers to ensure everything works as expected using `python -m nnterp run_tests` to update the status file locally.\n"
+            "  - check if the attention probabilities hook makes sense before using them by calling `model.attention_probabilities.print_source()` (prettier in a notebook).\n"
             f"Using test status from {closest_above or closest_below}."
         )
         nnterp_status = STATUS[closest_above or closest_below]
@@ -247,6 +250,11 @@ def warn_about_status(class_name: str, model, model_name: str):
             f"The {class_name} class did not pass the attention probabilities test,"
             "but still initialized correctly. Please consider using check_attn_probs_with_trace=True to ensure"
             "the attention probabilities pass basic sanity checks. Otherwise, use at your own risk."
+        )
+
+    if class_name in CLASS_STATUS["no_prompt_utils_available_models"]:
+        logger.warning(
+            f"{class_name} failed some tests using `nnterp.prompt_utils`. Use prompt_utils at your own risk. You can also run `python -m nnterp run_tests --class-names {class_name} -k test_prompt_utils` to have more information on the failures."
         )
 
     if class_name in CLASS_STATUS["no_intervention_available_models"]:
