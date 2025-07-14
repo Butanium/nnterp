@@ -9,7 +9,6 @@ from nnsight.intervention.tracing.globals import Object
 import transformers
 import nnsight
 import importlib.resources
-from pathlib import Path
 from packaging import version
 
 TraceTensor = Union[th.Tensor, Object]
@@ -116,14 +115,8 @@ if nnterp_status is None:
 else:
     CLASS_STATUS = {
         res_group: list(nnterp_status[res_group].keys())
-        for res_group in [
-            "fully_available_models",
-            "no_probs_available_models",
-            "no_intervention_available_models",
-            "failed_test_models",
-            "failed_attn_probs_models",
-            "nnsight_unavailable_models",
-        ]
+        for res_group in nnterp_status
+        if res_group not in ["last_updated", "ran_tests_on"]
     }
 
 
