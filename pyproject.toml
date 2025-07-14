@@ -19,8 +19,8 @@ classifiers = [
 ]
 dependencies = [
     "loguru>=0.7.3",
-    "nnsight>=0.5.0dev7",
-    "transformers>=4.53,<4.54"
+    "nnsight>=0.5.0.dev7",
+    "transformers>=4.53,<4.54",
 ]
 [project.optional-dependencies]
 display = ["plotly", "pandas"]
@@ -50,9 +50,11 @@ vllm = [
 
 [tool.setuptools]
 packages = ["nnterp"]
+include-package-data = true
 
 [tool.setuptools.package-data]
 nnterp = ["py.typed"]
+"*" = ["data/", "tests/*"]
 
 [tool.black]
 line-length = 88
@@ -71,4 +73,7 @@ exclude = '''
   | dist
 )/
 '''
+
+[tool.uv.sources]
+nnsight = { git = "https://github.com/ndif-team/nnsight", rev = "0.5" }
 
