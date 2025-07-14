@@ -2,26 +2,26 @@ import torch as th
 from nnterp.prompt_utils import (
     Prompt,
     run_prompts,
-    process_tokens_with_tokenization,
+    get_first_tokens,
     next_token_probs_unsqueeze,
 )
 from nnterp.interventions import logit_lens
 
 
 def test_process_tokens_with_tokenization(model):
-    """Test process_tokens_with_tokenization function."""
+    """Test get_first_tokens function."""
     with th.no_grad():
         tokenizer = model.tokenizer
 
         # Test with single word
         words = "hello"
-        tokens = process_tokens_with_tokenization(words, tokenizer)
+        tokens = get_first_tokens(words, tokenizer)
         assert isinstance(tokens, list)
         assert len(tokens) > 0
 
         # Test with list of words
         words = ["hello", "world"]
-        tokens = process_tokens_with_tokenization(words, tokenizer)
+        tokens = get_first_tokens(words, tokenizer)
         assert isinstance(tokens, list)
         assert len(tokens) >= 2  # Should have at least the original words
 

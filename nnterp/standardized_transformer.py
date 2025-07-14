@@ -1,13 +1,12 @@
 from __future__ import annotations
-import json
-from collections import defaultdict
 from typing import Callable
 from loguru import logger
-from pathlib import Path
 import torch as th
 from torch.nn import Module
 from torch import Size
 from nnsight import LanguageModel
+from transformers import AutoTokenizer
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 from .utils import (
     TraceTensor,
@@ -167,6 +166,15 @@ class StandardizedTransformer(LanguageModel):
                 )
                 self.attention_probabilities.disable()
         warn_about_status(model_name, self._model, model_name)
+        self._add_prefix_false_tokenizer = None
+
+    @property
+    def add_prefix_false_tokenizer(self) -> PreTrainedTokenizerBase:
+        if self._add_prefix_false_tokenizer is None:
+            self._add_prefix_false_tokenizer = AutoTokenizer.from_pretrained(
+                self.name_or_path, add_prefix_space=False
+            )
+        return self._add_prefix_false_tokenizer
 
     @property
     def attn_probs_available(self) -> bool:

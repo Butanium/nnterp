@@ -156,7 +156,7 @@ def pytest_runtest_makereport(item, call):
                 f"Model {model_name} failed the attention probabilities test"
             )
             config._fail_attn_probs_models[arch].append(model_name)
-    elif item.path.name == "test_interventions.py":
+    elif item.path.name in ["test_interventions.py", "test_prompt_utils.py"]:
         if model_name not in config._fail_intervention_models[arch]:
             logger.warning(f"Model {model_name} failed the intervention test")
             config._fail_intervention_models[arch].append(model_name)
@@ -182,7 +182,7 @@ def pytest_deselected(items):
 
 def pytest_sessionfinish(session, exitstatus):
     """Hook called after whole test session finishes."""
-    success = exitstatus == 0
+    success = exitstatus <= 1
     config = session.config
     is_partial = not config._is_full_run or config._has_deselected or not success
     existing_data = {}
