@@ -1,6 +1,7 @@
 # project specific
 data/test_log* 
 data/*.old.json
+nnterp/data/test_loading_status.json
 
 # general
 .junk/**
