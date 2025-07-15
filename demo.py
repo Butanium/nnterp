@@ -104,7 +104,66 @@ with nnterp_gpt2.trace("hello"):
     mlp_output = nnterp_gpt2.mlps_output[3]
 
 # %% [markdown]
-# ## 3. Builtin interventions
+# ## 3. `nnterp` Guarantees
+#
+
+# %% [markdown]
+# When designing, `nnterp` I was very worried about silent failures, where you load a model, and then get an unexpected failure in your code downstream, or worst, it doesn't fail but give you fake results. To avoid this, when you load an `nnterp` model, a series of fast tests are run to ensure that:
+# - The model has been correctly renamed
+# - The model module output are of the expected shape
+# - Attention probabilities have the right shape, sum to 1, and changing them changes the output
+#
+# This comes with the trade-off that `nnterp` will dispatch your model when you load it, which can be annoying if you don't want to load the model's weights. Also to be able to access the attention probabibilties, `nnterp` loads your model with the `eager` attention implementation, which can be slower than the default hf implementation. If you don't need the attention probabilities, you can force to use the default hf implementation / another one by passing `attn_implementation=None` or `attn_implementation="your_implementation"`.
+#
+# What `nnterp` can NOT guarantee:
+# - The attention probabilities won't be modified by the model before being multiplied by the values. To ensure this, you can check `model.attention_probabilities.print_source()` (preferably in a notebook for markdown display) to understand where the attention probabilities are computed.
+# - Huggingface's transformers sheringan w
+#
+# If youe model is not properly renamed, you can pass a `RenameConfig` to the `nnterp` constructor to rename the model. See more in the advanced usage section of this demo.
+#
+# On top of that, before releasing a new version of `nnterp`, a series of tests covering most architectures are performed. When you load a model, `nnterp` will check if tests were run for your `nnsight` and `transformers` versions, and will check the tests results for the class of your model. I chose to include the tests in the `nnterp` package, so that if your model architecture has not been tested / you use a different version of `nnsight` or `transformers`, you can run `python -m nnterp run_tests --model-names foo bar --class-names LlamaForCausalLM` to run the tests for your model. `--class-names` allow you to run the tests on a toy model of the same class as your model to make it cheaper and faster.
+
+# %% [markdown]
+# ## 4. Attention Probabilities
+#
+# For models that support it, you can access attention probabilities directly. You can check if a model supports it by calling `model.supports_attention_probabilities`.
+
+# %%
+import torch as th
+
+nnterp_gpt2.tokenizer.padding_side = (
+    "left"  # ensure left padding for easy access to the first token
+)
+
+with th.no_grad():
+    with nnterp_gpt2.trace("The cat sat on the mat"):
+        # Access attention probabilities for layer 5
+        attn_probs_l2 = nnterp_gpt2.attention_probabilities[2].save()
+        attn_probs = nnterp_gpt2.attention_probabilities[5].save()
+        print(
+            f"Attention probs shape will be: (batch, heads, seq_len, seq_len): {attn_probs.shape}"
+        )
+        # knock out the attention to the first token
+        attn_probs[:, :, :, 0] = 0
+        attn_probs /= attn_probs.sum(dim=-1, keepdim=True)
+        corr_logits = nnterp_gpt2.logits.save()
+    with nnterp_gpt2.trace("The cat sat on the mat"):
+        baseline_logits = nnterp_gpt2.logits.save()
+
+assert not th.allclose(corr_logits, baseline_logits)
+
+sums = attn_probs_l2.sum(dim=-1)
+# last dimension is the attention of token i to all other tokens, so should sum to 1
+assert th.allclose(sums, th.ones_like(sums))
+
+# %% [markdown]
+# Under the hood this uses the new tracing system implemented in `NNsight v0.5` which allow to access most model intermediate variables during the forward pass. This means that if the `transformers` implementation were to change, this could break or give unexpected results, so it is recommended to use one of the tested versions of `transformers` and to check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()` if you want to use a different version of `transformers` / a architecture that has not been tested.
+
+# %%
+nnterp_gpt2.attention_probabilities.print_source()  # pretty markdown display in a notebook
+
+# %% [markdown]
+# ## 5. Builtin interventions
 #
 # `StandardizedTransformer` also provides convenient methods for common operations:
 
@@ -143,44 +202,7 @@ with nnterp_gpt2.trace("The weather today is"):
     nnterp_gpt2.steer(layers=[1, 3], steering_vector=steering_vector, factor=0.5)
 
 # %% [markdown]
-# ## 4. Attention Probabilities
-#
-# For models that support it, you can access attention probabilities directly. You can check if a model supports it by calling `model.supports_attention_probabilities`.
-
-# %%
-nnterp_gpt2.tokenizer.padding_side = (
-    "left"  # ensure left padding for easy access to the first token
-)
-
-with th.no_grad():
-    with nnterp_gpt2.trace("The cat sat on the mat"):
-        # Access attention probabilities for layer 5
-        attn_probs_l2 = nnterp_gpt2.attention_probabilities[2].save()
-        attn_probs = nnterp_gpt2.attention_probabilities[5].save()
-        print(
-            f"Attention probs shape will be: (batch, heads, seq_len, seq_len): {attn_probs.shape}"
-        )
-        # knock out the attention to the first token
-        attn_probs[:, :, :, 0] = 0
-        attn_probs /= attn_probs.sum(dim=-1, keepdim=True)
-        corr_logits = nnterp_gpt2.logits.save()
-    with nnterp_gpt2.trace("The cat sat on the mat"):
-        baseline_logits = nnterp_gpt2.logits.save()
-
-assert not th.allclose(corr_logits, baseline_logits)
-
-sums = attn_probs_l2.sum(dim=-1)
-# last dimension is the attention of token i to all other tokens, so should sum to 1
-assert th.allclose(sums, th.ones_like(sums))
-
-# %% [markdown]
-# Under the hood this uses the new tracing system implemented in `NNsight v0.5` which allow to access most model intermediate variables during the forward pass. This means that if the `transformers` implementation were to change, this could break or give unexpected results, so it is recommended to use one of the tested versions of `transformers` and to check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()` if you want to use a different version of `transformers` / a architecture that has not been tested.
-
-# %%
-nnterp_gpt2.attention_probabilities.print_source()  # pretty markdown display in a notebook
-
-# %% [markdown]
-# ## 5. Specific Token Activation Collection
+# ## 6. Specific Token Activation Collection
 #
 # `nnterp` provides utilities for collecting activations efficiently:
 
@@ -209,7 +231,7 @@ batch_activations = collect_token_activations_batched(
 print(f"Batched activations shape: {batch_activations.shape}")
 
 # %% [markdown]
-# ## 6. Prompt Utilities
+# ## 7. Prompt Utilities
 #
 # `nnterp` provides utilities for working with prompts and tracking probabilities of first tokens of certain strings. It tracks both the first token of "string" and " string".
 #
@@ -246,7 +268,7 @@ for target, probs in results.items():
     print(f"  {target}: shape {probs.shape}")
 
 # %% [markdown]
-# ## 7. Interventions
+# ## 8. Interventions
 #
 # `nnterp` provides several intervention methods inspired by mechanistic interpretability research:
 
@@ -341,7 +363,7 @@ fig.show()
 
 
 # %% [markdown]
-# ## 8. Visualization
+# ## 9. Visualization
 #
 # Finally, `nnterp` provides visualization utilities for analyzing model probabilities and prompts:
 
@@ -368,8 +390,6 @@ display(df)
 # # Advanced usage
 
 # %% [markdown]
-# ## Adding support for new models
-#
 # Sometime, your model might not be supported yet by nnterp. In this case, you'll be able to use a `RenameConfig` to properly initialize your model.
 #
 # In this section, I'll show you the steps I took to add support for the `gpt2` to `nnterp`.
@@ -465,7 +485,7 @@ except Exception as e:
 
 # %%
 from nnterp import StandardizedTransformer
-gptj = StandardizedTransformer("yujiepan/gptj-tiny-random")
+gptj = StandardizedTransformer("yujiepan/gptj-tiny-random")  # In the current version of nnterp, this will work out of the box
 
 # %% [markdown]
 # As you can see, when you load a model,`nnterp` will automatically test if the attention probabilities hook is working and returns a tensor of shape `(batch_size, num_heads, seq_len, seq_len)` where the last dimension sums to 1. In this case, the test failed and `nnterp` logs the error.
@@ -676,7 +696,7 @@ print(
 #
 # `NNsight 0.5` introduces a builtin way to cache activations during the forward pass. Be careful not to call `tracer.stop()` before all the module of the cache have been accessed.
 #
-# NOTE: Currently doesn't work with renamed names.
+# NOTE: Currently the cache doesn't use the renamed names.
 
 # %%
 with nnterp_gpt2.trace("Hello") as tracer:

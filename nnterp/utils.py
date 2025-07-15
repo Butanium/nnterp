@@ -46,6 +46,10 @@ def _get_closest_version(
     return closest_below, closest_above
 
 
+WARNING_MESSAGE = (
+    "  - run the nnterp tests with your version of transformers to ensure everything works as expected using `python -m nnterp run_tests` to update the status file locally.\n"
+    "  - check if the attention probabilities hook makes sense before using them by calling `model.attention_probabilities.print_source()` (prettier in a notebook)."
+)
 IS_EXACT_VERSION = True
 if STATUS is None:
     nnterp_status = None
@@ -64,8 +68,8 @@ else:
             f"nnterp was not tested with Transformers version {current_version}. "
             f"Closest below: {closest_below}, closest above: {closest_above}\n"
             f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to {closest_above or closest_below} if possible or:\n"
-            f"  - run the nnterp tests with your version of transformers to ensure everything works as expected.\n  - check if the attention probabilities hook makes sense before using them by calling `model.attention_probabilities.print_source()` (prettier in a notebook).\n"
-            f"Using test status from {closest_above or closest_below}."
+            + WARNING_MESSAGE
+            + f"\nUsing test status from {closest_above or closest_below}."
         )
         transformers_status = STATUS[closest_above or closest_below]
 
@@ -103,9 +107,8 @@ else:
             f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to NNsight {closest_above or closest_below} if possible.\n"
             + tf_message
             + "Otherwise, consider:\n"
-            "  - run the nnterp tests with your version of transformers to ensure everything works as expected using `python -m nnterp run_tests` to update the status file locally.\n"
-            "  - check if the attention probabilities hook makes sense before using them by calling `model.attention_probabilities.print_source()` (prettier in a notebook).\n"
-            f"Using test status from {closest_above or closest_below}."
+            + WARNING_MESSAGE
+            + f"\nUsing test status from {closest_above or closest_below}."
         )
         nnterp_status = STATUS[closest_above or closest_below]
 

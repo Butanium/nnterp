@@ -245,13 +245,6 @@ with model.trace("The weather today is"):
     final_logits = model.logits.save()
 ```
 
-## Next steps
-Here are some nice features that could be cool to have, and for which I'd be happy to accept PRs:
-- [ ] Add access to k/q/v
-- [ ] Add helpers for getting gradients
-- [ ] Add helpers for `NNsight`'s cache as it returns raw tuple outputs.
-- [ ] Fix typing
-- [ ] Add support for `vllm` when `NNsight` supports it
 
 ## Dependencies
 The `transformers` version is pinned to `4.53.x` as it's the only one that was tested for now. When a model is loaded in `StandardizedTransformer`, it will go through a series of checks to make sure that the model is still compatible.
@@ -260,14 +253,29 @@ The `transformers` version is pinned to `4.53.x` as it's the only one that was t
 - **Visualization**: `plotly`, `pandas` (install with `[display]` extra)
 <!-- - **High-performance inference**: `vllm` (install with `[vllm]` extra) (NOT supported yet) -->
 
-# Contributing
+# I found a bug!
+Before opening an issue, make sure that you have a MWE (minimal working example) that reproduces the issue, and if possible, the equivalent code using `NNsight.LanguageModel`. If the NNsight MWE also fails, please open an issue on the [NNsight repository](https://github.com/ndif-team/nnsight/issues/). Also make sure that you can load the model with `AutoModelForCausalLM` from `transformers`.
 
-## Opening an issue
-Before opening an issue, make sure that:
-- You have a MWE (minimal working example) that reproduces the issue, and if possible, the equivalent code using `NNsight.LanguageModel`. If the NNsight MWE also fails, please open an issue on the [NNsight repository](https://github.com/ndif-team/nnsight/issues/).
+## Known issues:
+- You might encounter cryptic errors of the form `With block not found at line xyz`. In this case, restart your Notebook, and if it doesn't fix it delete your python cache e.g.  using 
+```bash
+find . -type d -name "__pycache__" -exec rm -rf {} + ; find . -name "*.pyc" -delete ; find . -name "*.pyo" -delete 
+```
+
+# Contributing
+Contribution are welcome! If a functionality is missing, and you implemented it for your reasearch, please open a PR, so that people in the community can benefit from it. That include adding support for new models with custom renamings!
+
+## Next steps
+Here are some nice features that could be cool to have, and for which I'd be happy to accept PRs (ordered by most to least useful imo):
+- [ ] Add helpers for getting gradients
+- [ ] Add support for `vllm` when `NNsight` supports it
+- [ ] Add helpers for `NNsight`'s cache as it returns raw tuple outputs instead of nice vectors.
+- [ ] Add access to k/q/v
+- [ ] Fix typing
 
 ## Development
-- Install the development environment with `make dev` or `uv sync --all-extras && uv pip install flash-attn --no-build-isolation`
+- Install the development environment with `make dev` or `uv sync --all-extras`. Add `uv pip install flash-attn --no-build-isolation` to support models like `Phi` that require `flash-attn`.
+You might encounter the error `with block not found at line xyz` when running the tests. In this case run `make clean` to remove the python cache and try again.
 - Create a git tag with the version number `git tag vx.y.z; git push origin vx.y.z`
 - Build with `python -m build`
 - Publish with e.g. `twine upload dist/*x.y.z*`
