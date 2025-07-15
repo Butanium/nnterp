@@ -1,5 +1,5 @@
-``nnterp`` - Neural Network Interpretation Utilities
-================================================
+``nnterp`` - NNsight wrapper for Large Language Models
+======================================================
 
 ``nnterp`` is a tool for researchers learning or using `NNsight <https://github.com/ndif-team/nnsight>`_. 
 
