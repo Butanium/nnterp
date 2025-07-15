@@ -1,19 +1,22 @@
 from __future__ import annotations
 
+import math
+from pathlib import Path
+
+import pandas as pd
 import torch as th
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import math
-from pathlib import Path
+from .prompt_utils import Prompt
 
 
 def plot_topk_tokens(
     next_token_probs: th.Tensor,
     tokenizer,
     k: int = 4,
-    title: str = None,
+    title: str | None = None,
     use_token_ids: bool = False,
-    file: str | None = None,
+    file: str | Path | None = None,
     save_html: bool = True,
     height: int = 300,
     width: int = 400,
@@ -111,3 +114,18 @@ def plot_topk_tokens(
             )
     fig.show()
     return fig
+
+
+def prompts_to_df(prompts: list[Prompt], tokenizer=None):
+    """
+    Convert a list of prompts to a pandas DataFrame, visualizing the target tokens and strings.
+    """
+    dic = {}
+    for i, prompt in enumerate(prompts):
+        dic[i] = {"prompt": prompt.prompt}
+        for tgt, string in prompt.target_strings.items():
+            dic[i][tgt + "_string"] = string
+        if tokenizer is not None:
+            for tgt, tokens in prompt.target_tokens.items():
+                dic[i][tgt + "_tokens"] = tokenizer.convert_ids_to_tokens(tokens)
+    return pd.DataFrame.from_dict(dic)

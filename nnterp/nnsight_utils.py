@@ -1,70 +1,28 @@
 from __future__ import annotations
 
-from .utils import UnifiedTransformer
-try:
-    from nnsight.models.LanguageModel import LanguageModelProxy, LanguageModel
-    from nnsight.envoy import Envoy
-except ImportError:
-    from nnsight.modeling.language import LanguageModel
-    from nnsight.intervention.envoy import Envoy
-    from nnsight.intervention.graph.proxy import InterventionProxy
-    LanguageModelProxy = InterventionProxy
-
+from typing import Union, Callable
 import torch as th
 from torch.utils.data import DataLoader
-import nnsight as nns
-from typing import Union, Callable
-from contextlib import nullcontext
-from transformers import AutoTokenizer
 
-NNLanguageModel = Union[UnifiedTransformer, LanguageModel]
-GetModuleOutput = Callable[[NNLanguageModel, int], LanguageModelProxy]
+from nnsight import LanguageModel
+from nnsight.intervention.envoy import Envoy
+from nnsight.intervention.tracing.globals import Object
+from .utils import TraceTensor, DummyCache
+from .standardized_transformer import StandardizedTransformer
+
+GetModuleOutput = Callable[[LanguageModel, int], TraceTensor]
 
 
-def load_model(
-    model_name: str,
-    trust_remote_code=False,
-    use_tl=False,
-    no_space_on_bos=False,
-    **kwargs_,
-):
+def get_layers(model: LanguageModel) -> list[Envoy]:
     """
-    Load a model into nnsight. If use_tl is True, a TransformerLens model is loaded.
-    Default device is "auto" and default torch_dtype is th.float16.
-
-    Args:
-        no_space_on_bos: If True, add_prefix_space is set to False in the tokenizer. It is useful if you want to use the tokenizer to get the first token of a word when it's not after a space.
+    Get the layers of the model
     """
-    kwargs = dict(torch_dtype=th.float16, trust_remote_code=trust_remote_code)
-    if use_tl:
-        if "device" not in kwargs_:
-            kwargs["n_devices"] = (
-                th.cuda.device_count() if th.cuda.is_available() else 1
-            )
-        kwargs["device"] = "cuda" if th.cuda.is_available() else "cpu"
-        kwargs["processing"] = False
-        kwargs["default_padding_side"] = kwargs_.pop("padding_side", "left")
-        tokenizer_kwargs = kwargs_.pop("tokenizer_kwargs", {})
-        tokenizer_kwargs["trust_remote_code"] = trust_remote_code
-        tokenizer_kwargs["padding_side"] = tokenizer_kwargs.get("padding_side", "left")
-        if no_space_on_bos:
-            tokenizer_kwargs.update(dict(add_prefix_space=False))
-        tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_kwargs)
-        kwargs["tokenizer"] = tokenizer
-        kwargs.update(kwargs_)
-        return UnifiedTransformer(model_name, **kwargs)
-    else:
-        kwargs["device_map"] = "auto"
-        tokenizer_kwargs = kwargs_.pop("tokenizer_kwargs", {})
-        if no_space_on_bos:
-            tokenizer_kwargs.update(
-                dict(add_prefix_space=False, trust_remote_code=trust_remote_code)
-            )
-        kwargs.update(kwargs_)
-        return LanguageModel(model_name, tokenizer_kwargs=tokenizer_kwargs, **kwargs)
+    if isinstance(model, StandardizedTransformer):
+        return model.layers
+    return model.model.layers
 
 
-def get_num_layers(nn_model: NNLanguageModel):
+def get_num_layers(nn_model: LanguageModel):
     """
     Get the number of layers in the model
     Args:
@@ -72,13 +30,10 @@ def get_num_layers(nn_model: NNLanguageModel):
     Returns:
         The number of layers in the model
     """
-    if isinstance(nn_model, UnifiedTransformer):
-        return len(nn_model.blocks)
-    else:
-        return len(nn_model.model.layers)
+    return len(get_layers(nn_model))
 
 
-def get_layer(nn_model: NNLanguageModel, layer: int) -> Envoy:
+def get_layer(nn_model: LanguageModel, layer: int) -> Envoy:
     """
     Get the layer of the model
     Args:
@@ -87,13 +42,10 @@ def get_layer(nn_model: NNLanguageModel, layer: int) -> Envoy:
     Returns:
         The Envoy for the layer
     """
-    if isinstance(nn_model, UnifiedTransformer):
-        return nn_model.blocks[layer]
-    else:
-        return nn_model.model.layers[layer]
+    return get_layers(nn_model)[layer]
 
 
-def get_layer_input(nn_model: NNLanguageModel, layer: int) -> LanguageModelProxy:
+def get_layer_input(nn_model: LanguageModel, layer: int) -> Union[int, Object]:
     """
     Get the hidden state input of a layer
     Args:
@@ -102,10 +54,10 @@ def get_layer_input(nn_model: NNLanguageModel, layer: int) -> LanguageModelProxy
     Returns:
         The Proxy for the input of the layer
     """
-    return get_layer(nn_model, layer).input[0][0]
+    return get_layer(nn_model, layer).input
 
 
-def get_layer_output(nn_model: NNLanguageModel, layer: int) -> LanguageModelProxy:
+def get_layer_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
     """
     Get the output of a layer
     Args:
@@ -115,13 +67,10 @@ def get_layer_output(nn_model: NNLanguageModel, layer: int) -> LanguageModelProx
         The Proxy for the output of the layer
     """
     output = get_layer(nn_model, layer).output
-    if isinstance(nn_model, UnifiedTransformer):
-        return output
-    else:
-        return output[0]
+    return output[0]
 
 
-def get_attention(nn_model: NNLanguageModel, layer: int) -> Envoy:
+def get_attention(nn_model: LanguageModel, layer: int) -> Envoy:
     """
     Get the attention module of a layer
     Args:
@@ -130,13 +79,10 @@ def get_attention(nn_model: NNLanguageModel, layer: int) -> Envoy:
     Returns:
         The Envoy for the attention module of the layer
     """
-    if isinstance(nn_model, UnifiedTransformer):
-        return nn_model.blocks[layer].attn
-    else:
-        return nn_model.model.layers[layer].self_attn
+    return get_layer(nn_model, layer).self_attn
 
 
-def get_attention_output(nn_model: NNLanguageModel, layer: int) -> LanguageModelProxy:
+def get_attention_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
     """
     Get the output of the attention block of a layer
     Args:
@@ -145,14 +91,24 @@ def get_attention_output(nn_model: NNLanguageModel, layer: int) -> LanguageModel
     Returns:
         The Proxy for the output of the attention block of the layer
     """
-    output = get_attention(nn_model, layer).output
-    if isinstance(nn_model, UnifiedTransformer):
-        return output
-    else:
-        return output[0]
+    return get_attention(nn_model, layer).output[0]
 
 
-def get_logits(nn_model: NNLanguageModel) -> LanguageModelProxy:
+def get_mlp(nn_model: LanguageModel, layer: int) -> Envoy:
+    """
+    Get the MLP of a layer
+    """
+    return get_layer(nn_model, layer).mlp
+
+
+def get_mlp_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
+    """
+    Get the output of the MLP of a layer
+    """
+    return get_mlp(nn_model, layer).output
+
+
+def get_logits(nn_model: LanguageModel) -> TraceTensor:
     """
     Get the logits of the model
     Args:
@@ -160,13 +116,10 @@ def get_logits(nn_model: NNLanguageModel) -> LanguageModelProxy:
     Returns:
         The Proxy for the logits of the model
     """
-    if isinstance(nn_model, UnifiedTransformer):
-        return nn_model.unembed.output
-    else:
-        return nn_model.lm_head.output
+    return nn_model.output.logits
 
 
-def get_unembed_norm(nn_model: NNLanguageModel) -> Envoy:
+def get_unembed_norm(nn_model: LanguageModel) -> Envoy:
     """
     Get the last layer norm of the model
     Args:
@@ -174,13 +127,12 @@ def get_unembed_norm(nn_model: NNLanguageModel) -> Envoy:
     Returns:
         The Envoy for the last layer norm of the model
     """
-    if isinstance(nn_model, UnifiedTransformer):
+    if isinstance(nn_model, StandardizedTransformer):
         return nn_model.ln_final
-    else:
-        return nn_model.model.norm
+    return nn_model.model.norm
 
 
-def get_unembed(nn_model: NNLanguageModel) -> Envoy:
+def get_unembed(nn_model: LanguageModel) -> Envoy:
     """
     Get the unembed module of the model
     Args:
@@ -188,15 +140,10 @@ def get_unembed(nn_model: NNLanguageModel) -> Envoy:
     Returns:
         The Envoy for the unembed module of the model
     """
-    if isinstance(nn_model, UnifiedTransformer):
-        return nn_model.unembed
-    else:
-        return nn_model.lm_head
+    return nn_model.lm_head
 
 
-def project_on_vocab(
-    nn_model: NNLanguageModel, h: LanguageModelProxy
-) -> LanguageModelProxy:
+def project_on_vocab(nn_model: LanguageModel, h: TraceTensor) -> TraceTensor:
     """
     Project the hidden states on the vocabulary, after applying the model's last layer norm
     Args:
@@ -205,15 +152,49 @@ def project_on_vocab(
     Returns:
         The Proxy for the hidden states projected on the vocabulary
     """
-    if isinstance(nn_model, UnifiedTransformer):
-        ln_out = nn_model.ln_final(h)
-        return nn_model.unembed(ln_out)
-    else:
-        ln_out = nn_model.model.norm(h)
-        return nn_model.lm_head(ln_out)
+    ln_out = get_unembed_norm(nn_model)(h)
+    return nn_model.lm_head(ln_out)
 
 
-def get_next_token_probs(nn_model: NNLanguageModel) -> LanguageModelProxy:
+def skip_layer(
+    nn_model: LanguageModel, layer: int, skip_with: TraceTensor | None = None
+):
+    """
+    Skip the computation of a layer. If skip_with is None, the input of the layer is used as its output.
+    Args:
+        nn_model: The NNSight model
+        layer: The layer to skip
+        skip_with: The input to skip the layer with. If None, the input of the layer is used.
+    """
+    return skip_layers(nn_model, layer, layer, skip_with)
+
+
+def skip_layers(
+    nn_model: LanguageModel,
+    start_layer: int,
+    end_layer: int,
+    skip_with: TraceTensor | None = None,
+):
+    """
+    Skip all layers between start_layer and end_layer (inclusive). Equivalent to:
+    ```py
+    set_layer_output(nn_model, end_layer, get_layer_input(nn_model, start_layer))
+    ```
+    But skip the useless computa
+
+    Args:
+        nn_model: The NNSight model
+        start_layer: The layer to start skipping from
+        end_layer: The layer to stop skipping at
+    """
+    if skip_with is None:
+        skip_with = get_layer_input(nn_model, start_layer)
+    for layer in range(start_layer, end_layer):
+        get_layer(nn_model, layer).skip((skip_with, DummyCache()))
+    get_layer(nn_model, end_layer).skip((skip_with, DummyCache()))
+
+
+def get_next_token_probs(nn_model: LanguageModel) -> TraceTensor:
     """
     Get the probabilities of the model
     Args:
@@ -224,33 +205,45 @@ def get_next_token_probs(nn_model: NNLanguageModel) -> LanguageModelProxy:
     return get_logits(nn_model)[:, -1, :].softmax(-1)
 
 
+def set_layer_output(nn_model: LanguageModel, layer: int, tensor: TraceTensor):
+    """
+    Set the output of a layer to a certain tensor.
+    Args:
+        nn_model: The NNSight model
+        layer: The layer to set the output of
+        tensor: The tensor to set the output of the layer to
+    """
+    get_layer(nn_model, layer).output = (tensor, *get_layer_output(nn_model, layer)[1:])
+
+
 @th.no_grad
-def collect_activations(
-    nn_model: NNLanguageModel,
-    prompts,
+def get_token_activations(
+    nn_model: LanguageModel,
+    prompts=None,
     layers=None,
     get_activations: GetModuleOutput | None = None,
     remote=False,
     idx: int | None = None,
-    open_context=True,
+    tracer=None,
 ):
     """
     Collect the hidden states of the last token of each prompt at each layer
 
     Args:
         nn_model: The NNSight model
-        prompts: The prompts to collect activations for
+        prompts: The prompts to collect activations for. Can be None if you call this from an existing tracer.
         layers: The layers to collect activations for, default to all layers
         get_activations: The function to get the activations, default to layer output
         remote: Whether to run the model on the remote device
         idx: The index of the token to collect activations for
-        open_context: Whether to open a trace context to collect activations. Set to false if you want to
-            use this function in a context that already has a trace context open
+        tracer: A tracer object to use to collect activations. If None, a new tracer is created.
 
     Returns:
         The hidden states of the last token of each prompt at each layer, moved to cpu. If open_context is False, returns a list of
         Proxies. Dimensions are (num_layers, num_prompts, hidden_size)
     """
+    if tracer is None and prompts is None:
+        raise ValueError("prompts must be provided if tracer is None")
     if get_activations is None:
         get_activations = get_layer_output
     if idx is None:
@@ -267,23 +260,22 @@ def collect_activations(
     if min(layers) < 0:
         last_layer = max(last_layer, get_num_layers(nn_model) + min(layers))
 
-    def wrap(h):
-        if open_context:
-            return h.cpu().save()
-        return h
-
     # Collect the hidden states of the last token of each prompt at each layer
-    context = nn_model.trace(prompts, remote=remote) if open_context else nullcontext()
-    with context:
-        acts = [wrap(get_activations(nn_model, layer)[:, idx]) for layer in layers]
-        if open_context:
-            get_layer(nn_model, last_layer).output.stop()
-        # This early stopping is useful to avoid e.g. Gemma2 converting its logits to floats
+    acts = []
+    if tracer is None:
+        with nn_model.trace(prompts, remote=remote) as tracer:
+            for layer in layers:
+                acts.append(get_activations(nn_model, layer)[:, idx].cpu().save())
+            tracer.stop()
+    else:
+        device = get_layer_output(nn_model, 0).device
+        for layer in layers:
+            acts.append(get_activations(nn_model, layer)[:, idx].to(device))
     return th.stack(acts)
 
 
 @th.no_grad
-def collect_activations_session(
+def collect_last_token_activations_session(
     nn_model,
     prompts,
     batch_size,
@@ -324,27 +316,28 @@ def collect_activations_session(
             "positive index is currently only supported with right padding"
         )
     with nn_model.session(remote=remote) as session:
-        all_acts = nns.list().save()
         dl = DataLoader(prompts, batch_size=batch_size)
-        with session.iter(dl) as batch:
-            with nn_model.trace(batch):
-                acts = [
-                    get_activations(nn_model, layer)[
-                        :,
-                        idx,
-                    ]
-                    .cpu()
-                    .save()
-                    for layer in layers
-                ]
-                get_layer(nn_model, last_layer).output.stop()
+        all_acts = []
+        for batch in dl:
+            with nn_model.trace(batch) as tracer:
+                acts = []
+                for layer in layers:
+                    acts.append(
+                        get_activations(nn_model, layer)[
+                            :,
+                            idx,
+                        ]
+                        .cpu()
+                        .save()
+                    )
+                tracer.stop()
             all_acts.append(th.stack(acts).save())
-        all_acts = nns.apply(th.cat, all_acts, dim=1).save()
-    return all_acts.value
+        all_acts = th.cat(all_acts, dim=1).save()
+    return all_acts
 
 
-def collect_activations_batched(
-    nn_model: NNLanguageModel,
+def collect_token_activations_batched(
+    nn_model: LanguageModel,
     prompts,
     batch_size,
     layers=None,
@@ -373,7 +366,7 @@ def collect_activations_batched(
         Dimensions are (num_layers, num_prompts, hidden_size)
     """
     if use_session and remote:
-        return collect_activations_session(
+        return collect_last_token_activations_session(
             nn_model,
             prompts,
             batch_size,
@@ -389,15 +382,15 @@ def collect_activations_batched(
         it = tqdm(it)
     for i in it:
         batch = prompts[i : min(i + batch_size, num_prompts)]
-        acts_batch = collect_activations(
+        acts_batch = get_token_activations(
             nn_model, batch, layers, get_activations, remote, idx
         )
         acts.append(acts_batch)
     return th.cat(acts, dim=1)
 
 
-def next_token_probs(
-    nn_model: NNLanguageModel, prompt: str | list[str], remote=False
+def compute_next_token_probs(
+    nn_model: LanguageModel, prompt: str | list[str], remote=False
 ) -> th.Tensor:
     """
     Get the probabilities of the next token for the prompt
@@ -409,8 +402,6 @@ def next_token_probs(
         The probabilities of the next token for the prompt
     """
     with nn_model.trace(prompt, remote=remote):
-        out = nn_model.output
-        if not isinstance(nn_model, UnifiedTransformer):
-            out = out.logits
+        out = nn_model.output.logits
         out = out[:, -1].softmax(-1).cpu().save()
-    return out.value
+    return out

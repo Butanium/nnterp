@@ -1,3 +1,12 @@
+# project specific
+data/test_log* 
+data/*.old.json
+nnterp/data/test_loading_status.json
+
+# general
+.junk/**
+junk**
+.claude
 *.log
 build/
 dist/
@@ -9,5 +18,16 @@ __pycache__/
 .DS_STORE
 config.yaml
 .nfs*
-.junk/**
-junk**
+.env
+.venv
+# Documentation build files
+docs/_build/
+docs/build/
+_build/
+site/
+.doctrees/
+.buildinfo
+*.mo
+docs/api/
+docs/generated/
+docs/_autosummary/

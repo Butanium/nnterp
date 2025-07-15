@@ -1,0 +1,4 @@
+[ ] revert the fake .8 entry in test_loading_status.py
+[ ] Finish glossary
+[ ] check if model was tested before class was tested
+[ ] doc for the test stuff (and the renaming stuff? check)

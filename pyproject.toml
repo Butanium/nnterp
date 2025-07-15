@@ -11,18 +11,66 @@ authors = [
 ]
 description = "Utils and mechanistic interpretability intervensions using nnsight"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "nnsight>=0.3",
-    "pandas",
-    ]
+    "loguru>=0.7.3",
+    "nnsight>=0.5.0.dev8",
+    "transformers>=4.53,<4.54",
+]
 [project.optional-dependencies]
-display = ["plotly"]
+display = ["plotly", "pandas"]
+dev = [
+    "sphinx>=7.2.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-autodoc-typehints>=1.25.0",
+    "myst-parser>=2.0.0",
+    "sphinx-copybutton",
+    "pydata-sphinx-theme",
+    "sphinx-design",
+    "nbsphinx",
+    "pytest",
+    "ipykernel",
+    "ipywidgets",
+    "pre-commit",
+    "black[jupyter]",
+    "jupytext",
+    "build",
+    # "flash-attn",  # Note: requires --no-build-isolation flag due to torch build dependency issue. Install with `uv pip install flash-attn --no-build-isolation`
+]
+vllm = [
+    "vllm",
+]
 [project.urls]
 "Homepage" = "https://github.com/butanium/nnterp"
+
+[tool.setuptools]
+packages = ["nnterp"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+nnterp = ["py.typed"]
+"*" = ["data/", "tests/*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
 
