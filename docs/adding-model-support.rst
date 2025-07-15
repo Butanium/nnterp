@@ -1,12 +1,12 @@
 Adding Support for Your Model
 ==============================
 
-nnterp uses a standardized naming convention to provide a unified interface across transformer architectures. When your model doesn't follow the expected naming patterns, you can use ``RenameConfig`` to map your model's modules to the standardized names.
+``nnterp`` uses a standardized naming convention to provide a unified interface across transformer architectures. When your model doesn't follow the expected naming patterns, you can use ``RenameConfig`` to map your model's modules to the standardized names.
 
 Understanding the Target Structure
 ----------------------------------
 
-nnterp expects models to follow this structure:
+``nnterp`` expects models to follow this structure:
 
 .. code-block:: text
 
@@ -158,7 +158,7 @@ Common issues and solutions:
 Testing Your Configuration
 --------------------------
 
-nnterp automatically validates your configuration:
+``nnterp`` automatically validates your configuration:
 
 .. code-block:: python
 
@@ -183,4 +183,4 @@ The tests verify:
 - Attention probabilities normalization (if enabled)
 - I/O compatibility with nnterp's accessors
 
-Once your model loads successfully, all nnterp features become available with the standard interface.
+Once your model loads successfully, all ``nnterp`` features become available with the standard interface.

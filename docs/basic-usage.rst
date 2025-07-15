@@ -4,7 +4,7 @@ Basic Usage
 Standardized Interface
 ----------------------
 
-Different transformer models use different naming conventions. nnterp standardizes all models to use the llama naming convention:
+Different transformer models use different naming conventions. ``nnterp`` standardizes all models to use the llama naming convention:
 
 .. code-block:: text
 

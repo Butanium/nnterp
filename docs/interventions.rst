@@ -9,7 +9,7 @@ Logit Lens
 
 See predictions at each layer:
 
-.. code-blockyou:: python
+.. code-block:: python
 
    from nnterp.interventions import logit_lens
    

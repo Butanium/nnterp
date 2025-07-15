@@ -1,7 +1,7 @@
 NNsight Utils
 =============
 
-You can use nnterp utility functions with regular nnsight models, as long as they use llama or gemma naming conventions.
+You can use ``nnterp`` utility functions with regular nnsight models, as long as they use llama or gemma naming conventions.
 
 Setup
 -----

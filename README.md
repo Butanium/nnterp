@@ -246,6 +246,24 @@ with model.trace("The weather today is"):
 ```
 
 
+## Automatic Testing & Validation
+
+nnterp includes comprehensive automatic testing to prevent silent failures. When you load a model, fast tests automatically run to ensure:
+
+- **Model renaming correctness**: All modules are properly renamed to the standardized interface
+- **Module output shapes**: Layer outputs and attention probabilities have the expected shapes
+- **Attention probabilities**: Attention at a token position sums to 1
+
+Also, when a new version of `nnterp` is released, tests are ran on most model architectures. Those tests are included in the package, and `nnterp` will warn you if the architecture you're using was tested, and if any of the tests failed. If you use a different version of `NNsight` or `transformers` or another model architecture, you can run the tests manually:
+
+```bash
+# Test specific models
+python -m nnterp run_tests --model-names "gpt2" "meta-llama/Llama-2-7b-hf"
+
+# Test using toy models (if available)
+python -m nnterp run_tests --class-names "LlamaForCausalLM" "GPT2LMHeadModel"
+```
+
 ## Dependencies
 The `transformers` version is pinned to `4.53.x` as it's the only one that was tested for now. When a model is loaded in `StandardizedTransformer`, it will go through a series of checks to make sure that the model is still compatible.
 

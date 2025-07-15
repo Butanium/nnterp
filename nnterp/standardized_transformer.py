@@ -66,13 +66,7 @@ class StandardizedTransformer(LanguageModel):
             when scan() fails during renaming checks. Defaults to True. You should set this to false
             if you plan to use the model remotely.
         check_attn_probs_with_trace (bool, default True): If True, the model will be dispatched and a test will ensure that the attention probabilities returned sum to 1.
-        mlp_returns_tuple (bool, default False): Set to true if your model returns a tuple from the mlp. This is the case for most MoEs.
-        attn_rename (str, optional): Extra module name to rename to ``self_attn``.
-        mlp_rename (str, optional): Extra module name to rename to ``mlp``.
-        ln_final_rename (str, optional): Extra module name to rename to ``ln_final``.
-        lm_head_rename (str, optional): Extra module name to rename to ``lm_head``.
-        model_rename (str, optional): Extra module name to rename to ``model``.
-        layers_rename (str, optional): Extra module name to rename to ``layers``.
+        rename_config (RenameConfig, default None): A RenameConfig object to use for renaming the model. If None, a default RenameConfig will be used.
     """
 
     def __init__(
