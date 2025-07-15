@@ -8,4 +8,4 @@ dev:
 
 .PHONY: clean
 clean:
-	rm -rf .venv
+	find . -type d -name "__pycache__" -exec rm -rf {} + ; find . -name "*.pyc" -delete ; find . -name "*.pyo" -delete ; find . -type d -name ".pytest_cache" -exec rm -rf {} +

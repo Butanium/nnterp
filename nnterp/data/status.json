@@ -3,47 +3,52 @@
     "0.5.0.dev8": {
       "fully_available_models": {
         "Qwen2ForCausalLM": [
-          "yujiepan/qwen1.5-tiny-random",
-          "yujiepan/qwen2.5-tiny-random",
+          "yujiepan/QwQ-preview-tiny-random",
           "yujiepan/QwQ-tiny-random",
-          "yujiepan/qwq-tiny-random-dim64",
-          "yujiepan/qwen2.5-128k-tiny-random",
+          "yujiepan/qwen1.5-tiny-random",
           "yujiepan/qwen2-tiny-random",
-          "yujiepan/QwQ-preview-tiny-random"
+          "yujiepan/qwen2.5-128k-tiny-random",
+          "yujiepan/qwen2.5-tiny-random",
+          "yujiepan/qwq-tiny-random-dim64"
         ],
-        "MistralForCausalLM": [
-          "yujiepan/mistral-v0.3-tiny-random",
-          "yujiepan/mistral-tiny-random",
-          "yujiepan/codestral-v0.1-tiny-random",
-          "yujiepan/mistral-nemo-2407-tiny-random",
-          "yujiepan/mathstral-v0.1-tiny-random"
-        ],
-        "SmolLM3ForCausalLM": [
-          "yujiepan/smollm3-tiny-random"
+        "GemmaForCausalLM": [
+          "yujiepan/gemma-tiny-random"
         ],
         "LlamaForCausalLM": [
-          "yujiepan/llama-3.1-tiny-random",
-          "yujiepan/llama-2-tiny-3layers-random",
-          "yujiepan/llama-3.3-tiny-random-dim64",
-          "yujiepan/smollm-tiny-random",
-          "yujiepan/meta-llama-3.1-tiny-random-hidden128",
-          "yujiepan/llama-3-tiny-random",
-          "yujiepan/llama-2-tiny-random",
-          "yujiepan/llama-3.3-tiny-random",
-          "yujiepan/deepseek-llm-tiny-random",
           "Maykeye/TinyLLama-v0",
           "sbintuitions/tiny-lm-chat",
+          "yujiepan/llama-2-tiny-3layers-random",
+          "yujiepan/llama-2-tiny-random",
+          "yujiepan/llama-3-tiny-random",
+          "yujiepan/llama-3.1-tiny-random",
           "yujiepan/llama-3.2-tiny-random",
-          "yujiepan/meta-llama-3.1-tiny-random",
-          "yujiepan/meta-llama-3.2-tiny-random",
+          "yujiepan/llama-3.3-tiny-random",
+          "yujiepan/llama-3.3-tiny-random-dim64",
           "yujiepan/meta-llama-3-tiny-random",
-          "authentrics/toy_llm"
+          "yujiepan/meta-llama-3.1-tiny-random",
+          "yujiepan/meta-llama-3.1-tiny-random-hidden128",
+          "yujiepan/meta-llama-3.2-tiny-random",
+          "yujiepan/smollm-tiny-random"
+        ],
+        "Qwen3MoeForCausalLM": [
+          "yujiepan/qwen3-moe-tiny-random"
+        ],
+        "MistralForCausalLM": [
+          "yujiepan/codestral-v0.1-tiny-random",
+          "yujiepan/mathstral-v0.1-tiny-random",
+          "yujiepan/mistral-nemo-2407-tiny-random",
+          "yujiepan/mistral-tiny-random",
+          "yujiepan/mistral-v0.3-tiny-random"
+        ],
+        "OPTForCausalLM": [
+          "yujiepan/opt-tiny-2layers-random",
+          "yujiepan/opt-tiny-random"
+        ],
+        "GPT2LMHeadModel": [
+          "gpt2"
         ],
         "BloomForCausalLM": [
           "yujiepan/bloom-tiny-random"
-        ],
-        "Qwen3ForCausalLM": [
-          "yujiepan/qwen3-tiny-random"
         ],
         "Glm4ForCausalLM": [
           "yujiepan/glm-4-tiny-random"
@@ -51,66 +56,50 @@
         "Phi3ForCausalLM": [
           "yujiepan/phi-4-tiny-random"
         ],
-        "OPTForCausalLM": [
-          "yujiepan/opt-tiny-2layers-random",
-          "yujiepan/opt-tiny-random"
+        "GPTJForCausalLM": [
+          "yujiepan/gptj-tiny-random"
+        ],
+        "Qwen3ForCausalLM": [
+          "yujiepan/qwen3-tiny-random"
         ],
         "MixtralForCausalLM": [
           "yujiepan/mixtral-8xtiny-random",
           "yujiepan/mixtral-tiny-random"
         ],
-        "GPTJForCausalLM": [
-          "yujiepan/gptj-tiny-random"
-        ],
-        "Qwen3MoeForCausalLM": [
-          "yujiepan/qwen3-moe-tiny-random"
-        ],
-        "GPT2LMHeadModel": [
-          "gpt2"
-        ],
-        "GemmaForCausalLM": [
-          "yujiepan/gemma-tiny-random"
+        "SmolLM3ForCausalLM": [
+          "yujiepan/smollm3-tiny-random"
         ],
         "BloomModel": [
           "bigscience/bigscience-small-testing"
         ]
       },
       "no_probs_available_models": {
+        "GPTBigCodeForCausalLM": [
+          "yujiepan/starcoder-tiny-random"
+        ],
         "DbrxForCausalLM": [
           "yujiepan/dbrx-tiny-random",
           "yujiepan/dbrx-tiny256-random"
         ],
-        "GPTBigCodeForCausalLM": [
-          "yujiepan/starcoder-tiny-random"
-        ],
         "StableLmForCausalLM": [
           "yujiepan/stablelm-2-tiny-random"
-        ],
-        "Qwen2MoeForCausalLM": [
-          "yujiepan/qwen1.5-moe-tiny-random"
         ]
       },
       "no_intervention_available_models": {
         "Gemma2ForCausalLM": [
           "yujiepan/gemma-2-tiny-random"
         ],
+        "LlamaForCausalLM": [
+          "yujiepan/deepseek-llm-tiny-random"
+        ],
         "Gemma3ForCausalLM": [
           "axolotl-ai-co/gemma-3-34M"
         ]
       },
+      "no_prompt_utils_available_models": {},
       "failed_test_models": {
-        "BambaForCausalLM": [
-          "yujiepan/bamba-tiny-random"
-        ],
-        "Mamba2ForCausalLM": [
-          "yujiepan/mamba2-tiny-random",
-          "yujiepan/mamba2-codestral-v0.1-tiny-random"
-        ],
         "WhisperForConditionalGeneration": [
           "yujiepan/whisper-v3-tiny-random"
-        ],
-        "MllamaForConditionalGeneration": [
-          "yujiepan/llama-3.2-vision-tiny-random"
         ],
         "Gemma3ForConditionalGeneration": [
           "yujiepan/gemma-3-tiny-random"
@@ -118,47 +107,66 @@
         "BertModel": [
           "yujiepan/tiny-random-bert"
         ],
+        "MllamaForConditionalGeneration": [
+          "yujiepan/llama-3.2-vision-tiny-random"
+        ],
+        "Mamba2ForCausalLM": [
+          "yujiepan/mamba2-codestral-v0.1-tiny-random",
+          "yujiepan/mamba2-tiny-random"
+        ],
         "MambaForCausalLM": [
           "yujiepan/mamba-tiny-random"
-        ]
-      },
-      "failed_attn_probs_models": {
-        "DbrxForCausalLM": [
-          "yujiepan/dbrx-tiny-random",
-          "yujiepan/dbrx-tiny256-random"
         ],
         "BambaForCausalLM": [
           "yujiepan/bamba-tiny-random"
+        ]
+      },
+      "failed_attn_probs_models": {
+        "WhisperForConditionalGeneration": [
+          "yujiepan/whisper-v3-tiny-random"
+        ],
+        "Gemma3ForConditionalGeneration": [
+          "yujiepan/gemma-3-tiny-random"
+        ],
+        "BertModel": [
+          "yujiepan/tiny-random-bert"
+        ],
+        "MllamaForConditionalGeneration": [
+          "yujiepan/llama-3.2-vision-tiny-random"
         ],
         "Mamba2ForCausalLM": [
-          "yujiepan/mamba2-tiny-random",
-          "yujiepan/mamba2-codestral-v0.1-tiny-random"
+          "yujiepan/mamba2-codestral-v0.1-tiny-random",
+          "yujiepan/mamba2-tiny-random"
         ],
         "GPTBigCodeForCausalLM": [
           "yujiepan/starcoder-tiny-random"
         ],
-        "StableLmForCausalLM": [
-          "yujiepan/stablelm-2-tiny-random"
-        ],
-        "WhisperForConditionalGeneration": [
-          "yujiepan/whisper-v3-tiny-random"
-        ],
-        "MllamaForConditionalGeneration": [
-          "yujiepan/llama-3.2-vision-tiny-random"
-        ],
-        "Gemma3ForConditionalGeneration": [
-          "yujiepan/gemma-3-tiny-random"
-        ],
-        "BertModel": [
-          "yujiepan/tiny-random-bert"
-        ],
         "MambaForCausalLM": [
           "yujiepan/mamba-tiny-random"
         ],
-        "Qwen2MoeForCausalLM": [
-          "yujiepan/qwen1.5-moe-tiny-random"
+        "DbrxForCausalLM": [
+          "yujiepan/dbrx-tiny256-random",
+          "yujiepan/dbrx-tiny-random"
+        ],
+        "StableLmForCausalLM": [
+          "yujiepan/stablelm-2-tiny-random"
+        ],
+        "BambaForCausalLM": [
+          "yujiepan/bamba-tiny-random"
         ]
       },
+      "failed_intervention_models": {
+        "Gemma2ForCausalLM": [
+          "yujiepan/gemma-2-tiny-random"
+        ],
+        "Gemma3ForCausalLM": [
+          "axolotl-ai-co/gemma-3-34M"
+        ],
+        "LlamaForCausalLM": [
+          "yujiepan/deepseek-llm-tiny-random"
+        ]
+      },
+      "failed_prompt_utils_models": {},
       "nnsight_unavailable_models": {
         "Llama4ForConditionalGeneration": [
           "yujiepan/llama-4-tiny-random",
@@ -166,9 +174,6 @@
         ],
         "JambaForCausalLM": [
           "yujiepan/jamba-tiny-random"
-        ],
-        "MptForCausalLM": [
-          "yujiepan/mpt-tiny-random"
         ],
         "Phi3ForCausalLM": [
           "yujiepan/phi-3.5-tiny-random",
@@ -178,118 +183,105 @@
           "yujiepan/phi-3.5-moe-tiny-random",
           "yujiepan/phi-moe-tiny-random"
         ],
+        "DeepseekV3ForCausalLM": [
+          "yujiepan/kimi-k2-tiny-random",
+          "yujiepan/deepseek-v3-tiny-random"
+        ],
         "FalconForCausalLM": [
           "yujiepan/falcon-tiny-random",
           "yujiepan/falcon-new-tiny64-random"
-        ],
-        "DeepseekV3ForCausalLM": [
-          "yujiepan/deepseek-v3-tiny-random"
         ]
       },
       "ran_tests_on": {
-        "DbrxForCausalLM": [
-          "yujiepan/dbrx-tiny-random",
-          "yujiepan/dbrx-tiny256-random"
-        ],
         "Qwen2ForCausalLM": [
-          "yujiepan/QwQ-tiny-random",
-          "yujiepan/qwen1.5-tiny-random",
           "yujiepan/qwq-tiny-random-dim64",
-          "yujiepan/QwQ-preview-tiny-random",
-          "yujiepan/qwen2.5-128k-tiny-random",
+          "yujiepan/qwen1.5-tiny-random",
           "yujiepan/qwen2.5-tiny-random",
+          "yujiepan/QwQ-tiny-random",
+          "yujiepan/qwen2.5-128k-tiny-random",
+          "yujiepan/QwQ-preview-tiny-random",
           "yujiepan/qwen2-tiny-random"
         ],
-        "MistralForCausalLM": [
-          "yujiepan/mistral-v0.3-tiny-random",
-          "yujiepan/mistral-tiny-random",
-          "yujiepan/mistral-nemo-2407-tiny-random",
-          "yujiepan/mathstral-v0.1-tiny-random",
-          "yujiepan/codestral-v0.1-tiny-random"
-        ],
-        "SmolLM3ForCausalLM": [
-          "yujiepan/smollm3-tiny-random"
-        ],
-        "LlamaForCausalLM": [
-          "yujiepan/meta-llama-3.1-tiny-random-hidden128",
-          "Maykeye/TinyLLama-v0",
-          "sbintuitions/tiny-lm-chat",
-          "yujiepan/meta-llama-3.1-tiny-random",
-          "yujiepan/meta-llama-3.2-tiny-random",
-          "yujiepan/smollm-tiny-random",
-          "yujiepan/llama-3.3-tiny-random",
-          "yujiepan/llama-3.3-tiny-random-dim64",
-          "yujiepan/llama-3.2-tiny-random",
-          "yujiepan/llama-3.1-tiny-random",
-          "yujiepan/meta-llama-3-tiny-random",
-          "yujiepan/llama-3-tiny-random",
-          "yujiepan/deepseek-llm-tiny-random",
-          "yujiepan/llama-2-tiny-3layers-random",
-          "yujiepan/llama-2-tiny-random",
-          "authentrics/toy_llm"
-        ],
-        "BloomForCausalLM": [
-          "yujiepan/bloom-tiny-random"
-        ],
-        "Qwen3ForCausalLM": [
-          "yujiepan/qwen3-tiny-random"
-        ],
-        "GPTBigCodeForCausalLM": [
-          "yujiepan/starcoder-tiny-random"
-        ],
-        "StableLmForCausalLM": [
-          "yujiepan/stablelm-2-tiny-random"
+        "GemmaForCausalLM": [
+          "yujiepan/gemma-tiny-random"
         ],
         "Gemma2ForCausalLM": [
           "yujiepan/gemma-2-tiny-random"
         ],
-        "Glm4ForCausalLM": [
-          "yujiepan/glm-4-tiny-random"
+        "LlamaForCausalLM": [
+          "yujiepan/meta-llama-3.1-tiny-random",
+          "yujiepan/llama-2-tiny-random",
+          "yujiepan/llama-3.1-tiny-random",
+          "yujiepan/llama-3.2-tiny-random",
+          "Maykeye/TinyLLama-v0",
+          "yujiepan/deepseek-llm-tiny-random",
+          "yujiepan/llama-3.3-tiny-random-dim64",
+          "yujiepan/llama-2-tiny-3layers-random",
+          "sbintuitions/tiny-lm-chat",
+          "yujiepan/smollm-tiny-random",
+          "yujiepan/llama-3-tiny-random",
+          "yujiepan/llama-3.3-tiny-random",
+          "yujiepan/meta-llama-3-tiny-random",
+          "yujiepan/meta-llama-3.2-tiny-random",
+          "yujiepan/meta-llama-3.1-tiny-random-hidden128"
         ],
-        "Phi3ForCausalLM": [
-          "yujiepan/phi-4-tiny-random"
+        "Qwen3MoeForCausalLM": [
+          "yujiepan/qwen3-moe-tiny-random"
+        ],
+        "MistralForCausalLM": [
+          "yujiepan/mistral-tiny-random",
+          "yujiepan/mistral-v0.3-tiny-random",
+          "yujiepan/mistral-nemo-2407-tiny-random",
+          "yujiepan/mathstral-v0.1-tiny-random",
+          "yujiepan/codestral-v0.1-tiny-random"
         ],
         "OPTForCausalLM": [
           "yujiepan/opt-tiny-2layers-random",
           "yujiepan/opt-tiny-random"
         ],
-        "MixtralForCausalLM": [
-          "yujiepan/mixtral-tiny-random",
-          "yujiepan/mixtral-8xtiny-random"
-        ],
-        "GPTJForCausalLM": [
-          "yujiepan/gptj-tiny-random"
-        ],
-        "Qwen3MoeForCausalLM": [
-          "yujiepan/qwen3-moe-tiny-random"
-        ],
         "GPT2LMHeadModel": [
           "gpt2"
         ],
-        "GemmaForCausalLM": [
-          "yujiepan/gemma-tiny-random"
-        ],
-        "BloomModel": [
-          "bigscience/bigscience-small-testing"
-        ],
-        "Qwen2MoeForCausalLM": [
-          "yujiepan/qwen1.5-moe-tiny-random"
+        "BloomForCausalLM": [
+          "yujiepan/bloom-tiny-random"
         ],
         "Gemma3ForCausalLM": [
           "axolotl-ai-co/gemma-3-34M"
         ],
-        "BambaForCausalLM": [
-          "yujiepan/bamba-tiny-random"
+        "Glm4ForCausalLM": [
+          "yujiepan/glm-4-tiny-random"
         ],
-        "Mamba2ForCausalLM": [
-          "yujiepan/mamba2-tiny-random",
-          "yujiepan/mamba2-codestral-v0.1-tiny-random"
+        "GPTBigCodeForCausalLM": [
+          "yujiepan/starcoder-tiny-random"
+        ],
+        "Phi3ForCausalLM": [
+          "yujiepan/phi-4-tiny-random"
+        ],
+        "DbrxForCausalLM": [
+          "yujiepan/dbrx-tiny256-random",
+          "yujiepan/dbrx-tiny-random"
+        ],
+        "GPTJForCausalLM": [
+          "yujiepan/gptj-tiny-random"
+        ],
+        "Qwen3ForCausalLM": [
+          "yujiepan/qwen3-tiny-random"
+        ],
+        "MixtralForCausalLM": [
+          "yujiepan/mixtral-8xtiny-random",
+          "yujiepan/mixtral-tiny-random"
+        ],
+        "StableLmForCausalLM": [
+          "yujiepan/stablelm-2-tiny-random"
+        ],
+        "SmolLM3ForCausalLM": [
+          "yujiepan/smollm3-tiny-random"
+        ],
+        "BloomModel": [
+          "bigscience/bigscience-small-testing"
         ],
         "WhisperForConditionalGeneration": [
           "yujiepan/whisper-v3-tiny-random"
-        ],
-        "MllamaForConditionalGeneration": [
-          "yujiepan/llama-3.2-vision-tiny-random"
         ],
         "Gemma3ForConditionalGeneration": [
           "yujiepan/gemma-3-tiny-random"
@@ -297,12 +289,21 @@
         "BertModel": [
           "yujiepan/tiny-random-bert"
         ],
+        "MllamaForConditionalGeneration": [
+          "yujiepan/llama-3.2-vision-tiny-random"
+        ],
+        "Mamba2ForCausalLM": [
+          "yujiepan/mamba2-codestral-v0.1-tiny-random",
+          "yujiepan/mamba2-tiny-random"
+        ],
         "MambaForCausalLM": [
           "yujiepan/mamba-tiny-random"
+        ],
+        "BambaForCausalLM": [
+          "yujiepan/bamba-tiny-random"
         ]
       },
-      "last_updated": "2025-07-12T02:07:41.989084",
-      "failed_intervention_models": {}
+      "last_updated": "2025-07-15T01:04:09.266136"
     }
   }
 }

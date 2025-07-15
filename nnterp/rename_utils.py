@@ -70,6 +70,52 @@ class AttnProbFunction(ABC):
 
 @dataclass
 class RenameConfig:
+    """Configuration for renaming transformer model modules to standardized names.
+
+    This class provides configuration options for mapping model-specific module names
+    to standardized names used by the renaming system. It allows customization of
+    how different transformer architectures are handled.
+
+    Args:
+        attn_name: Name(s) of the attention module to rename to 'self_attn'.
+            Can be a string for a single name or list for multiple alternatives.
+        mlp_name: Name(s) of the MLP/feed-forward module to rename to 'mlp'.
+            Can be a string for a single name or list for multiple alternatives.
+        ln_final_name: Name(s) of the final layer normalization to rename to 'ln_final'.
+            Can be a string for a single name or list for multiple alternatives.
+        lm_head_name: Name(s) of the language model head to rename to 'lm_head'.
+            Can be a string for a single name or list for multiple alternatives.
+        model_name: Name(s) of the main model container to rename to 'model'.
+            Can be a string for a single name or list for multiple alternatives.
+        layers_name: Name(s) of the transformer layers container to rename to 'layers'.
+            Can be a string for a single name or list for multiple alternatives.
+        mlp_returns_tuple: Whether the MLP module returns a tuple instead of a single tensor.
+            Some architectures (e.g., Mixtral, Qwen2MoE, DBRX) return tuples from MLP.
+        attn_prob_source: Custom function for accessing attention probabilities.
+            Should be an instance of AttnProbFunction that defines how to extract
+            attention weights from the attention module.
+        ignore_mlp: Whether to skip MLP module processing for this architecture.
+            Some models (e.g., OPT) don't have a unified MLP module.
+        ignore_attn: Whether to skip attention module processing for this architecture.
+            Rarely used, for architectures without standard attention.
+        attn_head_config_key: Custom key name for the number of attention heads in model config.
+            You can also directly pass the number of attention heads as an integer.
+            Defaults to standard keys: ['n_heads', 'num_attention_heads', 'n_head'].
+        hidden_size_config_key: Custom key name for hidden size in model config.
+            You can also directly pass the hidden size as an integer.
+            Defaults to standard keys: ['hidden_size', 'd_model', 'n_embd'].
+
+    Example:
+        ```python
+        # Custom configuration for a non-standard architecture
+        config = RenameConfig(
+            attn_name="custom_attention",
+            mlp_name=["feed_forward", "ffn"],
+            mlp_returns_tuple=True
+        )
+        ```
+    """
+
     attn_name: str | list[str] | None = None
     mlp_name: str | list[str] | None = None
     ln_final_name: str | list[str] | None = None
@@ -78,6 +124,10 @@ class RenameConfig:
     layers_name: str | list[str] | None = None
     mlp_returns_tuple: bool | None = None
     attn_prob_source: AttnProbFunction | None = None
+    ignore_mlp: bool | None = None
+    ignore_attn: bool | None = None
+    attn_head_config_key: str | list[str] | int | None = None
+    hidden_size_config_key: str | list[str] | int | None = None
 
 
 # Configuration keys for getting the number of attention heads and hidden size
@@ -119,9 +169,23 @@ def text_config(model):
     return cfg
 
 
-def get_num_attention_heads(model, raise_error: bool = True):
+def get_num_attention_heads(
+    model, raise_error: bool = True, rename_config: RenameConfig | None = None
+):
     cfg = text_config(model)
-    for attn_head_key in ATTN_HEAD_CONFIG_KEYS:
+    attn_cfg_keys = ATTN_HEAD_CONFIG_KEYS
+    if rename_config is not None and rename_config.attn_head_config_key is not None:
+        if isinstance(rename_config.attn_head_config_key, str):
+            attn_cfg_keys.append(rename_config.attn_head_config_key)
+        elif isinstance(rename_config.attn_head_config_key, list):
+            attn_cfg_keys.extend(rename_config.attn_head_config_key)
+        elif isinstance(rename_config.attn_head_config_key, int):
+            return rename_config.attn_head_config_key
+        else:
+            raise ValueError(
+                f"Invalid attn head config key: {rename_config.attn_head_config_key}, expected None, str, list[str] or int"
+            )
+    for attn_head_key in attn_cfg_keys:
         if attn_head_key in cfg:
             return getattr(cfg, attn_head_key)
     if raise_error:
@@ -129,13 +193,32 @@ def get_num_attention_heads(model, raise_error: bool = True):
     return None
 
 
-def get_hidden_size(model, raise_error: bool = True):
+def get_hidden_size(
+    model, raise_error: bool = True, rename_config: RenameConfig | None = None
+):
     cfg = text_config(model)
-    for hidden_size_key in HIDDEN_SIZE_CONFIG_KEYS:
+    hidden_size_keys = HIDDEN_SIZE_CONFIG_KEYS
+    if rename_config is not None and rename_config.hidden_size_config_key is not None:
+        if isinstance(rename_config.hidden_size_config_key, str):
+            hidden_size_keys.append(rename_config.hidden_size_config_key)
+        elif isinstance(rename_config.hidden_size_config_key, list):
+            hidden_size_keys.extend(rename_config.hidden_size_config_key)
+        elif isinstance(rename_config.hidden_size_config_key, int):
+            return rename_config.hidden_size_config_key
+        else:
+            raise ValueError(
+                f"Invalid hidden size config key: {rename_config.hidden_size_config_key}, expected None, str, list[str] or int"
+            )
+    for hidden_size_key in hidden_size_keys:
         if hidden_size_key in cfg:
             return getattr(cfg, hidden_size_key)
     if raise_error:
         raise ValueError(f"No hidden size config key found in {model}")
+    else:
+        logger.warning(
+            f"Couldn't find the number of attention heads in {model.name_or_path}."
+            "You should pass the number of attention heads as an integer or look at the config and pass the key in the attn_head_config_key argument of a RenameConfig."
+        )
     return None
 
 
@@ -307,10 +390,15 @@ class AttentionProbabilitiesAccessor:
     def check_source(
         self, layer: int = 0, allow_dispatch: bool = True, use_trace: bool = True
     ):
+        if self.model.num_heads is None:
+            raise RenamingError(
+                f"Can't check the shapes of the model internals because the number of attention heads is not available in {self.model.repo_id} architecture."
+                "You should pass the number of attention heads as an integer or look at the config and pass the key in the attn_head_config_key argument of a RenameConfig."
+            )
 
         def test_prob_source():
             batch_size, seq_len = self.model.input_size
-            num_heads = get_num_attention_heads(self.model)
+            num_heads = self.model.num_heads
             probs = self[layer]
             if probs.shape != (batch_size, num_heads, seq_len, seq_len):
                 raise RenamingError(
@@ -401,7 +489,7 @@ class AttentionProbabilitiesAccessor:
             display_markdown(markdown_text)
 
 
-def get_ignores(model) -> list[str]:
+def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:
     ignores = []
     if isinstance(model, IGNORE_MLP_MODELS):
         message = f"{model.__class__.__name__} does not have a mlp module."
@@ -409,6 +497,11 @@ def get_ignores(model) -> list[str]:
             message += " You'll have to manually use layers.fc1 and layers.fc2 instead."
         logger.warning(message)
         ignores.append("mlp")
+    if rename_config is not None:
+        if rename_config.ignore_mlp:
+            ignores.append("mlp")
+        if rename_config.ignore_attn:
+            ignores.append("attention")
     return ignores
 
 
@@ -420,7 +513,12 @@ def mlp_returns_tuple(model, rename_config: RenameConfig | None = None) -> bool:
 
 def check_io(std_model, model_name: str, ignores: list[str]):
     batch_size, seq_len = std_model.input_size
-    hidden_size = get_hidden_size(std_model)
+    hidden_size = std_model.hidden_size
+    if hidden_size is None:
+        raise RenamingError(
+            f"Can't check the shapes of the model internals because the hidden size is not available in {model_name} architecture."
+            "You should pass the hidden size as an integer or look at the config and pass the key in the hidden_size_config_key argument of a RenameConfig."
+        )
     layer_input = std_model.layers_input[0]
     if not isinstance(layer_input, th.Tensor):
         raise ValueError(
@@ -484,7 +582,10 @@ def check_io(std_model, model_name: str, ignores: list[str]):
 
 
 def check_model_renaming(
-    std_model, model_name: str, ignores: list[str], allow_dispatch: bool
+    std_model,
+    model_name: str,
+    ignores: list[str],
+    allow_dispatch: bool,
 ):
 
     if not hasattr(std_model, "layers"):

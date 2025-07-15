@@ -1,6 +1,4 @@
-[ ] Check shapes in rename_utils.py, also probs = 1 for attn probs
-[ ] finish the using the status for informing user about loading
-[ ] implement check_source in rename_utils.py
 [ ] revert the fake .8 entry in test_loading_status.py
 [ ] Finish glossary
-[ ] Tutorial add a new model
+[ ] check if model was tested before class was tested
+[ ] doc for the test stuff (and the renaming stuff? check)

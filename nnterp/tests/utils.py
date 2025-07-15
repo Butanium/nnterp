@@ -108,7 +108,7 @@ def save_test_loading_status(transformers_status):
 
     full_status.setdefault(TRANSFORMERS_VERSION, {}).update(transformers_status)
 
-    with open(test_loading_status_path, "w") as f:
+    with open(str(test_loading_status_path), "w") as f:
         json.dump(full_status, f, indent=4)
     return full_status
 
@@ -360,7 +360,7 @@ def requires_trust_remote_code(model_name):
 
 
 def merge_partial_status(
-    prev_status: dict, new_status: dict, tested_models: defaultdict
+    prev_status: dict, new_status: dict, tested_models: dict[str, list[str]]
 ) -> dict:
     """Merge partial test results into existing status by updating only the tested models."""
     merged = copy.deepcopy(prev_status)
@@ -395,6 +395,10 @@ def merge_partial_status(
         merged["nnsight_unavailable_models"] = new_status["nnsight_unavailable_models"]
 
     return merged
+
+
+def rm_empty_list(dict_):
+    return {k: v for k, v in dict_.items() if v}
 
 
 if __name__ == "__main__":

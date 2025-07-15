@@ -77,10 +77,12 @@ def get_first_tokens(
                         "add_prefix_space=False is needed to ensure proper tokenization of words without the space."
                     )
             final_tokens.append(token)
-            if (
-                token_with_start_of_word
-                != tokenizer(" ", add_special_tokens=False).input_ids[0]
-            ):
+            space_token = tokenizer(" ", add_special_tokens=False).input_ids
+            if space_token:
+                space_token = space_token[0]
+            else:
+                space_token = None
+            if token_with_start_of_word != space_token:
                 final_tokens.append(token_with_start_of_word)
     return list(dict.fromkeys(final_tokens))
 

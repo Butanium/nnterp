@@ -122,7 +122,7 @@ class StandardizedTransformer(LanguageModel):
         else:
             model_name = model.__class__.__name__
 
-        ignores = get_ignores(self._model)
+        ignores = get_ignores(self._model, rename_config)
 
         # Create accessor instances
         self.layers_input = LayerAccessor(self, None, IOType.INPUT, returns_tuple=False)
@@ -146,8 +146,12 @@ class StandardizedTransformer(LanguageModel):
         )
 
         self.num_layers = len(self.layers)
-        self.num_heads = get_num_attention_heads(self._model, raise_error=False)
-        self.hidden_size = get_hidden_size(self._model, raise_error=False)
+        self.num_heads = get_num_attention_heads(
+            self._model, raise_error=False, rename_config=rename_config
+        )
+        self.hidden_size = get_hidden_size(
+            self._model, raise_error=False, rename_config=rename_config
+        )
 
         if check_renaming:
             check_model_renaming(self, model_name, ignores, allow_dispatch)
