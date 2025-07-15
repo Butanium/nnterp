@@ -102,9 +102,7 @@ def test_prompt_has_no_collisions(model):
 def test_prompt_run(model):
     """Test Prompt.run method."""
     with th.no_grad():
-        prompt = Prompt.from_strings(
-            "The quick brown fox", {"target": "jumps"}, model
-        )
+        prompt = Prompt.from_strings("The quick brown fox", {"target": "jumps"}, model)
 
         # Define a simple probability function
         def simple_get_probs(nn_model, prompt_text):

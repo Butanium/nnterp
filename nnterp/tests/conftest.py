@@ -25,6 +25,7 @@ from .utils import (
     TRANSFORMERS_VERSION,
     LLAMA_LIKE_MODELS,
     merge_partial_status,
+    rm_empty_list,
 )
 
 PROJECT_ROOT = Path(str(importlib.resources.files("nnterp")))
@@ -243,6 +244,12 @@ def _update_status(prev_status: dict, config):
     )
     transformers_section = prev_status.setdefault(TRANSFORMERS_VERSION, {})
     prev_nnsight_status = transformers_section.get(NNSIGHT_VERSION, {})
+    config._tested_models = rm_empty_list(config._tested_models)
+    config._fail_test_models = rm_empty_list(config._fail_test_models)
+    config._fail_attn_probs_models = rm_empty_list(config._fail_attn_probs_models)
+    config._fail_intervention_models = rm_empty_list(config._fail_intervention_models)
+    config._fail_prompt_utils_models = rm_empty_list(config._fail_prompt_utils_models)
+    nnsight_unavailable_models = rm_empty_list(nnsight_unavailable_models)
     new_status = {
         "fully_available_models": {},
         "no_probs_available_models": {},
@@ -292,7 +299,8 @@ def _update_status(prev_status: dict, config):
         )
         if len(available_no_prompt_utils) > 0:
             new_status["no_prompt_utils_available_models"][model_class] = sorted(
-                available_no_prompt_utils)
+                available_no_prompt_utils
+            )
 
     if config._is_model_specific:
         new_status = merge_partial_status(

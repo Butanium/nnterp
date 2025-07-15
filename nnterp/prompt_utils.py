@@ -82,10 +82,7 @@ def get_first_tokens(
                 space_token = space_token[0]
             else:
                 space_token = None
-            if (
-                token_with_start_of_word
-                != space_token
-            ):
+            if token_with_start_of_word != space_token:
                 final_tokens.append(token_with_start_of_word)
     return list(dict.fromkeys(final_tokens))
 

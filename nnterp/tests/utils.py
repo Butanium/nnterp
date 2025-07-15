@@ -397,6 +397,10 @@ def merge_partial_status(
     return merged
 
 
+def rm_empty_list(dict_):
+    return {k: v for k, v in dict_.items() if v}
+
+
 if __name__ == "__main__":
     test_status = load_test_loading_status()
     save_test_loading_status(test_status)

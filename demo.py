@@ -35,7 +35,8 @@ print(AutoModelForCausalLM.from_pretrained("gpt2"))
 from nnsight import LanguageModel
 
 model = LanguageModel(
-    "gpt2", rename=dict(transformer="model", h="layers", ln_f="ln_final", attn="self_attn")
+    "gpt2",
+    rename=dict(transformer="model", h="layers", ln_f="ln_final", attn="self_attn"),
 )
 print(model)
 # Access the attn module as if it was a llama model
@@ -424,7 +425,7 @@ print(model)
 
 # %%
 from nnterp import StandardizedTransformer
-from traceback import print_exc 
+from traceback import print_exc
 
 try:
     StandardizedTransformer(model)
@@ -485,7 +486,10 @@ except Exception as e:
 
 # %%
 from nnterp import StandardizedTransformer
-gptj = StandardizedTransformer("yujiepan/gptj-tiny-random")  # In the current version of nnterp, this will work out of the box
+
+gptj = StandardizedTransformer(
+    "yujiepan/gptj-tiny-random"
+)  # In the current version of nnterp, this will work out of the box
 
 # %% [markdown]
 # As you can see, when you load a model,`nnterp` will automatically test if the attention probabilities hook is working and returns a tensor of shape `(batch_size, num_heads, seq_len, seq_len)` where the last dimension sums to 1. In this case, the test failed and `nnterp` logs the error.
@@ -515,7 +519,7 @@ with gptj.scan("a"):
 # Here, line 20-24:
 # ```py
 #  self_attn_dropout_0     -> 20     attn_weights = self.attn_dropout(attn_weights)
-#                             21 
+#                             21
 #                             22     # Mask heads if we want to
 #                             23     if head_mask is not None:
 #                             24         attn_weights = attn_weights * head_mask
@@ -527,8 +531,11 @@ with gptj.scan("a"):
 
 # %%
 import torch as th
+
 with gptj.scan(th.tensor([[1, 2, 3]])):
-    print(gptj.attentions[0].source.self__attn_0.source.self_attn_dropout_0.output.shape)
+    print(
+        gptj.attentions[0].source.self__attn_0.source.self_attn_dropout_0.output.shape
+    )
 
 # %% [markdown]
 # Nice! The shape looks good. Now we can initialize our model with the right RenameConfig, and let `nnterp` run the tests for us.
