@@ -48,7 +48,7 @@ Quick example:
    :maxdepth: 2
    :caption: API Reference:
 
-   api/nnterp
+   api
 
 .. toctree::
    :hidden:
