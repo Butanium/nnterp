@@ -14,7 +14,7 @@ StandardizedTransformer
 ├── layers
 │   ├── self_attn
 │   └── mlp
-├── norm
+├── ln_final
 └── lm_head
 ```
 and include built-in properties like `model.logits` and `model.next_token_probs`.
@@ -271,3 +271,4 @@ Before opening an issue, make sure that:
 - Create a git tag with the version number `git tag vx.y.z; git push origin vx.y.z`
 - Build with `python -m build`
 - Publish with e.g. `twine upload dist/*x.y.z*`
+- test with `pytest --cache-clear`. **cache-clear is mandatory for now otherwise `NNsight`'s source can break.** It might not be sufficient, in which case you can do `make clean` to remove Python cache.
