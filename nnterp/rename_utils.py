@@ -70,50 +70,69 @@ class AttnProbFunction(ABC):
 
 @dataclass
 class RenameConfig:
-    """Configuration for renaming transformer model modules to standardized names.
+    """
+    Configuration for renaming transformer model modules to standardized names.
 
-    This class provides configuration options for mapping model-specific module names
-    to standardized names used by the renaming system. It allows customization of
-    how different transformer architectures are handled.
+    This dataclass specifies how to map model-specific module names to standardized names
+    used by nnterp. It allows customization for different transformer architectures.
 
-    Args:
-        attn_name: Name(s) of the attention module to rename to 'self_attn'.
-            Can be a string for a single name or list for multiple alternatives.
-        mlp_name: Name(s) of the MLP/feed-forward module to rename to 'mlp'.
-            Can be a string for a single name or list for multiple alternatives.
-        ln_final_name: Name(s) of the final layer normalization to rename to 'ln_final'.
-            Can be a string for a single name or list for multiple alternatives.
-        lm_head_name: Name(s) of the language model head to rename to 'lm_head'.
-            Can be a string for a single name or list for multiple alternatives.
-        model_name: Name(s) of the main model container to rename to 'model'.
-            Can be a string for a single name or list for multiple alternatives.
-        layers_name: Name(s) of the transformer layers container to rename to 'layers'.
-            Can be a string for a single name or list for multiple alternatives.
-        mlp_returns_tuple: Whether the MLP module returns a tuple instead of a single tensor.
-            Some architectures (e.g., Mixtral, Qwen2MoE, DBRX) return tuples from MLP.
-        attn_prob_source: Custom function for accessing attention probabilities.
-            Should be an instance of AttnProbFunction that defines how to extract
-            attention weights from the attention module.
-        ignore_mlp: Whether to skip MLP module processing for this architecture.
-            Some models (e.g., OPT) don't have a unified MLP module.
-        ignore_attn: Whether to skip attention module processing for this architecture.
-            Rarely used, for architectures without standard attention.
-        attn_head_config_key: Custom key name for the number of attention heads in model config.
-            You can also directly pass the number of attention heads as an integer.
-            Defaults to standard keys: ['n_heads', 'num_attention_heads', 'n_head'].
-        hidden_size_config_key: Custom key name for hidden size in model config.
-            You can also directly pass the hidden size as an integer.
-            Defaults to standard keys: ['hidden_size', 'd_model', 'n_embd'].
+    Parameters
+    ----------
+    attn_name : str or list of str, optional
+        Name(s) of the attention module to rename to 'self_attn'.
 
-    Example:
-        ```python
-        # Custom configuration for a non-standard architecture
+    mlp_name : str or list of str, optional
+        Name(s) of the MLP/feed-forward module to rename to 'mlp'.
+
+    ln_final_name : str or list of str, optional
+        Name(s) of the final layer normalization to rename to 'ln_final'.
+
+    lm_head_name : str or list of str, optional
+        Name(s) of the language model head to rename to 'lm_head'.
+
+    model_name : str or list of str, optional
+        Name(s) of the main model container to rename to 'model'.
+
+    layers_name : str or list of str, optional
+        Name(s) of the transformer layers container to rename to 'layers'.
+
+    mlp_returns_tuple : bool, optional
+        Whether the MLP module returns a tuple instead of a single tensor.
+        Some architectures (e.g., Mixtral, Qwen2MoE, DBRX) return tuples from MLP.
+
+    attn_prob_source : AttnProbFunction, optional
+        Custom function for accessing attention probabilities.
+        Should be an instance of AttnProbFunction that defines how to extract
+        attention weights from the attention module.
+
+    ignore_mlp : bool, optional
+        Whether to skip MLP module processing for this architecture.
+        Some models (e.g., OPT) don't have a unified MLP module.
+
+    ignore_attn : bool, optional
+        Whether to skip attention module processing for this architecture.
+        Rarely used, for architectures without standard attention.
+
+    attn_head_config_key : str, list of str, or int, optional
+        Custom key name for the number of attention heads in model config,
+        or the number of heads directly. Defaults to standard keys:
+        ['n_heads', 'num_attention_heads', 'n_head'].
+
+    hidden_size_config_key : str, list of str, or int, optional
+        Custom key name for hidden size in model config,
+        or the hidden size directly. Defaults to standard keys:
+        ['hidden_size', 'd_model', 'n_embd'].
+
+    Example
+    -------
+    Custom configuration for a non-standard architecture::
+
         config = RenameConfig(
             attn_name="custom_attention",
             mlp_name=["feed_forward", "ffn"],
             mlp_returns_tuple=True
         )
-        ```
+
     """
 
     attn_name: str | list[str] | None = None
