@@ -2396,7 +2396,7 @@ wheels = [
 [[package]]
 name = "nnsight"
 version = "0.5.0.dev8"
-source = { git = "https://github.com/ndif-team/nnsight?rev=0.5#3ca5e52583d99a75fc94977e9ed90ee99840db24" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "accelerate" },
     { name = "astor" },
@@ -2409,6 +2409,14 @@ dependencies = [
     { name = "toml" },
     { name = "torch" },
     { name = "transformers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c3/7c/22b08d08af4d3b7cb3cdcb006892cadc332db3319bd36aa8c2ee2f3b85d4/nnsight-0.5.0.dev8.tar.gz", hash = "sha256:3518275fb886e64c6456b4c6eb51fe29d179553470b2bbddd76e4f62f332994b", size = 155832, upload-time = "2025-07-15T04:34:59.291Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/36/26/811dec3b5c5083e653299847956f7e6e659e6fc96344768ae707e3670c54/nnsight-0.5.0.dev8-cp310-cp310-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:3fb1c964eedc087007a987799cfface41b4d8c068bc22b69c862f6c62341fad2", size = 85723, upload-time = "2025-07-15T04:34:52.152Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/1c/6ca41376ecbf469bdac6c770f2b5fb54d88de51c912999a111b907d5c6d0/nnsight-0.5.0.dev8-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:03cffdb07f00a531efb5f3eea105e668f96251b8dfbfb85cb4ac93ff1a7c1482", size = 85738, upload-time = "2025-07-15T04:34:53.714Z" },
+    { url = "https://files.pythonhosted.org/packages/8b/43/3f6c058224d03eecbf830a2f3d6f2043be87923bac2feec7d7913753cac8/nnsight-0.5.0.dev8-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:8502c5c47a406539b21f051284092ecb34a830b964fd081dad136dc100c1f755", size = 86132, upload-time = "2025-07-15T04:34:54.632Z" },
+    { url = "https://files.pythonhosted.org/packages/51/0d/9a4489e6d973c09134a50c7584e676881f1da1a9b826946737140ecd8cdb/nnsight-0.5.0.dev8-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:d2b8c94937588c8c22479ddf301e946da47588086628e0907b950bfcc68b1ea6", size = 86170, upload-time = "2025-07-15T04:34:56.008Z" },
+    { url = "https://files.pythonhosted.org/packages/5f/71/906a9adbfb8391da64e3091b031c86a072afe7705ca33f945cbb7a13ec8e/nnsight-0.5.0.dev8-cp39-cp39-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:2ea25148440550d19783eb4a203fefa1d8d33ef31ba4bfd67a841ac37fb8ac70", size = 85479, upload-time = "2025-07-15T04:34:58.372Z" },
 ]
 
 [[package]]
@@ -2459,7 +2467,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "nbsphinx", marker = "extra == 'dev'" },
-    { name = "nnsight", git = "https://github.com/ndif-team/nnsight?rev=0.5" },
+    { name = "nnsight", specifier = ">=0.5.0.dev8" },
     { name = "pandas", marker = "extra == 'display'" },
     { name = "plotly", marker = "extra == 'display'" },
     { name = "pre-commit", marker = "extra == 'dev'" },
