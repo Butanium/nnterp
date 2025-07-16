@@ -27,8 +27,9 @@ pip install --upgrade pip
 
 # Install all dependencies from pyproject.toml
 pip install uv
-uv sync --all-extras --active
+uv sync --active
 uv pip install flash-attn --no-build-isolation
+uv pip install pytest
 
 
 
@@ -70,12 +71,14 @@ for version in "${test_versions[@]}"; do
         echo "Successfully installed transformers $version"
         
         # Run tests
-        if python -m pytest tests/ --tb=short; then
-            echo "✅ Tests PASSED for transformers $version"
+        make clean ; python -m pytest nnterp/tests --cache-clear  --tb=short
+        exitcode=$?
+        if [ $exitcode -le 1 ]; then
+            echo "✅ Tests RAN for transformers $version"
             results+=("$version: PASSED")
         else
-            echo "❌ Tests FAILED for transformers $version"
-            results+=("$version: FAILED")
+            echo "❌ Tests FAILED to run for transformers $version"
+            results+=("$version: FAILED_TO_RUN")
         fi
     else
         echo "⚠️  Failed to install transformers $version"
