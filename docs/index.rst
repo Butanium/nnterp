@@ -9,7 +9,7 @@ You can install ``nnterp`` using pip:
 
 .. code-block:: bash
 
-   pip install nnterp
+   pip install "nnterp>0.4.9" --pre
 
 **You need to know NNsight to use nnterp.** ``nnterp`` provides a standardized interface for transformer models and common interventions, making it easier to work with different architectures. But for anything complex, you'll still need NNsight directly.
 

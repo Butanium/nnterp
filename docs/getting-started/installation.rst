@@ -6,18 +6,14 @@ Basic Installation
 
 .. code-block:: bash
 
-   pip install nnterp
+   pip install "nnterp>0.4.9" --pre
 
 For visualization:
 
 .. code-block:: bash
 
-   pip install nnterp[display]
+   pip install "nnterp[display]>0.4.9" --pre
 
-Transformers Version
--------------------
-
-``nnterp`` uses ``transformers==4.53.x``. The version is pinned for compatibility with the standardized naming system.
 
 Quick Test
 ----------

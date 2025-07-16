@@ -22,8 +22,8 @@ and include built-in properties like `model.logits` and `model.next_token_probs`
 Unlike other libraries that reimplement transformers, `nnterp` uses `NNsight`'s renaming feature to work with the original HuggingFace implementations, ensuring perfect compatibility and preventing subtle bugs.
 
 ## Installation
-- `pip install nnterp` - Basic installation
-- `pip install nnterp[display]` - Includes visualization dependencies
+- `pip install "nnterp>0.4.9" --pre` - Basic installation
+- `pip install "nnterp[display]>0.4.9" --pre` - Includes visualization dependencies
 <!-- - `pip install nnterp[vllm]` - Includes vLLM support for efficient inference (NOT supported yet) -->
 
 ## Key Features
