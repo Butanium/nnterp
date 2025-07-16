@@ -29,10 +29,6 @@ from .rename_utils import (
 GetLayerObject = Callable[[int], TraceTensor]
 
 
-def get_layer_output(model: StandardizedTransformer, layer: int) -> TraceTensor:
-    return model.layers_output[layer]
-
-
 class StandardizedTransformer(LanguageModel):
     """
     Renames the LanguageModel modules to match a standardized architecture.

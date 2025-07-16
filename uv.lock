@@ -2395,7 +2395,7 @@ wheels = [
 
 [[package]]
 name = "nnsight"
-version = "0.5.0.dev8"
+version = "0.5.0.dev9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "accelerate" },
@@ -2410,13 +2410,13 @@ dependencies = [
     { name = "torch" },
     { name = "transformers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c3/7c/22b08d08af4d3b7cb3cdcb006892cadc332db3319bd36aa8c2ee2f3b85d4/nnsight-0.5.0.dev8.tar.gz", hash = "sha256:3518275fb886e64c6456b4c6eb51fe29d179553470b2bbddd76e4f62f332994b", size = 155832, upload-time = "2025-07-15T04:34:59.291Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/40/1e72cdeebe9a70040309b843d2c2b3186759e292a71ca42d6e99e24070ce/nnsight-0.5.0.dev9.tar.gz", hash = "sha256:24d76b87642ad6c0a1c36f05dc83a5e2ef539a1eaac6409b4a53503430bc5a55", size = 155699, upload-time = "2025-07-15T19:59:22.039Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/36/26/811dec3b5c5083e653299847956f7e6e659e6fc96344768ae707e3670c54/nnsight-0.5.0.dev8-cp310-cp310-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:3fb1c964eedc087007a987799cfface41b4d8c068bc22b69c862f6c62341fad2", size = 85723, upload-time = "2025-07-15T04:34:52.152Z" },
-    { url = "https://files.pythonhosted.org/packages/1c/1c/6ca41376ecbf469bdac6c770f2b5fb54d88de51c912999a111b907d5c6d0/nnsight-0.5.0.dev8-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:03cffdb07f00a531efb5f3eea105e668f96251b8dfbfb85cb4ac93ff1a7c1482", size = 85738, upload-time = "2025-07-15T04:34:53.714Z" },
-    { url = "https://files.pythonhosted.org/packages/8b/43/3f6c058224d03eecbf830a2f3d6f2043be87923bac2feec7d7913753cac8/nnsight-0.5.0.dev8-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:8502c5c47a406539b21f051284092ecb34a830b964fd081dad136dc100c1f755", size = 86132, upload-time = "2025-07-15T04:34:54.632Z" },
-    { url = "https://files.pythonhosted.org/packages/51/0d/9a4489e6d973c09134a50c7584e676881f1da1a9b826946737140ecd8cdb/nnsight-0.5.0.dev8-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:d2b8c94937588c8c22479ddf301e946da47588086628e0907b950bfcc68b1ea6", size = 86170, upload-time = "2025-07-15T04:34:56.008Z" },
-    { url = "https://files.pythonhosted.org/packages/5f/71/906a9adbfb8391da64e3091b031c86a072afe7705ca33f945cbb7a13ec8e/nnsight-0.5.0.dev8-cp39-cp39-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:2ea25148440550d19783eb4a203fefa1d8d33ef31ba4bfd67a841ac37fb8ac70", size = 85479, upload-time = "2025-07-15T04:34:58.372Z" },
+    { url = "https://files.pythonhosted.org/packages/59/89/dd06560a9a4c5dec07f7aa237ab461949f26d55d21f7ae0ebba5c183120e/nnsight-0.5.0.dev9-cp310-cp310-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:883c5e43b748e3a2e8e0bf95fb7f8939a576fd5070c84311b9d388f96454d0a2", size = 85523, upload-time = "2025-07-15T19:59:15.859Z" },
+    { url = "https://files.pythonhosted.org/packages/2f/2b/eaaeb7adec093c48d249abb76a976f71cf87bb1984e236b4dc4d47dd49d7/nnsight-0.5.0.dev9-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:cbd05fa6168a532233f684c8d3dcb9dd6f36bc14f580c0f529b036d837e732d9", size = 85539, upload-time = "2025-07-15T19:59:16.896Z" },
+    { url = "https://files.pythonhosted.org/packages/49/43/97d7ad659ed91a46ba7a19f66469f3eef2c038efbca06371b5d3c195e0f1/nnsight-0.5.0.dev9-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:65325ae54761c45519396c90185503640a5470065b23a505869b3b57989fe8ac", size = 85930, upload-time = "2025-07-15T19:59:17.692Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/ed/25c4a79731312d63708ceb80e5eb5ddd1ed5cac6b32e0e7a0c2993bb24e7/nnsight-0.5.0.dev9-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:6aa1ed46ca19b3d43c6a4439649168e193d09fee918e55d62d8f7b303c9c8790", size = 85971, upload-time = "2025-07-15T19:59:18.771Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/b6/9bdb25b6251d5c2774021c474bd01a4b4558db330fd20076fa26c68ce142/nnsight-0.5.0.dev9-cp39-cp39-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:9365c083ec5faf821c89174d158ebda5d1f470c386485a4fa6474df0bdf8d403", size = 85273, upload-time = "2025-07-15T19:59:20.956Z" },
 ]
 
 [[package]]
@@ -2435,23 +2435,25 @@ dev = [
     { name = "ipykernel" },
     { name = "ipywidgets" },
     { name = "jupytext" },
-    { name = "myst-parser", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "myst-parser", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "nbsphinx" },
     { name = "pre-commit" },
-    { name = "pydata-sphinx-theme" },
     { name = "pytest" },
     { name = "sphinx", version = "7.4.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+]
+display = [
+    { name = "pandas" },
+    { name = "plotly" },
+]
+docs = [
+    { name = "myst-parser", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "myst-parser", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "nbsphinx" },
+    { name = "pydata-sphinx-theme" },
     { name = "sphinx-autodoc-typehints", version = "2.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "sphinx-autodoc-typehints", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "sphinx-copybutton" },
     { name = "sphinx-design" },
     { name = "sphinx-rtd-theme" },
-]
-display = [
-    { name = "pandas" },
-    { name = "plotly" },
 ]
 vllm = [
     { name = "vllm" },
@@ -2465,23 +2467,23 @@ requires-dist = [
     { name = "ipywidgets", marker = "extra == 'dev'" },
     { name = "jupytext", marker = "extra == 'dev'" },
     { name = "loguru", specifier = ">=0.7.3" },
-    { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=2.0.0" },
-    { name = "nbsphinx", marker = "extra == 'dev'" },
+    { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=2.0.0" },
+    { name = "nbsphinx", marker = "extra == 'docs'" },
     { name = "nnsight", specifier = ">=0.5.0.dev8" },
     { name = "pandas", marker = "extra == 'display'" },
     { name = "plotly", marker = "extra == 'display'" },
     { name = "pre-commit", marker = "extra == 'dev'" },
-    { name = "pydata-sphinx-theme", marker = "extra == 'dev'" },
+    { name = "pydata-sphinx-theme", marker = "extra == 'docs'" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "sphinx", marker = "extra == 'dev'", specifier = ">=7.2.0" },
-    { name = "sphinx-autodoc-typehints", marker = "extra == 'dev'", specifier = ">=1.25.0" },
-    { name = "sphinx-copybutton", marker = "extra == 'dev'" },
-    { name = "sphinx-design", marker = "extra == 'dev'" },
-    { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=2.0.0" },
+    { name = "sphinx-autodoc-typehints", marker = "extra == 'docs'", specifier = ">=1.25.0" },
+    { name = "sphinx-copybutton", marker = "extra == 'docs'" },
+    { name = "sphinx-design", marker = "extra == 'docs'" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=2.0.0" },
     { name = "transformers", specifier = ">=4.53,<4.54" },
     { name = "vllm", marker = "extra == 'vllm'" },
 ]
-provides-extras = ["display", "dev", "vllm"]
+provides-extras = ["display", "docs", "dev", "vllm"]
 
 [[package]]
 name = "nodeenv"
@@ -5254,7 +5256,7 @@ wheels = [
 
 [[package]]
 name = "transformers"
-version = "4.53.1"
+version = "4.53.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "filelock" },
@@ -5269,9 +5271,9 @@ dependencies = [
     { name = "tokenizers" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9f/2c/68a0024c311db41bb92d4ec17d22e90b7406a4d28aa18d87662f2bbebcd9/transformers-4.53.1.tar.gz", hash = "sha256:da5a9f66ad480bc2a7f75bc32eaf735fd20ac56af4325ca4ce994021ceb37710", size = 9192189, upload-time = "2025-07-04T08:28:40.571Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4c/67/80f51466ec447028fd84469b208eb742533ce06cc8fad2e3181380199e5c/transformers-4.53.2.tar.gz", hash = "sha256:6c3ed95edfb1cba71c4245758f1b4878c93bf8cde77d076307dacb2cbbd72be2", size = 9201233, upload-time = "2025-07-11T12:39:08.742Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8d/10/8cef2288810a3210659eb3a20711e8387cc35a881a7762ae387806e2d651/transformers-4.53.1-py3-none-any.whl", hash = "sha256:c84f3c3e41c71fdf2c60c8a893e1cd31191b0cb463385f4c276302d2052d837b", size = 10825681, upload-time = "2025-07-04T08:28:37.318Z" },
+    { url = "https://files.pythonhosted.org/packages/96/88/beb33a79a382fcd2aed0be5222bdc47f41e4bfe7aaa90ae1374f1d8ea2af/transformers-4.53.2-py3-none-any.whl", hash = "sha256:db8f4819bb34f000029c73c3c557e7d06fc1b8e612ec142eecdae3947a9c78bf", size = 10826609, upload-time = "2025-07-11T12:39:05.461Z" },
 ]
 
 [package.optional-dependencies]

@@ -51,7 +51,7 @@ WARNING_MESSAGE = (
     "  - check if the attention probabilities hook makes sense before using them by calling `model.attention_probabilities.print_source()` (prettier in a notebook)."
 )
 IS_EXACT_VERSION = True
-if STATUS is None:
+if STATUS is None or len(STATUS) == 0:
     nnterp_status = None
 else:
     if TRANSFORMERS_VERSION in STATUS:
@@ -60,18 +60,18 @@ else:
         IS_EXACT_VERSION = False
         available_versions = list(STATUS.keys())
         current_version = TRANSFORMERS_VERSION
-        closest_below, closest_above = _get_closest_version(
+        nns_closest_below, nns_closest_above = _get_closest_version(
             current_version, available_versions
         )
 
         logger.warning(
             f"nnterp was not tested with Transformers version {current_version}. "
-            f"Closest below: {closest_below}, closest above: {closest_above}\n"
-            f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to {closest_above or closest_below} if possible or:\n"
+            f"Closest below: {nns_closest_below}, closest above: {nns_closest_above}\n"
+            f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to {nns_closest_above or nns_closest_below} if possible or:\n"
             + WARNING_MESSAGE
-            + f"\nUsing test status from {closest_above or closest_below}."
+            + f"\nUsing test status from {nns_closest_above or nns_closest_below}."
         )
-        transformers_status = STATUS[closest_above or closest_below]
+        transformers_status = STATUS[nns_closest_above or nns_closest_below]
 
     if NNSIGHT_VERSION in transformers_status:
         nnterp_status = transformers_status[NNSIGHT_VERSION]
@@ -92,25 +92,38 @@ else:
         else:
             action = None
         tf_message = ""
+        tf_version = tf_closest_above or tf_closest_below
         if action:
-            tf_message = f"You could also {action} to transformers {tf_closest_above}, for which NNsight {NNSIGHT_VERSION} was tested."
-
+            tf_message = f"You could also {action} to transformers {tf_version}, for which NNsight {NNSIGHT_VERSION} was tested."
         available_versions = list(transformers_status.keys())
         current_version = NNSIGHT_VERSION
-        closest_below, closest_above = _get_closest_version(
+        nns_closest_below, nns_closest_above = _get_closest_version(
             current_version, available_versions
         )
-
+        nnsight_message = ""
+        if nns_closest_below or nns_closest_above:
+            nnsight_message = f"Closest below: {nns_closest_below}, closest above: {nns_closest_above}\n"
+        if nns_closest_above:
+            advice = f"Using test results from NNsight {nns_closest_above}."
+            nnterp_status = transformers_status[nns_closest_above]
+        elif tf_closest_above:
+            advice = f"Using test results from transformers {tf_closest_above}."
+            nnterp_status = STATUS[tf_closest_above][NNSIGHT_VERSION]
+        elif tf_closest_below:
+            advice = f"Using test results from transformers {tf_closest_below}."
+            nnterp_status = STATUS[tf_closest_below][NNSIGHT_VERSION]
+        else:
+            advice = f"Using test results from NNsight {nns_closest_below}."
+            nnterp_status = transformers_status[nns_closest_below]
         logger.warning(
             f"nnterp was not tested with NNsight version {current_version} for transformers version {TRANSFORMERS_VERSION}. "
-            f"Closest below: {closest_below}, closest above: {closest_above}\n"
-            f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to NNsight {closest_above or closest_below} if possible.\n"
+            + nnsight_message
+            + f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to NNsight {nns_closest_above or nns_closest_below} if possible.\n"
             + tf_message
             + "Otherwise, consider:\n"
             + WARNING_MESSAGE
-            + f"\nUsing test status from {closest_above or closest_below}."
+            + f"\n{advice}"
         )
-        nnterp_status = STATUS[closest_above or closest_below]
 
 
 if nnterp_status is None:

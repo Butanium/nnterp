@@ -199,16 +199,16 @@ def pytest_sessionfinish(session, exitstatus):
                 logger.warning(f"Error loading {status_file}: {e}")
 
     try:
-        existing_data = _update_status(existing_data, config)
+        new_status = _update_status(existing_data, config)
     except Exception as e:
         if existing_data == {} or config._is_model_specific:
             raise e
         logger.warning(f"Error updating status: {e}")
-        existing_data = _update_status({}, config)
+        new_status = _update_status({}, config)
 
     if not is_partial:
         with open(status_file, "w") as f:
-            json.dump(existing_data, f, indent=2)
+            json.dump(new_status, f, indent=2)
         print(
             f"\nModels tested during this session: {config._tested_models}, saving to {status_file}"
         )
@@ -229,9 +229,7 @@ def pytest_sessionfinish(session, exitstatus):
             "transformers_version": TRANSFORMERS_VERSION,
             "nnsight_version": NNSIGHT_VERSION,
             "errors": dict(config._errors),
-            "status": existing_data.get(TRANSFORMERS_VERSION, {}).get(
-                NNSIGHT_VERSION, {}
-            ),
+            "status": new_status.get(TRANSFORMERS_VERSION, {}).get(NNSIGHT_VERSION, {}),
         }
 
         with open(log_entry_file, "w") as f:
