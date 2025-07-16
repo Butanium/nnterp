@@ -43,7 +43,7 @@ html_context = {
 
 html_theme_options = {
     "show_nav_level": 3,
-    "navbar_end": ["theme-switcher"],
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
     "navbar_align": "left",
     "icon_links": [
         {

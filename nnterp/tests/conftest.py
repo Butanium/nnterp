@@ -277,14 +277,15 @@ def _update_status(prev_status: dict, config):
         if len(fully_available) > 0:
             new_status["fully_available_models"][model_class] = sorted(fully_available)
         available_no_probs = (
-            set(new_status["failed_attn_probs_models"][model_class]) - all_general_fails
+            set(new_status["failed_attn_probs_models"].get(model_class, []))
+            - all_general_fails
         )
         if len(available_no_probs) > 0:
             new_status["no_probs_available_models"][model_class] = sorted(
                 available_no_probs
             )
         available_no_intervention = (
-            set(new_status["failed_intervention_models"][model_class])
+            set(new_status["failed_intervention_models"].get(model_class, []))
             - all_general_fails
         )
         if len(available_no_intervention) > 0:
@@ -292,7 +293,7 @@ def _update_status(prev_status: dict, config):
                 available_no_intervention
             )
         available_no_prompt_utils = (
-            set(new_status["failed_prompt_utils_models"][model_class])
+            set(new_status["failed_prompt_utils_models"].get(model_class, []))
             - all_general_fails
         )
         if len(available_no_prompt_utils) > 0:
