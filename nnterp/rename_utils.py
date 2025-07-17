@@ -190,7 +190,7 @@ def text_config(model):
 
 def get_num_attention_heads(
     model, raise_error: bool = True, rename_config: RenameConfig | None = None
-):
+) -> int | None:
     cfg = text_config(model)
     attn_cfg_keys = ATTN_HEAD_CONFIG_KEYS
     if rename_config is not None and rename_config.attn_head_config_key is not None:
@@ -214,7 +214,7 @@ def get_num_attention_heads(
 
 def get_hidden_size(
     model, raise_error: bool = True, rename_config: RenameConfig | None = None
-):
+) -> int | None:
     cfg = text_config(model)
     hidden_size_keys = HIDDEN_SIZE_CONFIG_KEYS
     if rename_config is not None and rename_config.hidden_size_config_key is not None:

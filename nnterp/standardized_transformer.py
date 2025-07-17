@@ -179,6 +179,10 @@ class StandardizedTransformer(LanguageModel):
         return self.inputs[1]["input_ids"].shape
 
     @property
+    def attention_mask(self) -> TraceTensor:
+        return self.inputs[1]["attention_mask"]
+
+    @property
     def logits(self) -> TraceTensor:
         """Returns the lm_head output"""
         return self.output.logits
