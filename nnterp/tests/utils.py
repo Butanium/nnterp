@@ -63,6 +63,41 @@ def get_all_toy_models():
     ]
 
 
+def sort_json_recursively(obj, preserve_level=None, current_level=0):
+    """
+    Recursively sort JSON object:
+    - Sort dictionary keys (unless current_level == preserve_level)
+    - Sort lists (if elements are sortable)
+    - Recurse into nested structures
+
+    Args:
+        obj: The JSON object to sort
+        preserve_level: The depth level to preserve order (None means sort all levels)
+        current_level: Current depth level (0 is top-level)
+    """
+    if isinstance(obj, dict):
+        if preserve_level is not None and current_level == preserve_level:
+            iterator = obj.items()
+        else:
+            iterator = sorted(obj.items())
+        return {
+            key: sort_json_recursively(value, preserve_level, current_level + 1)
+            for key, value in iterator
+        }
+    elif isinstance(obj, list):
+        els = [
+            sort_json_recursively(el, preserve_level, current_level + 1) for el in obj
+        ]
+        list_els = sorted([e for e in els if isinstance(e, list)], key=lambda x: str(x))
+        dict_els = sorted([e for e in els if isinstance(e, dict)], key=lambda x: str(x))
+        other_els = [
+            e for e in els if not isinstance(e, list) and not isinstance(e, dict)
+        ]
+        return other_els + list_els + dict_els
+    else:
+        return obj
+
+
 def get_all_test_models(class_names=None) -> list[str]:
     """Get all models used in tests: both collection models and hardcoded ones."""
     collection_models = get_all_toy_models()

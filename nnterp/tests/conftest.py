@@ -26,6 +26,7 @@ from .utils import (
     LLAMA_LIKE_MODELS,
     merge_partial_status,
     rm_empty_list,
+    sort_json_recursively,
 )
 
 PROJECT_ROOT = Path(str(importlib.resources.files("nnterp")))
@@ -307,6 +308,7 @@ def _update_status(prev_status: dict, config):
         )
 
     new_status["last_updated"] = datetime.datetime.now().isoformat()
+    new_status = sort_json_recursively(new_status, preserve_level=0)
     transformers_section[NNSIGHT_VERSION] = new_status
     return prev_status
 
