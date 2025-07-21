@@ -25,7 +25,7 @@ def plot_topk_tokens(
     Plot the top k tokens for each layer using Plotly.
 
     Args:
-        next_token_probs (th.Tensor): Probability tensor of shape (batch_size, num_layers, vocab_size)
+        next_token_probs (th.Tensor): Probability tensor of shape (batch_size, num_layers, vocab_size) or (num_layers, vocab_size) or (vocab_size,)
         tokenizer: Tokenizer object
         k (int): Number of top tokens to plot
         title (str): Title of the plot
