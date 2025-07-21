@@ -42,6 +42,7 @@ dev = [
     "black[jupyter]",
     "jupytext",
     "build",
+    "ruff",
     # "flash-attn",  # Note: requires --no-build-isolation flag due to torch build dependency issue. Install with `uv pip install flash-attn --no-build-isolation`
 ]
 vllm = [
