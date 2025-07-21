@@ -5,32 +5,29 @@ set -e
 
 # Function to clean up temporary environment
 cleanup() {
-    if [ -n "$TEMP_VENV" ] && [ -d "$TEMP_VENV" ]; then
-        echo "Cleaning up temporary environment: $TEMP_VENV"
-        rm -rf "$TEMP_VENV"
+    if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
+        echo "Cleaning up temporary environment: $TEMP_DIR"
+        rm -rf "$TEMP_DIR"
     fi
 }
 
 # Set up cleanup trap
 trap cleanup EXIT
 
-# Create temporary virtual environment
-TEMP_VENV=$(mktemp -d)
-echo "Creating temporary virtual environment at: $TEMP_VENV"
+# create a temporary directory
+TEMP_DIR=$(mktemp -d)
 
-# Create and activate virtual environment
-python -m venv "$TEMP_VENV"
-source "$TEMP_VENV/bin/activate"
-
-# Upgrade pip
-pip install --upgrade pip
+# Copy source code to temporary location
+cp -r ./nnterp "$TEMP_DIR/"
+cp pyproject.toml "$TEMP_DIR/"
+cd "$TEMP_DIR"
 
 # Install all dependencies from pyproject.toml
-pip install uv
-uv sync --active
+uv venv
+uv sync
 uv pip install flash-attn --no-build-isolation
-uv pip install pytest
-
+uv pip install pytest protobuf sentencepiece
+source .venv/bin/activate
 
 
 # Get all available transformers versions and extract only the latest patch for each minor version
@@ -56,6 +53,7 @@ printf '%s\n' "${test_versions[@]}"
 # Array to store test results
 declare -a results
 
+set +e
 for version in "${test_versions[@]}"; do
     # Only test versions 4.28.0 and above
     major=$(echo "$version" | cut -d. -f1)
@@ -71,6 +69,7 @@ for version in "${test_versions[@]}"; do
         echo "Successfully installed transformers $version"
         
         # Run tests
+        
         make clean ; python -m pytest nnterp/tests --cache-clear  --tb=short
         exitcode=$?
         if [ $exitcode -le 1 ]; then
@@ -87,6 +86,8 @@ for version in "${test_versions[@]}"; do
     
     echo "----------------------------------------"
 done
+
+set -e
 
 # Print summary
 echo ""
