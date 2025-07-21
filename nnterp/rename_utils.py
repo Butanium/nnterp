@@ -577,24 +577,24 @@ def check_io(std_model, model_name: str, ignores: list[str]):
             raise ValueError(
                 f"mlps_input[0] is not a tensor in {model_name} architecture. Found type {type(mlp_input)}. This means it's not properly initialized."
             )
-        if mlp_input.shape != (batch_size, seq_len, std_model.config.hidden_size):
+        if mlp_input.shape != (batch_size, seq_len, hidden_size):
             raise ValueError(
-                f"mlps_input[0] has shape {mlp_input.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
+                f"mlps_input[0] has shape {mlp_input.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
             )
         if not isinstance(mlp_output, th.Tensor):
             raise ValueError(
                 f"mlps_output[0] is not a tensor in {model_name} architecture. Found type {type(mlp_output)}. This means it's not properly initialized."
             )
-        if mlp_output.shape != (batch_size, seq_len, std_model.config.hidden_size):
+        if mlp_output.shape != (batch_size, seq_len, hidden_size):
             raise ValueError(
-                f"mlps_output[0] has shape {mlp_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
+                f"mlps_output[0] has shape {mlp_output.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
             )
     layer_output = std_model.layers_output[0]
     if not isinstance(layer_output, th.Tensor):
         raise ValueError(
             f"layers_output[0] is not a tensor in {model_name} architecture. Found type {type(layer_output)}. This means it's not properly initialized."
         )
-    if layer_output.shape != (batch_size, seq_len, std_model.config.hidden_size):
+    if layer_output.shape != (batch_size, seq_len, hidden_size):
         raise ValueError(
             f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
         )

@@ -246,6 +246,48 @@ class StandardizedTransformer(LanguageModel):
                 :, positions
             ] += factor * steering_vector.to(layer_device)
 
-    def project_on_vocab(self, h: TraceTensor) -> TraceTensor:
-        h = self.ln_final(h)
-        return self.lm_head(h)
+    def project_on_vocab(self, hidden_state: TraceTensor) -> TraceTensor:
+        hidden_state = self.ln_final(hidden_state)
+        return self.lm_head(hidden_state)
+
+    def probs_to_dict(self, tokens: th.Tensor, probs: th.Tensor) -> dict[str, float]:
+        """
+        Convert a tensor of probabilities to a dictionary mapping tokens to their probabilities
+        """
+        return {
+            token: prob.item()
+            for token, prob in zip(self.tokenizer.convert_ids_to_tokens(tokens), probs)
+        }
+
+    def get_topk_closest_tokens(
+        self, hidden_state: th.Tensor, k=5
+    ) -> dict[str, float] | list[dict[str, float]]:
+        """
+        Get the top-k closest tokens to the hidden state h.
+        Args:
+            h: The hidden state to project on the vocabulary. Shape (batch_size, hidden_size) or (hidden_size,).
+            k: The number of top tokens to return.
+            returns_df: If True, returns a DataFrame instead of a dictionary. Note that you need to have pandas installed for this to work.
+                Pandas is included in ``pip install nnterp[display]``.
+        Returns:
+            A dictionary mapping tokens to their probabilities if h is 1D, or a list of dictionaries if h is 2D.
+        """
+        if hidden_state.shape[-1] != self.hidden_size and self.hidden_size is not None:
+            raise ValueError(
+                f"Hidden state shape {hidden_state.shape} does not match model hidden size {self.hidden_size}."
+            )
+
+        logits = self.project_on_vocab(hidden_state)
+        probs = logits.softmax(-1)
+        topk_tokens = th.topk(probs, k=k, dim=-1)
+        if hidden_state.ndim == 1:
+            return self.probs_to_dict(topk_tokens.indices, topk_tokens.values)
+        elif hidden_state.ndim == 2:
+            return [
+                self.probs_to_dict(topk_tokens.indices[i], topk_tokens.values[i])
+                for i in range(hidden_state.shape[0])
+            ]
+        else:
+            raise ValueError(
+                f"Unsupported hidden state shape {hidden_state.shape}. Expected 1D or 2D tensor."
+            )
