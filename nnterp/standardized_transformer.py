@@ -77,11 +77,8 @@ class StandardizedTransformer(LanguageModel):
     ):
         kwargs.setdefault("device_map", "auto")
         # Check if attention implementation is supported for attention pattern tracing
-        if "attn_implementation" in kwargs or "config" in kwargs:
-            impl = (
-                kwargs.pop("attn_implementation", None)
-                or kwargs["config"]._attn_implementation
-            )
+        if "attn_implementation" in kwargs:
+            impl = kwargs.pop("attn_implementation", None)
             if impl != "eager":
                 logger.warning(
                     f"Attention implementation {impl} is not supported for attention pattern tracing. Please use eager attention implementation if you plan to access attention patterns."
@@ -175,20 +172,30 @@ class StandardizedTransformer(LanguageModel):
         return self.attention_probabilities.enabled
 
     @property
+    def input_ids(self) -> TraceTensor:
+        return self.inputs[1]["input_ids"]
+
+    @property
     def input_size(self) -> Size:
-        return self.inputs[1]["input_ids"].shape
+        """
+        Returns the shape of the input tensor (batch_size, sequence_length)
+        """
+        return self.input_ids.shape
 
     @property
     def attention_mask(self) -> TraceTensor:
+        """Returns the attention mask tensor."""
         return self.inputs[1]["attention_mask"]
 
     @property
     def logits(self) -> TraceTensor:
-        """Returns the lm_head output"""
+        """Returns the predicted logits."""
         return self.output.logits
 
     @property
     def next_token_probs(self) -> TraceTensor:
+        """Returns the predicted probabilities for the next token.
+        Assumes padding_side is "left"."""
         return self.logits[:, -1, :].softmax(-1)
 
     def skip_layer(self, layer: int, skip_with: TraceTensor | None = None):
@@ -214,9 +221,8 @@ class StandardizedTransformer(LanguageModel):
         """
         if skip_with is None:
             skip_with = self.layers_input[start_layer]
-        for layer in range(start_layer, end_layer):
+        for layer in range(start_layer, end_layer + 1):
             self.layers[layer].skip((skip_with, DummyCache()))
-        self.layers[end_layer].skip((skip_with, DummyCache()))
 
     def steer(
         self,
