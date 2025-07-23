@@ -1,3 +1,5 @@
+Try the demo: [![Try Demo in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Butanium/nnterp/blob/main/demo.ipynb)
+
 # nnterp
 
 **A unified interface for all transformer models that puts best `NNsight` practices for LLMs in everyone's hands.**
