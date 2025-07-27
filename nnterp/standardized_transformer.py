@@ -24,6 +24,7 @@ from .rename_utils import (
     RouterLayerAccessor,
     RouterProbabilitiesAccessor,
     detect_router_attr_name,
+    check_router_structure,
     get_num_attention_heads,
     get_hidden_size,
     RenameConfig,
@@ -164,20 +165,20 @@ class StandardizedTransformer(LanguageModel):
                 )
                 self.attention_probabilities.disable()
         
-        # Initialize router accessors for MoE models
-        self._router_attr_name = detect_router_attr_name(self, rename_config)
-        if self._router_attr_name is not None:
+        # Initialize router accessors for MoE models (similar to attention_probabilities)
+        router_attr_name = detect_router_attr_name(self, rename_config)
+        if router_attr_name is not None:
             # Use RouterLayerAccessor for router components (handles nested mlp.router access)
-            self.routers = RouterLayerAccessor(self, self._router_attr_name, None)
-            self.routers_input = RouterLayerAccessor(self, self._router_attr_name, IOType.INPUT)
-            self.routers_output = RouterLayerAccessor(self, self._router_attr_name, IOType.OUTPUT)
+            self.routers = RouterLayerAccessor(self, router_attr_name, None)
+            self.routers_input = RouterLayerAccessor(self, router_attr_name, IOType.INPUT)
+            self.routers_output = RouterLayerAccessor(self, router_attr_name, IOType.OUTPUT)
             
             # Specialized accessor for router probabilities
-            self.router_probabilities = RouterProbabilitiesAccessor(self, self._router_attr_name)
+            self.router_probabilities = RouterProbabilitiesAccessor(self, router_attr_name)
             
             if check_renaming:
                 try:
-                    self.router_probabilities.check_router_structure()
+                    check_router_structure(self, router_attr_name)
                 except Exception as e:
                     logger.error(
                         f"Router access is not available for {model_name} architecture. Disabling it. Error:\n{e}"
@@ -207,9 +208,31 @@ class StandardizedTransformer(LanguageModel):
     
     @property
     def routers_available(self) -> bool:
-        return self._router_attr_name is not None and (
-            self.router_probabilities is None or self.router_probabilities.enabled
-        )
+        return (self.routers is not None and 
+                self.routers_input is not None and 
+                self.routers_output is not None and 
+                self.router_probabilities is not None and
+                self.router_probabilities.enabled)
+    
+    @property
+    def layers_with_routers(self) -> list[int]:
+        """Get ordered list of layer indices that contain routers."""
+        if not self.routers_available:
+            return []
+        
+        router_layers = []
+        for layer_idx in range(self.num_layers):
+            try:
+                # Check if this layer has a router by trying to access it
+                layer_module = self.layers[layer_idx]
+                if hasattr(layer_module, 'mlp'):
+                    mlp = layer_module.mlp
+                    if hasattr(mlp, self.router_probabilities._router_attr_name):
+                        router_layers.append(layer_idx)
+            except:
+                continue
+        
+        return router_layers
 
     @property
     def input_ids(self) -> TraceTensor:

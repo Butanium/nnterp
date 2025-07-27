@@ -538,9 +538,7 @@ def detect_router_attr_name(model, rename_config: RenameConfig | None = None) ->
                 router_names = list(rename_config.router_name) + router_names
         
         # Check multiple layers since some models (like Llama4) have mixed dense/MoE layers
-        num_layers_to_check = min(len(model.layers), 8)  # Check first 8 layers max
-        
-        for layer_idx in range(num_layers_to_check):
+        for layer_idx in range(len(model.layers)):
             layer = model.layers[layer_idx]
             if not hasattr(layer, 'mlp'):
                 continue
@@ -655,7 +653,7 @@ class RouterProbabilitiesAccessor:
         
         # First try to find a layer with a router
         router = None
-        for check_layer in range(min(layer + 8, len(self.model.layers))):
+        for check_layer in range(layer, len(self.model.layers)):
             try:
                 router = self._get_router_module(check_layer)
                 break
@@ -679,43 +677,76 @@ class RouterProbabilitiesAccessor:
             return config.top_k
         
         raise RenamingError(f"Could not find top_k parameter for router")
+
+
+def check_router_structure(model, router_attr_name: str, layer: int = 0):
+    """
+    Validate router structure and shapes for a model.
     
-    def check_router_structure(self, layer: int = 0):
-        """Validate router structure and shapes."""
-        if not self.enabled:
-            raise RenamingError("Router probabilities are disabled for this model.")
-        
-        # Find a layer with a router for validation
-        router = None
-        actual_layer = None
-        for check_layer in range(min(layer + 8, len(self.model.layers))):
-            try:
-                router = self._get_router_module(check_layer)
-                actual_layer = check_layer
-                break
-            except RenamingError:
-                continue
-        
-        if router is None:
-            raise RenamingError(f"Could not find any router component starting from layer {layer}")
-        
-        # Basic structure validation
-        if not hasattr(router, 'weight'):
-            raise RenamingError(f"Router at layer {actual_layer} does not have weight attribute")
-        
-        # Check if router has expected methods/attributes
-        weight = router.weight
-        if not isinstance(weight, th.Tensor):
-            raise RenamingError(f"Router weight at layer {actual_layer} is not a tensor")
-        
-        logger.info(f"Router at layer {actual_layer} validated successfully")
-        logger.info(f"Router weight shape: {weight.shape}")
-        
+    Args:
+        model: The StandardizedTransformer model
+        router_attr_name: The detected router attribute name
+        layer: Starting layer to check (default: 0)
+    
+    Raises:
+        RenamingError: If router structure is invalid
+    """
+    # Find a layer with a router for validation
+    router = None
+    actual_layer = None
+    
+    for check_layer in range(layer, len(model.layers)):
         try:
-            top_k = self.get_top_k(layer)
+            layer_module = model.layers[check_layer]
+            if hasattr(layer_module, 'mlp'):
+                mlp = layer_module.mlp
+                if hasattr(mlp, router_attr_name):
+                    router = getattr(mlp, router_attr_name)
+                    actual_layer = check_layer
+                    break
+        except Exception:
+            continue
+    
+    if router is None:
+        raise RenamingError(f"Could not find any router component starting from layer {layer}")
+    
+    # Basic structure validation
+    if not hasattr(router, 'weight'):
+        raise RenamingError(f"Router at layer {actual_layer} does not have weight attribute")
+    
+    # Check if router has expected methods/attributes
+    weight = router.weight
+    if not isinstance(weight, th.Tensor):
+        raise RenamingError(f"Router weight at layer {actual_layer} is not a tensor")
+    
+    logger.info(f"Router at layer {actual_layer} validated successfully")
+    logger.info(f"Router weight shape: {weight.shape}")
+    
+    # Try to get top_k parameter
+    try:
+        # Try different attribute names for top_k
+        top_k_attrs = ['top_k', 'topk', 'num_experts_per_tok', 'k']
+        top_k = None
+        for attr in top_k_attrs:
+            if hasattr(router, attr):
+                top_k = getattr(router, attr)
+                break
+        
+        # Check if it's in the model config
+        if top_k is None:
+            config = model.config
+            if hasattr(config, 'num_experts_per_tok'):
+                top_k = config.num_experts_per_tok
+            elif hasattr(config, 'top_k'):
+                top_k = config.top_k
+        
+        if top_k is not None:
             logger.info(f"Router top_k: {top_k}")
-        except RenamingError as e:
-            logger.warning(f"Could not get top_k: {e}")
+        else:
+            logger.warning("Could not find top_k parameter for router")
+    except Exception as e:
+        logger.warning(f"Could not get top_k: {e}")
+
 
 
 

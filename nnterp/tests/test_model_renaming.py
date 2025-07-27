@@ -204,13 +204,18 @@ def test_standardized_transformer_methods(model_name):
             
             # Test router access for MoE models
             if "router" not in ignores and model.routers_available:
+                # Use layers_with_routers to find a valid router layer
+                router_layers = model.layers_with_routers
+                assert len(router_layers) > 0, f"Should find router layers for MoE model {model_name}"
+                
                 # Test LayerAccessor-based router access
-                _router_accessor = model.routers[0]
-                router_input_accessor = model.routers_input[0].save()
-                router_output_accessor = model.routers_output[0].save()
+                router_layer = router_layers[0]
+                _router_accessor = model.routers[router_layer]
+                router_input_accessor = model.routers_input[router_layer].save()
+                router_output_accessor = model.routers_output[router_layer].save()
                 
                 # Test specialized router probabilities accessor
-                router_probs_accessor = model.router_probabilities[0].save()
+                router_probs_accessor = model.router_probabilities[router_layer].save()
                 top_k = model.router_probabilities.get_top_k()
                 assert isinstance(top_k, int) and top_k > 0, "top_k should be positive integer"
             
@@ -261,7 +266,11 @@ def test_standardized_transformer_methods(model_name):
         assert router_input_accessor.shape[1] == seq_len, "Router input seq len should match input"
         assert router_output_accessor.shape[0] == batch_size, "Router output batch size should match input"
         assert router_output_accessor.shape[1] == seq_len, "Router output seq len should match input"
-        assert router_output_accessor.shape[2] > 0, "Router should have positive number of experts"
+        # Get num_experts from router weights for validation
+        router = model.routers[router_layer]
+        num_experts = router.weight.shape[1]
+        assert router_output_accessor.shape[2] == num_experts, \
+            f"Router should have {num_experts} experts (got {router_output_accessor.shape[2]})"
         assert router_probs_accessor.shape == router_output_accessor.shape, "Router probabilities should match output shape"
 
     print(

@@ -12,8 +12,12 @@ def get_moe_models():
         "yujiepan/qwen1.5-moe-tiny-random", 
         "yujiepan/qwen3-moe-tiny-random",
     ]
-    # Filter to only include models that are in TEST_MODELS
-    return [model for model in moe_models if model in TEST_MODELS]
+    # Ensure all MoE models are in TEST_MODELS
+    missing_models = [model for model in moe_models if model not in TEST_MODELS]
+    if missing_models:
+        raise ValueError(f"MoE models not found in TEST_MODELS: {missing_models}")
+    
+    return moe_models
 
 
 def get_non_moe_models():
@@ -23,7 +27,12 @@ def get_non_moe_models():
         "bigscience/bigscience-small-testing",
         "yujiepan/opt-tiny-2layers-random",
     ]
-    return [model for model in non_moe_models if model in TEST_MODELS]
+    # Ensure all non-MoE models are in TEST_MODELS
+    missing_models = [model for model in non_moe_models if model not in TEST_MODELS]
+    if missing_models:
+        raise ValueError(f"Non-MoE models not found in TEST_MODELS: {missing_models}")
+    
+    return non_moe_models
 
 
 @pytest.mark.parametrize("model_name", get_moe_models())
@@ -38,18 +47,14 @@ def test_router_detection_moe_models(model_name):
         
         # Should be able to access router components
         with model.trace("Hello world"):
-            # Find a layer with a router (may not be layer 0 for mixed architectures)
-            router_layer = None
-            for layer_idx in range(min(8, model.num_layers)):
-                try:
-                    router = model.routers[layer_idx]
-                    if router is not None:
-                        router_layer = layer_idx
-                        break
-                except:
-                    continue
+            # Use layers_with_routers to find router layers
+            router_layers = model.layers_with_routers
+            assert len(router_layers) > 0, f"Should find at least one router layer in {model_name}"
             
-            assert router_layer is not None, f"Should find at least one router layer in {model_name}"
+            # Test access to first router layer
+            router_layer = router_layers[0]
+            router = model.routers[router_layer]
+            assert router is not None, f"Router should be accessible at layer {router_layer}"
 
 
 @pytest.mark.parametrize("model_name", get_non_moe_models())
@@ -75,13 +80,16 @@ def test_router_module_access(model_name):
     with th.no_grad():
         model = StandardizedTransformer(model_name)
         
-        if not model.routers_available:
-            pytest.skip(f"Router not available for {model_name}")
+        assert model.routers_available, f"Router should be available for MoE model {model_name}"
         
         with model.trace("Hello world"):
-            # Find a layer with a router
+            # Use layers_with_routers to find router layers
+            router_layers = model.layers_with_routers
+            assert len(router_layers) > 0, f"Should find at least one router layer in {model_name}"
+            
+            # Find a layer with a router that has weights
             router_layer = None
-            for layer_idx in range(min(8, model.num_layers)):
+            for layer_idx in router_layers:
                 try:
                     router = model.routers[layer_idx]
                     if router is not None and hasattr(router, 'weight'):
@@ -90,8 +98,7 @@ def test_router_module_access(model_name):
                 except:
                     continue
             
-            if router_layer is None:
-                pytest.skip(f"No router layer found for {model_name}")
+            assert router_layer is not None, f"Should find a router with weights in {model_name}"
             
             # Test router module access
             router = model.routers[router_layer]
@@ -114,24 +121,15 @@ def test_router_io_access(model_name):
     with th.no_grad():
         model = StandardizedTransformer(model_name)
         
-        if not model.routers_available:
-            pytest.skip(f"Router not available for {model_name}")
+        assert model.routers_available, f"Router should be available for MoE model {model_name}"
         
         with model.trace("Hello world"):
-            # Find a layer with a router
-            router_layer = None
-            for layer_idx in range(min(8, model.num_layers)):
-                try:
-                    router_input = model.routers_input[layer_idx]
-                    router_output = model.routers_output[layer_idx]
-                    if router_input is not None and router_output is not None:
-                        router_layer = layer_idx
-                        break
-                except:
-                    continue
+            # Use layers_with_routers to find router layers
+            router_layers = model.layers_with_routers
+            assert len(router_layers) > 0, f"Should find at least one router layer in {model_name}"
             
-            if router_layer is None:
-                pytest.skip(f"No router layer found for {model_name}")
+            # Use first router layer
+            router_layer = router_layers[0]
             
             # Test router input/output access
             router_input = model.routers_input[router_layer]
@@ -146,7 +144,12 @@ def test_router_io_access(model_name):
             assert router_input.shape[1] == seq_len, f"Router input sequence length should be {seq_len}"
             assert router_output.shape[0] == batch_size, f"Router output batch size should be {batch_size}"
             assert router_output.shape[1] == seq_len, f"Router output sequence length should be {seq_len}"
-            assert router_output.shape[2] > 0, "Router outputs should have positive number of experts"
+            
+            # Get num_experts from router weights for validation
+            router = model.routers[router_layer]
+            num_experts = router.weight.shape[1]
+            assert router_output.shape[2] == num_experts, \
+                f"Router outputs should have {num_experts} experts (got {router_output.shape[2]})"
 
 
 @pytest.mark.parametrize("model_name", get_moe_models())
@@ -155,23 +158,15 @@ def test_router_probabilities_and_top_k(model_name):
     with th.no_grad():
         model = StandardizedTransformer(model_name)
         
-        if not model.routers_available:
-            pytest.skip(f"Router not available for {model_name}")
+        assert model.routers_available, f"Router should be available for MoE model {model_name}"
         
         with model.trace("Hello world"):
-            # Find a layer with a router
-            router_layer = None
-            for layer_idx in range(min(8, model.num_layers)):
-                try:
-                    router_probs = model.router_probabilities[layer_idx]
-                    if router_probs is not None:
-                        router_layer = layer_idx
-                        break
-                except:
-                    continue
+            # Use layers_with_routers to find router layers
+            router_layers = model.layers_with_routers
+            assert len(router_layers) > 0, f"Should find at least one router layer in {model_name}"
             
-            if router_layer is None:
-                pytest.skip(f"No router layer found for {model_name}")
+            # Use first router layer
+            router_layer = router_layers[0]
             
             # Test router probabilities access
             router_probs = model.router_probabilities[router_layer]
@@ -181,7 +176,12 @@ def test_router_probabilities_and_top_k(model_name):
             batch_size, seq_len = model.input_size
             assert router_probs.shape[0] == batch_size, f"Router probs batch size should be {batch_size}"
             assert router_probs.shape[1] == seq_len, f"Router probs sequence length should be {seq_len}"
-            assert router_probs.shape[2] > 0, "Router probs should have positive number of experts"
+            
+            # Get num_experts from router weights for validation
+            router = model.routers[router_layer]
+            num_experts = router.weight.shape[1]
+            assert router_probs.shape[2] == num_experts, \
+                f"Router probabilities should have {num_experts} experts (got {router_probs.shape[2]})"
         
         # Test getting top_k parameter
         top_k = model.router_probabilities.get_top_k()
@@ -278,25 +278,17 @@ def test_router_tensor_shapes_consistency(model_name):
     with th.no_grad():
         model = StandardizedTransformer(model_name)
         
-        if not model.routers_available:
-            pytest.skip(f"Router not available for {model_name}")
+        assert model.routers_available, f"Router should be available for MoE model {model_name}"
         
         with model.trace("Hello world"):
             batch_size, seq_len = model.input_size
             
-            # Find a layer with a router
-            router_layer = None
-            for layer_idx in range(min(8, model.num_layers)):
-                try:
-                    router = model.routers[layer_idx]
-                    if router is not None and hasattr(router, 'weight'):
-                        router_layer = layer_idx
-                        break
-                except:
-                    continue
+            # Use layers_with_routers to find router layers
+            router_layers = model.layers_with_routers
+            assert len(router_layers) > 0, f"Should find at least one router layer in {model_name}"
             
-            if router_layer is None:
-                pytest.skip(f"No router layer found for {model_name}")
+            # Use first router layer
+            router_layer = router_layers[0]
             
             # Get router components
             router = model.routers[router_layer]
@@ -319,8 +311,15 @@ def test_router_tensor_shapes_consistency(model_name):
             assert router_probs.shape == router_output.shape, \
                 f"Router probabilities shape should match output shape"
             
+            # Validate num_experts consistency
+            assert router_output.shape[2] == num_experts, \
+                f"Router output experts dimension ({router_output.shape[2]}) should match router weight experts ({num_experts})"
+            assert router_probs.shape[2] == num_experts, \
+                f"Router probabilities experts dimension ({router_probs.shape[2]}) should match router weight experts ({num_experts})"
+            
             # top_k should be reasonable relative to num_experts
             assert top_k <= num_experts, f"top_k ({top_k}) should not exceed num_experts ({num_experts})"
+            assert top_k > 0, f"top_k ({top_k}) should be positive"
             
             # Hidden size should match model's hidden size if available
             if model.hidden_size is not None:
