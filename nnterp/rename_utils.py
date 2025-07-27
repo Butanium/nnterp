@@ -513,90 +513,157 @@ class AttentionProbabilitiesAccessor:
             display_markdown(markdown_text)
 
 
-class RouterAccessor:
+def detect_router_attr_name(model, rename_config: RenameConfig | None = None) -> str | None:
     """
-    Accessor for MoE router components that provides standardized access
-    to router weights, outputs, and top_k parameter across different architectures.
+    Detect the router attribute name for MoE models by scanning multiple layers.
     
     Handles different naming conventions:
     - "router" (e.g., Llama4: model.layers[0].feed_forward.router)
     - "gate" (e.g., OLMoE: model.layers[0].feed_forward.gate)
+    
+    Returns the router attribute name if found, None otherwise.
     """
-    
-    def __init__(self, model, rename_config: RenameConfig | None = None):
-        self.model = model
-        self.rename_config = rename_config
-        self.enabled = True
-        self._router_attr_name = None
-        self._detect_router_structure()
-    
-    def _detect_router_structure(self):
-        """Detect the router structure and naming convention for this model."""
-        try:
-            # Check if this is a MoE model by looking at the first layer's MLP
-            first_layer = self.model.layers[0]
-            if not hasattr(first_layer, 'mlp'):
-                self.enabled = False
-                return
+    try:
+        # Check if router is explicitly ignored
+        if rename_config and rename_config.ignore_router:
+            logger.debug("Router access is explicitly ignored in configuration")
+            return None
+        
+        # Try different router naming conventions
+        router_names = ROUTER_NAMES.copy()
+        if rename_config and rename_config.router_name:
+            if isinstance(rename_config.router_name, str):
+                router_names.insert(0, rename_config.router_name)
+            else:
+                router_names = list(rename_config.router_name) + router_names
+        
+        # Check multiple layers since some models (like Llama4) have mixed dense/MoE layers
+        num_layers_to_check = min(len(model.layers), 8)  # Check first 8 layers max
+        
+        for layer_idx in range(num_layers_to_check):
+            layer = model.layers[layer_idx]
+            if not hasattr(layer, 'mlp'):
+                continue
                 
-            mlp = first_layer.mlp
-            
-            # Try different router naming conventions
-            router_names = ROUTER_NAMES.copy()
-            if self.rename_config and self.rename_config.router_name:
-                if isinstance(self.rename_config.router_name, str):
-                    router_names.insert(0, self.rename_config.router_name)
-                else:
-                    router_names = list(self.rename_config.router_name) + router_names
+            mlp = layer.mlp
             
             for router_name in router_names:
                 if hasattr(mlp, router_name):
-                    self._router_attr_name = router_name
-                    logger.info(f"Detected router component: {router_name}")
-                    return
-            
-            # No router found - this is not a MoE model
-            self.enabled = False
-            logger.debug("No router component found - not a MoE model")
-            
-        except Exception as e:
-            logger.warning(f"Failed to detect router structure: {e}")
-            self.enabled = False
+                    logger.info(f"Detected router component '{router_name}' in layer {layer_idx}")
+                    return router_name
+        
+        # No router found in any layer - this is not a MoE model
+        logger.debug("No router component found in any layer - not a MoE model")
+        return None
+        
+    except Exception as e:
+        logger.warning(f"Failed to detect router structure: {e}")
+        return None
+
+
+class RouterLayerAccessor:
+    """
+    Layer accessor for router components that handles nested attribute access.
+    Similar to LayerAccessor but can handle paths like "mlp.router".
+    """
+    
+    def __init__(self, model, router_attr_name: str, io_type: IOType | None = None):
+        self.model = model
+        self.router_attr_name = router_attr_name
+        self.io_type = io_type
+    
+    def get_module(self, layer: int) -> Envoy:
+        """Get the router module for a specific layer."""
+        layer_module = self.model.layers[layer]
+        if not hasattr(layer_module, 'mlp'):
+            raise RenamingError(f"Layer {layer} does not have an MLP component.")
+        
+        mlp = layer_module.mlp
+        if not hasattr(mlp, self.router_attr_name):
+            raise RenamingError(f"Layer {layer} does not have a router component ('{self.router_attr_name}').")
+        
+        return getattr(mlp, self.router_attr_name)
+    
+    def __getitem__(self, layer: int) -> TraceTensor | Envoy:
+        """Get router module or its input/output for the specified layer."""
+        module = self.get_module(layer)
+        if self.io_type is None:
+            return module
+        elif self.io_type.value == "input":
+            return module.input
+        elif self.io_type.value == "output":
+            return module.output
+        else:
+            raise ValueError(f"Invalid io_type: {self.io_type}")
+    
+    def __setitem__(self, layer: int, value: TraceTensor):
+        """Set router input/output for the specified layer."""
+        if self.io_type is None:
+            raise ValueError("Cannot set the value of a module accessor. Did you mean router_input/output")
+        
+        module = self.get_module(layer)
+        if self.io_type.value == "input":
+            module.input = value
+        else:
+            module.output = value
+
+
+class RouterProbabilitiesAccessor:
+    """
+    Specialized accessor for MoE router probability distributions.
+    Similar to AttentionProbabilitiesAccessor but for router outputs.
+    """
+    
+    def __init__(self, model, router_attr_name: str):
+        self.model = model
+        self.router_attr_name = router_attr_name
+        self.enabled = True
     
     def disable(self):
-        """Disable router access."""
+        """Disable router probabilities access."""
         self.enabled = False
     
     def _get_router_module(self, layer: int):
-        """Get the router module for a specific layer."""
+        """Get the router module for a specific layer, handling mixed architectures."""
         if not self.enabled:
-            raise RenamingError("Router access is disabled for this model.")
-        if self._router_attr_name is None:
-            raise RenamingError("Router component not detected.")
+            raise RenamingError("Router probabilities are disabled for this model.")
         
-        mlp = self.model.layers[layer].mlp
-        return getattr(mlp, self._router_attr_name)
+        layer_module = self.model.layers[layer]
+        if not hasattr(layer_module, 'mlp'):
+            raise RenamingError(f"Layer {layer} does not have an MLP component.")
+        
+        mlp = layer_module.mlp
+        if not hasattr(mlp, self.router_attr_name):
+            raise RenamingError(f"Layer {layer} does not have a router component ('{self.router_attr_name}').")
+        
+        return getattr(mlp, self.router_attr_name)
     
     def __getitem__(self, layer: int) -> TraceTensor:
-        """Get router module for the specified layer."""
-        return self._get_router_module(layer)
+        """Get router probability output for the specified layer."""
+        router = self._get_router_module(layer)
+        return router.output
     
-    @property
-    def router_outputs(self):
-        """Get router outputs accessor."""
-        return RouterOutputAccessor(self)
-    
-    @property
-    def router_weights(self):
-        """Get router weights accessor."""
-        return RouterWeightAccessor(self)
+    def __setitem__(self, layer: int, value: TraceTensor):
+        """Set router probability output for the specified layer."""
+        router = self._get_router_module(layer)
+        router.output = value
     
     def get_top_k(self, layer: int = 0) -> int:
         """Get the top_k parameter for the router at the specified layer."""
         if not self.enabled:
-            raise RenamingError("Router access is disabled for this model.")
+            raise RenamingError("Router probabilities are disabled for this model.")
         
-        router = self._get_router_module(layer)
+        # First try to find a layer with a router
+        router = None
+        for check_layer in range(min(layer + 8, len(self.model.layers))):
+            try:
+                router = self._get_router_module(check_layer)
+                break
+            except RenamingError:
+                continue
+        
+        if router is None:
+            raise RenamingError(f"Could not find any router component starting from layer {layer}")
         
         # Try different attribute names for top_k
         top_k_attrs = ['top_k', 'topk', 'num_experts_per_tok', 'k']
@@ -611,25 +678,37 @@ class RouterAccessor:
         if hasattr(config, 'top_k'):
             return config.top_k
         
-        raise RenamingError(f"Could not find top_k parameter for router in layer {layer}")
+        raise RenamingError(f"Could not find top_k parameter for router")
     
     def check_router_structure(self, layer: int = 0):
         """Validate router structure and shapes."""
         if not self.enabled:
-            raise RenamingError("Router access is disabled for this model.")
+            raise RenamingError("Router probabilities are disabled for this model.")
         
-        router = self._get_router_module(layer)
+        # Find a layer with a router for validation
+        router = None
+        actual_layer = None
+        for check_layer in range(min(layer + 8, len(self.model.layers))):
+            try:
+                router = self._get_router_module(check_layer)
+                actual_layer = check_layer
+                break
+            except RenamingError:
+                continue
+        
+        if router is None:
+            raise RenamingError(f"Could not find any router component starting from layer {layer}")
         
         # Basic structure validation
         if not hasattr(router, 'weight'):
-            raise RenamingError(f"Router at layer {layer} does not have weight attribute")
+            raise RenamingError(f"Router at layer {actual_layer} does not have weight attribute")
         
         # Check if router has expected methods/attributes
         weight = router.weight
         if not isinstance(weight, th.Tensor):
-            raise RenamingError(f"Router weight at layer {layer} is not a tensor")
+            raise RenamingError(f"Router weight at layer {actual_layer} is not a tensor")
         
-        logger.info(f"Router at layer {layer} validated successfully")
+        logger.info(f"Router at layer {actual_layer} validated successfully")
         logger.info(f"Router weight shape: {weight.shape}")
         
         try:
@@ -638,29 +717,6 @@ class RouterAccessor:
         except RenamingError as e:
             logger.warning(f"Could not get top_k: {e}")
 
-
-class RouterOutputAccessor:
-    """Accessor for router outputs."""
-    
-    def __init__(self, router_accessor: RouterAccessor):
-        self.router_accessor = router_accessor
-    
-    def __getitem__(self, layer: int) -> TraceTensor:
-        """Get router output for the specified layer."""
-        router = self.router_accessor._get_router_module(layer)
-        return router.output
-
-
-class RouterWeightAccessor:
-    """Accessor for router weights."""
-    
-    def __init__(self, router_accessor: RouterAccessor):
-        self.router_accessor = router_accessor
-    
-    def __getitem__(self, layer: int) -> TraceTensor:
-        """Get router weights for the specified layer."""
-        router = self.router_accessor._get_router_module(layer)
-        return router.weight
 
 
 def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:

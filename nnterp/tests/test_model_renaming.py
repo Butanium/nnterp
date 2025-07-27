@@ -204,10 +204,14 @@ def test_standardized_transformer_methods(model_name):
             
             # Test router access for MoE models
             if "router" not in ignores and model.routers_available:
+                # Test LayerAccessor-based router access
                 _router_accessor = model.routers[0]
-                router_weights_accessor = model.routers.router_weights[0].save()
-                router_outputs_accessor = model.routers.router_outputs[0].save()
-                top_k = model.routers.get_top_k()
+                router_input_accessor = model.routers_input[0].save()
+                router_output_accessor = model.routers_output[0].save()
+                
+                # Test specialized router probabilities accessor
+                router_probs_accessor = model.router_probabilities[0].save()
+                top_k = model.router_probabilities.get_top_k()
                 assert isinstance(top_k, int) and top_k > 0, "top_k should be positive integer"
             
             layer_output_accessor = model.layers_output[0].save()
@@ -253,10 +257,12 @@ def test_standardized_transformer_methods(model_name):
     # Test router shape consistency for MoE models
     if "router" not in ignores and model.routers_available:
         batch_size, seq_len = model.input_size
-        assert router_weights_accessor.ndim == 2, "Router weights should be 2D"
-        assert router_outputs_accessor.shape[0] == batch_size, "Router output batch size should match input"
-        assert router_outputs_accessor.shape[1] == seq_len, "Router output seq len should match input"
-        assert router_outputs_accessor.shape[2] > 0, "Router should have positive number of experts"
+        assert router_input_accessor.shape[0] == batch_size, "Router input batch size should match input"
+        assert router_input_accessor.shape[1] == seq_len, "Router input seq len should match input"
+        assert router_output_accessor.shape[0] == batch_size, "Router output batch size should match input"
+        assert router_output_accessor.shape[1] == seq_len, "Router output seq len should match input"
+        assert router_output_accessor.shape[2] > 0, "Router should have positive number of experts"
+        assert router_probs_accessor.shape == router_output_accessor.shape, "Router probabilities should match output shape"
 
     print(
         "StandardizedTransformer both accessor and direct access methods tested successfully."

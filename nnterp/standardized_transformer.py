@@ -21,7 +21,9 @@ from .rename_utils import (
     mlp_returns_tuple,
     check_model_renaming,
     AttentionProbabilitiesAccessor,
-    RouterAccessor,
+    RouterLayerAccessor,
+    RouterProbabilitiesAccessor,
+    detect_router_attr_name,
     get_num_attention_heads,
     get_hidden_size,
     RenameConfig,
@@ -53,8 +55,9 @@ class StandardizedTransformer(LanguageModel):
     - mlps_output[i]: Get/set MLP output at layer i
     - mlps[i]: Get MLP module at layer i
     - routers[i]: Get router module at layer i (MoE models only)
-    - routers.router_outputs[i]: Get router output at layer i (MoE models only)
-    - routers.router_weights[i]: Get router weights at layer i (MoE models only)
+    - routers_input[i]: Get/set router input at layer i (MoE models only)
+    - routers_output[i]: Get/set router output at layer i (MoE models only)
+    - router_probabilities[i]: Get/set router probability distribution at layer i (MoE models only)
 
     Args:
         repo_id (str): Hugging Face repository ID or path of the model to load.
@@ -161,16 +164,31 @@ class StandardizedTransformer(LanguageModel):
                 )
                 self.attention_probabilities.disable()
         
-        # Initialize router accessor
-        self.routers = RouterAccessor(self, rename_config=rename_config)
-        if check_renaming and self.routers.enabled:
-            try:
-                self.routers.check_router_structure()
-            except Exception as e:
-                logger.error(
-                    f"Router access is not available for {model_name} architecture. Disabling it. Error:\n{e}"
-                )
-                self.routers.disable()
+        # Initialize router accessors for MoE models
+        self._router_attr_name = detect_router_attr_name(self, rename_config)
+        if self._router_attr_name is not None:
+            # Use RouterLayerAccessor for router components (handles nested mlp.router access)
+            self.routers = RouterLayerAccessor(self, self._router_attr_name, None)
+            self.routers_input = RouterLayerAccessor(self, self._router_attr_name, IOType.INPUT)
+            self.routers_output = RouterLayerAccessor(self, self._router_attr_name, IOType.OUTPUT)
+            
+            # Specialized accessor for router probabilities
+            self.router_probabilities = RouterProbabilitiesAccessor(self, self._router_attr_name)
+            
+            if check_renaming:
+                try:
+                    self.router_probabilities.check_router_structure()
+                except Exception as e:
+                    logger.error(
+                        f"Router access is not available for {model_name} architecture. Disabling it. Error:\n{e}"
+                    )
+                    self.router_probabilities.disable()
+        else:
+            # No routers found - create disabled accessors
+            self.routers = None
+            self.routers_input = None
+            self.routers_output = None
+            self.router_probabilities = None
         
         warn_about_status(model_name, self._model, model_name)
         self._add_prefix_false_tokenizer = None
@@ -189,7 +207,9 @@ class StandardizedTransformer(LanguageModel):
     
     @property
     def routers_available(self) -> bool:
-        return self.routers.enabled
+        return self._router_attr_name is not None and (
+            self.router_probabilities is None or self.router_probabilities.enabled
+        )
 
     @property
     def input_ids(self) -> TraceTensor:
