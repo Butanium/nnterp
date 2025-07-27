@@ -21,6 +21,7 @@ from .rename_utils import (
     mlp_returns_tuple,
     check_model_renaming,
     AttentionProbabilitiesAccessor,
+    RouterAccessor,
     get_num_attention_heads,
     get_hidden_size,
     RenameConfig,
@@ -51,6 +52,9 @@ class StandardizedTransformer(LanguageModel):
     - attentions[i]: Get attention module at layer i
     - mlps_output[i]: Get/set MLP output at layer i
     - mlps[i]: Get MLP module at layer i
+    - routers[i]: Get router module at layer i (MoE models only)
+    - routers.router_outputs[i]: Get router output at layer i (MoE models only)
+    - routers.router_weights[i]: Get router weights at layer i (MoE models only)
 
     Args:
         repo_id (str): Hugging Face repository ID or path of the model to load.
@@ -156,6 +160,18 @@ class StandardizedTransformer(LanguageModel):
                     f"Attention probabilities is not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
                 self.attention_probabilities.disable()
+        
+        # Initialize router accessor
+        self.routers = RouterAccessor(self, rename_config=rename_config)
+        if check_renaming and self.routers.enabled:
+            try:
+                self.routers.check_router_structure()
+            except Exception as e:
+                logger.error(
+                    f"Router access is not available for {model_name} architecture. Disabling it. Error:\n{e}"
+                )
+                self.routers.disable()
+        
         warn_about_status(model_name, self._model, model_name)
         self._add_prefix_false_tokenizer = None
 
@@ -170,6 +186,10 @@ class StandardizedTransformer(LanguageModel):
     @property
     def attn_probs_available(self) -> bool:
         return self.attention_probabilities.enabled
+    
+    @property
+    def routers_available(self) -> bool:
+        return self.routers.enabled
 
     @property
     def input_ids(self) -> TraceTensor:
