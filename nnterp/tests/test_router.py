@@ -2,25 +2,12 @@ import torch as th
 import pytest
 from nnterp import StandardizedTransformer
 from nnterp.rename_utils import RenamingError, RenameConfig
-from nnterp.tests.utils import TEST_MODELS
-
-
-# MoE models that are known to have router components
-MOE_MODELS = [
-    "yujiepan/mixtral-8xtiny-random",
-    "yujiepan/qwen1.5-moe-tiny-random", 
-    "yujiepan/qwen3-moe-tiny-random",
-]
-
-# Ensure all MoE models are in TEST_MODELS
-missing_models = [model for model in MOE_MODELS if model not in TEST_MODELS]
-if missing_models:
-    raise ValueError(f"MoE models not found in TEST_MODELS: {missing_models}")
+from nnterp.tests.utils import TEST_MODELS, TEST_MOE_MODELS
 
 
 def test_router_detection_moe_models(model_name):
     """Test that router components are properly detected in MoE models."""
-    if model_name not in MOE_MODELS:
+    if model_name not in TEST_MOE_MODELS:
         pytest.skip(f"Skipping router test for non-MoE model {model_name}")
     
     with th.no_grad():
@@ -43,7 +30,7 @@ def test_router_detection_moe_models(model_name):
 
 def test_router_detection_non_moe_models(model_name):
     """Test that router components are properly disabled for non-MoE models."""
-    if model_name in MOE_MODELS:
+    if model_name in TEST_MOE_MODELS:
         pytest.skip(f"Skipping non-MoE test for MoE model {model_name}")
     
     with th.no_grad():
@@ -61,7 +48,7 @@ def test_router_detection_non_moe_models(model_name):
 
 def test_router_module_access(model_name):
     """Test accessing router modules and their weights."""
-    if model_name not in MOE_MODELS:
+    if model_name not in TEST_MOE_MODELS:
         pytest.skip(f"Skipping router test for non-MoE model {model_name}")
     
     with th.no_grad():
@@ -104,7 +91,7 @@ def test_router_module_access(model_name):
 
 def test_router_io_access(model_name):
     """Test accessing router inputs and outputs."""
-    if model_name not in MOE_MODELS:
+    if model_name not in TEST_MOE_MODELS:
         pytest.skip(f"Skipping router test for non-MoE model {model_name}")
     
     with th.no_grad():
@@ -143,7 +130,7 @@ def test_router_io_access(model_name):
 
 def test_router_probabilities_and_top_k(model_name):
     """Test accessing router probabilities and top_k parameter."""
-    if model_name not in MOE_MODELS:
+    if model_name not in TEST_MOE_MODELS:
         pytest.skip(f"Skipping router test for non-MoE model {model_name}")
     
     with th.no_grad():
@@ -210,9 +197,88 @@ def test_router_ignore_configuration(model_name):
         assert model.router_probabilities is None
 
 
+def test_router_structure_validation(model_name):
+    """Test router structure validation for MoE models."""
+    if model_name not in TEST_MOE_MODELS:
+        pytest.skip(f"Skipping router test for non-MoE model {model_name}")
+    
+    with th.no_grad():
+        model = StandardizedTransformer(model_name)
+        
+        assert model.routers_available, f"Router should be available for MoE model {model_name}"
+        
+        with model.trace("Hello world"):
+            # Use layers_with_routers to find router layers
+            router_layers = model.layers_with_routers
+            assert len(router_layers) > 0, f"Should find at least one router layer in {model_name}"
+            
+            # Test each router layer
+            for layer_idx in router_layers:
+                router = model.routers[layer_idx]
+                assert router is not None, f"Router should be accessible at layer {layer_idx}"
+                assert hasattr(router, 'weight'), f"Router at layer {layer_idx} should have weight attribute"
+                
+                # Test router weights shape
+                router_weights = router.weight
+                assert router_weights.ndim == 2, f"Router weights should be 2D at layer {layer_idx}"
+                assert router_weights.shape[0] > 0, f"Router weights should have positive input dimension at layer {layer_idx}"
+                assert router_weights.shape[1] > 0, f"Router weights should have positive expert dimension at layer {layer_idx}"
+
+
+def test_router_multiple_layers(model_name):
+    """Test router access across multiple layers."""
+    if model_name not in TEST_MOE_MODELS:
+        pytest.skip(f"Skipping router test for non-MoE model {model_name}")
+    
+    with th.no_grad():
+        model = StandardizedTransformer(model_name)
+        
+        assert model.routers_available, f"Router should be available for MoE model {model_name}"
+        
+        with model.trace("Hello world"):
+            # Use layers_with_routers to find router layers
+            router_layers = model.layers_with_routers
+            assert len(router_layers) > 0, f"Should find at least one router layer in {model_name}"
+            
+            # Test that each layer in layers_with_routers has a router
+            for layer_idx in router_layers:
+                router = model.routers[layer_idx]
+                assert router is not None, f"Layer {layer_idx} should have a router (it's in layers_with_routers)"
+                assert hasattr(router, 'weight'), f"Router at layer {layer_idx} should have weights"
+            
+            # Test that layers NOT in layers_with_routers don't have routers
+            for layer_idx in range(model.num_layers):
+                if layer_idx not in router_layers:
+                    try:
+                        router = model.routers[layer_idx]
+                        # If we get here, the router exists but shouldn't
+                        assert False, f"Layer {layer_idx} should not have a router (not in layers_with_routers)"
+                    except:
+                        # Expected - layer doesn't have router
+                        pass
+
+
+def test_router_error_handling(model_name):
+    """Test error handling for router access on non-MoE models."""
+    if model_name in TEST_MOE_MODELS:
+        pytest.skip(f"Skipping error handling test for MoE model {model_name}")
+    
+    with th.no_grad():
+        model = StandardizedTransformer(model_name)
+        
+        # Router should be disabled for non-MoE models
+        assert not model.routers_available, f"Router should not be available for non-MoE model {model_name}"
+        
+        # Accessing router components should fail gracefully
+        assert model.routers is None, "Router accessor should be None for non-MoE models"
+        assert model.routers_input is None, "Router input accessor should be None for non-MoE models"
+        assert model.routers_output is None, "Router output accessor should be None for non-MoE models"
+        assert model.router_probabilities is None, "Router probabilities accessor should be None for non-MoE models"
+
+
 def test_router_tensor_shapes_comprehensive(model_name):
     """Test comprehensive tensor shape validation for router components."""
-    if model_name not in MOE_MODELS:
+    if model_name not in TEST_MOE_MODELS:
         pytest.skip(f"Skipping router test for non-MoE model {model_name}")
     
     with th.no_grad():
@@ -264,4 +330,3 @@ def test_router_tensor_shapes_comprehensive(model_name):
             if model.hidden_size is not None:
                 assert router.weight.shape[0] == model.hidden_size, \
                     f"Router input dimension should match hidden size"
-

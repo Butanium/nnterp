@@ -559,20 +559,7 @@ def detect_router_attr_name(model, rename_config: RenameConfig | None = None) ->
         return None
 
 
-class RouterLayerAccessor(LayerAccessor):
-    """
-    Layer accessor for router components that handles nested attribute access.
-    Similar to LayerAccessor but can handle paths like "mlp.router".
-    """
-    
-    def __init__(self, model, rename_config: RenameConfig | None = None, io_type: IOType | None = None):
-        self.router_attr_name = detect_router_attr_name(model, rename_config)
-        
-        if self.router_attr_name is None:
-            raise RenamingError("No router attribute found for this model")
-        
-        # Use the standard LayerAccessor with the router path
-        super().__init__(model, f"mlp.{self.router_attr_name}", io_type)
+
 
 
 class RouterProbabilitiesAccessor:
@@ -648,13 +635,14 @@ class RouterProbabilitiesAccessor:
         raise RenamingError(f"Could not find top_k parameter for router")
 
 
-def check_router_structure(model, router_attr_name: str, layer: int = 0):
+def check_router_structure(model, layer: int = 0):
     """
     Validate router structure and shapes for a model.
+    Since the renamings would have been checked by then, the function should NOT take a router_attr_name parameter.
+    The router should be accessible at .router so the function should just use that.
     
     Args:
         model: The StandardizedTransformer model
-        router_attr_name: The detected router attribute name
         layer: Starting layer to check (default: 0)
     
     Raises:
@@ -669,8 +657,8 @@ def check_router_structure(model, router_attr_name: str, layer: int = 0):
             layer_module = model.layers[check_layer]
             if hasattr(layer_module, 'mlp'):
                 mlp = layer_module.mlp
-                if hasattr(mlp, router_attr_name):
-                    router = getattr(mlp, router_attr_name)
+                if hasattr(mlp, 'router'):
+                    router = mlp.router
                     actual_layer = check_layer
                     break
         except Exception:

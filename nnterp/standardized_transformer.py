@@ -21,9 +21,7 @@ from .rename_utils import (
     mlp_returns_tuple,
     check_model_renaming,
     AttentionProbabilitiesAccessor,
-    RouterLayerAccessor,
     RouterProbabilitiesAccessor,
-    detect_router_attr_name,
     check_router_structure,
     get_num_attention_heads,
     get_hidden_size,
@@ -166,29 +164,23 @@ class StandardizedTransformer(LanguageModel):
                 self.attention_probabilities.disable()
         
         # Initialize router accessors for MoE models (similar to attention_probabilities)
-        try:
-            # Use RouterLayerAccessor for router components (handles nested mlp.router access)
-            self.routers = RouterLayerAccessor(self, rename_config, None)
-            self.routers_input = RouterLayerAccessor(self, rename_config, IOType.INPUT)
-            self.routers_output = RouterLayerAccessor(self, rename_config, IOType.OUTPUT)
-            
-            # Specialized accessor for router probabilities
-            self.router_probabilities = RouterProbabilitiesAccessor(self, self.routers.router_attr_name)
-            
-            if check_renaming:
-                try:
-                    check_router_structure(self, self.routers.router_attr_name)
-                except Exception as e:
-                    logger.error(
-                        f"Router access is not available for {model_name} architecture. Disabling it. Error:\n{e}"
-                    )
-                    self.router_probabilities.disable()
-        except RenamingError:
-            # No routers found - create disabled accessors
-            self.routers = None
-            self.routers_input = None
-            self.routers_output = None
-            self.router_probabilities = None
+        # First assign the accessors (router, input, and output accessors should be simple layer accessors)
+        self.routers = LayerAccessor(self, "mlp.router", None)
+        self.routers_input = LayerAccessor(self, "mlp.router", IOType.INPUT)
+        self.routers_output = LayerAccessor(self, "mlp.router", IOType.OUTPUT)
+        self.router_probabilities = RouterProbabilitiesAccessor(self, "router")
+        
+        if check_renaming:
+            try:
+                check_router_structure(self)
+            except Exception as e:
+                logger.error(
+                    f"Router access is not available for {model_name} architecture. Disabling it. Error:\n{e}"
+                )
+                self.routers.disable()
+                self.routers_input.disable()
+                self.routers_output.disable()
+                self.router_probabilities.disable()
         
         warn_about_status(model_name, self._model, model_name)
         self._add_prefix_false_tokenizer = None

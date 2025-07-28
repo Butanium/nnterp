@@ -205,7 +205,8 @@ def test_standardized_transformer_methods(model_name):
             # Test router access for MoE models
             if "router" not in ignores:
                 # If router is not ignored, then MoE models should have routers available
-                if model_name in ["yujiepan/mixtral-8xtiny-random", "yujiepan/qwen1.5-moe-tiny-random", "yujiepan/qwen3-moe-tiny-random"]:
+                from nnterp.tests.utils import TEST_MOE_MODELS
+                if model_name in TEST_MOE_MODELS:
                     assert model.routers_available, f"Router should be available for MoE model {model_name} when not ignored"
                 
                 if model.routers_available:
@@ -225,9 +226,13 @@ def test_standardized_transformer_methods(model_name):
                 assert isinstance(top_k, int) and top_k > 0, "top_k should be positive integer"
                 
                 # Test direct access for comparison (similar to attention probabilities)
-                # Use the detected router attribute name for direct access
-                router_attr_name = model.routers.router_attr_name
-                router_output_direct = getattr(model.model.layers[router_layer].mlp, router_attr_name).output[0].save()
+                # Model should already be renamed so router should be accessible at .router
+                router_output_direct = model.model.layers[router_layer].mlp.router.output[0].save()
+                
+                # Compare with th.allclose like attention probabilities tests
+                assert th.allclose(
+                    router_output_accessor, router_output_direct
+                ), "Router output mismatch between accessor and direct access"
             
             layer_output_accessor = model.layers_output[0].save()
             layer_output_direct = model.model.layers[0].output[0].save()

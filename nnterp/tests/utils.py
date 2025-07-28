@@ -53,6 +53,18 @@ TEST_MODELS = [
     "yujiepan/qwen3-moe-tiny-random",
 ]
 
+# MoE models that are known to have router components
+TEST_MOE_MODELS = [
+    "yujiepan/mixtral-8xtiny-random",
+    "yujiepan/qwen1.5-moe-tiny-random",
+    "yujiepan/qwen3-moe-tiny-random",
+]
+
+# Ensure all MoE models are in TEST_MODELS
+missing_models = [model for model in TEST_MOE_MODELS if model not in TEST_MODELS]
+if missing_models:
+    raise ValueError(f"MoE models not found in TEST_MODELS: {missing_models}")
+
 
 def get_all_toy_models():
     return [
