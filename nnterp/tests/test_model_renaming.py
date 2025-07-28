@@ -15,6 +15,7 @@ from nnterp.nnsight_utils import (
     get_num_layers,
 )
 from nnterp.rename_utils import get_ignores, mlp_returns_tuple
+from nnterp.tests.utils import TEST_MOE_MODELS
 from transformers import OPTForCausalLM
 from contextlib import nullcontext
 
@@ -205,7 +206,6 @@ def test_standardized_transformer_methods(model_name):
             # Test router access for MoE models
             if "router" not in ignores:
                 # If router is not ignored, then MoE models should have routers available
-                from nnterp.tests.utils import TEST_MOE_MODELS
                 if model_name in TEST_MOE_MODELS:
                     assert model.routers_available, f"Router should be available for MoE model {model_name} when not ignored"
                 
@@ -226,7 +226,6 @@ def test_standardized_transformer_methods(model_name):
                 assert isinstance(top_k, int) and top_k > 0, "top_k should be positive integer"
                 
                 # Test direct access for comparison (similar to attention probabilities)
-                # Model should already be renamed so router should be accessible at .router
                 router_output_direct = model.model.layers[router_layer].mlp.router.output[0].save()
                 
                 # Compare with th.allclose like attention probabilities tests

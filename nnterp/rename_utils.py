@@ -304,7 +304,9 @@ class LayerAccessor:
     def get_module(self, layer: int) -> Envoy:
         module = self.model.layers[layer]
         if self.attr_name is not None:
-            module = getattr(module, self.attr_name)
+            # Split up the attribute name by periods and iteratively getattr on each element
+            for attr in self.attr_name.split('.'):
+                module = getattr(module, attr)
         return module
 
     def __getitem__(self, layer: int) -> TraceTensor | Envoy:
@@ -568,9 +570,8 @@ class RouterProbabilitiesAccessor:
     Similar to AttentionProbabilitiesAccessor but for router outputs.
     """
     
-    def __init__(self, model, router_attr_name: str):
+    def __init__(self, model):
         self.model = model
-        self.router_attr_name = router_attr_name
         self.enabled = True
     
     def disable(self):
@@ -587,10 +588,10 @@ class RouterProbabilitiesAccessor:
             raise RenamingError(f"Layer {layer} does not have an MLP component.")
         
         mlp = layer_module.mlp
-        if not hasattr(mlp, self.router_attr_name):
-            raise RenamingError(f"Layer {layer} does not have a router component ('{self.router_attr_name}').")
+        if not hasattr(mlp, 'router'):
+            raise RenamingError(f"Layer {layer} does not have a router component ('router').")
         
-        return getattr(mlp, self.router_attr_name)
+        return mlp.router
     
     def __getitem__(self, layer: int) -> TraceTensor:
         """Get router probability output for the specified layer."""
@@ -638,8 +639,6 @@ class RouterProbabilitiesAccessor:
 def check_router_structure(model, layer: int = 0):
     """
     Validate router structure and shapes for a model.
-    Since the renamings would have been checked by then, the function should NOT take a router_attr_name parameter.
-    The router should be accessible at .router so the function should just use that.
     
     Args:
         model: The StandardizedTransformer model

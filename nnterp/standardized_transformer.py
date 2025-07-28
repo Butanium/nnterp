@@ -168,7 +168,7 @@ class StandardizedTransformer(LanguageModel):
         self.routers = LayerAccessor(self, "mlp.router", None)
         self.routers_input = LayerAccessor(self, "mlp.router", IOType.INPUT)
         self.routers_output = LayerAccessor(self, "mlp.router", IOType.OUTPUT)
-        self.router_probabilities = RouterProbabilitiesAccessor(self, "router")
+        self.router_probabilities = RouterProbabilitiesAccessor(self)
         
         if check_renaming:
             try:
