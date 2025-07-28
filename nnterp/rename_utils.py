@@ -559,51 +559,20 @@ def detect_router_attr_name(model, rename_config: RenameConfig | None = None) ->
         return None
 
 
-class RouterLayerAccessor:
+class RouterLayerAccessor(LayerAccessor):
     """
     Layer accessor for router components that handles nested attribute access.
     Similar to LayerAccessor but can handle paths like "mlp.router".
     """
     
-    def __init__(self, model, router_attr_name: str, io_type: IOType | None = None):
-        self.model = model
-        self.router_attr_name = router_attr_name
-        self.io_type = io_type
-    
-    def get_module(self, layer: int) -> Envoy:
-        """Get the router module for a specific layer."""
-        layer_module = self.model.layers[layer]
-        if not hasattr(layer_module, 'mlp'):
-            raise RenamingError(f"Layer {layer} does not have an MLP component.")
+    def __init__(self, model, rename_config: RenameConfig | None = None, io_type: IOType | None = None):
+        self.router_attr_name = detect_router_attr_name(model, rename_config)
         
-        mlp = layer_module.mlp
-        if not hasattr(mlp, self.router_attr_name):
-            raise RenamingError(f"Layer {layer} does not have a router component ('{self.router_attr_name}').")
+        if self.router_attr_name is None:
+            raise RenamingError("No router attribute found for this model")
         
-        return getattr(mlp, self.router_attr_name)
-    
-    def __getitem__(self, layer: int) -> TraceTensor | Envoy:
-        """Get router module or its input/output for the specified layer."""
-        module = self.get_module(layer)
-        if self.io_type is None:
-            return module
-        elif self.io_type.value == "input":
-            return module.input
-        elif self.io_type.value == "output":
-            return module.output
-        else:
-            raise ValueError(f"Invalid io_type: {self.io_type}")
-    
-    def __setitem__(self, layer: int, value: TraceTensor):
-        """Set router input/output for the specified layer."""
-        if self.io_type is None:
-            raise ValueError("Cannot set the value of a module accessor. Did you mean router_input/output")
-        
-        module = self.get_module(layer)
-        if self.io_type.value == "input":
-            module.input = value
-        else:
-            module.output = value
+        # Use the standard LayerAccessor with the router path
+        super().__init__(model, f"mlp.{self.router_attr_name}", io_type)
 
 
 class RouterProbabilitiesAccessor:

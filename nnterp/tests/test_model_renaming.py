@@ -203,7 +203,12 @@ def test_standardized_transformer_methods(model_name):
                 mlps_output_direct = mlps_output_direct.save()
             
             # Test router access for MoE models
-            if "router" not in ignores and model.routers_available:
+            if "router" not in ignores:
+                # If router is not ignored, then MoE models should have routers available
+                if model_name in ["yujiepan/mixtral-8xtiny-random", "yujiepan/qwen1.5-moe-tiny-random", "yujiepan/qwen3-moe-tiny-random"]:
+                    assert model.routers_available, f"Router should be available for MoE model {model_name} when not ignored"
+                
+                if model.routers_available:
                 # Use layers_with_routers to find a valid router layer
                 router_layers = model.layers_with_routers
                 assert len(router_layers) > 0, f"Should find router layers for MoE model {model_name}"
@@ -218,6 +223,11 @@ def test_standardized_transformer_methods(model_name):
                 router_probs_accessor = model.router_probabilities[router_layer].save()
                 top_k = model.router_probabilities.get_top_k()
                 assert isinstance(top_k, int) and top_k > 0, "top_k should be positive integer"
+                
+                # Test direct access for comparison (similar to attention probabilities)
+                # Use the detected router attribute name for direct access
+                router_attr_name = model.routers.router_attr_name
+                router_output_direct = getattr(model.model.layers[router_layer].mlp, router_attr_name).output[0].save()
             
             layer_output_accessor = model.layers_output[0].save()
             layer_output_direct = model.model.layers[0].output[0].save()
@@ -248,6 +258,12 @@ def test_standardized_transformer_methods(model_name):
     assert th.allclose(
         logits, logits_direct
     ), "Logits mismatch between logits and direct access"
+    
+    # Test router accessor vs direct access for MoE models
+    if "router" not in ignores and model.routers_available:
+        assert th.allclose(
+            router_output_accessor, router_output_direct
+        ), "Router output mismatch between accessor and direct access"
 
     # Test shape consistency
     assert next_probs.shape[-1] == model.config.vocab_size
