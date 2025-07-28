@@ -304,7 +304,6 @@ class LayerAccessor:
     def get_module(self, layer: int) -> Envoy:
         module = self.model.layers[layer]
         if self.attr_name is not None:
-            # Split up the attribute name by periods and iteratively getattr on each element
             for attr in self.attr_name.split('.'):
                 module = getattr(module, attr)
         return module
