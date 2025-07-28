@@ -21,6 +21,8 @@ from .rename_utils import (
     mlp_returns_tuple,
     check_model_renaming,
     AttentionProbabilitiesAccessor,
+    RouterProbabilitiesAccessor,
+    check_router_structure,
     get_num_attention_heads,
     get_hidden_size,
     RenameConfig,
@@ -51,6 +53,10 @@ class StandardizedTransformer(LanguageModel):
     - attentions[i]: Get attention module at layer i
     - mlps_output[i]: Get/set MLP output at layer i
     - mlps[i]: Get MLP module at layer i
+    - routers[i]: Get router module at layer i (MoE models only)
+    - routers_input[i]: Get/set router input at layer i (MoE models only)
+    - routers_output[i]: Get/set router output at layer i (MoE models only)
+    - router_probabilities[i]: Get/set router probability distribution at layer i (MoE models only)
 
     Args:
         repo_id (str): Hugging Face repository ID or path of the model to load.
@@ -156,6 +162,26 @@ class StandardizedTransformer(LanguageModel):
                     f"Attention probabilities is not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
                 self.attention_probabilities.disable()
+        
+        # Initialize router accessors for MoE models (similar to attention_probabilities)
+        # First assign the accessors (router, input, and output accessors should be simple layer accessors)
+        self.routers = LayerAccessor(self, "mlp.router", None)
+        self.routers_input = LayerAccessor(self, "mlp.router", IOType.INPUT)
+        self.routers_output = LayerAccessor(self, "mlp.router", IOType.OUTPUT)
+        self.router_probabilities = RouterProbabilitiesAccessor(self)
+        
+        if check_renaming:
+            try:
+                check_router_structure(self)
+            except Exception as e:
+                logger.error(
+                    f"Router access is not available for {model_name} architecture. Disabling it. Error:\n{e}"
+                )
+                self.routers.disable()
+                self.routers_input.disable()
+                self.routers_output.disable()
+                self.router_probabilities.disable()
+        
         warn_about_status(model_name, self._model, model_name)
         self._add_prefix_false_tokenizer = None
 
@@ -170,6 +196,32 @@ class StandardizedTransformer(LanguageModel):
     @property
     def attn_probs_available(self) -> bool:
         return self.attention_probabilities.enabled
+    
+    @property
+    def routers_available(self) -> bool:
+        return (self.routers is not None and 
+                self.routers_input is not None and 
+                self.routers_output is not None and 
+                self.router_probabilities is not None and
+                self.router_probabilities.enabled)
+    
+    @property
+    def layers_with_routers(self) -> list[int]:
+        """Get ordered list of layer indices that contain routers."""
+        if not self.routers_available:
+            return []
+        
+        router_layers = []
+        for layer_idx in range(self.num_layers):
+            try:
+                # Check if this layer has a router by trying to access it
+                router = self.routers[layer_idx]
+                if router is not None:
+                    router_layers.append(layer_idx)
+            except:
+                continue
+        
+        return router_layers
 
     @property
     def input_ids(self) -> TraceTensor:

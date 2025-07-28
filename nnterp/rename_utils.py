@@ -147,6 +147,8 @@ class RenameConfig:
     ignore_attn: bool | None = None
     attn_head_config_key: str | list[str] | int | None = None
     hidden_size_config_key: str | list[str] | int | None = None
+    router_name: str | list[str] | None = None
+    ignore_router: bool | None = None
 
 
 # Configuration keys for getting the number of attention heads and hidden size
@@ -179,6 +181,7 @@ LN_NAMES = [
 ]
 LM_HEAD_NAMES = ["embed_out"]
 MLP_NAMES = ["block_sparse_moe", "ffn"]
+ROUTER_NAMES = ["router", "gate"]
 
 
 def text_config(model):
@@ -261,6 +264,7 @@ def get_rename_dict(
         update_rename_dict("mlp", rename_config.mlp_name)
         update_rename_dict("ln_final", rename_config.ln_final_name)
         update_rename_dict("lm_head", rename_config.lm_head_name)
+        update_rename_dict("router", rename_config.router_name)
 
     rename_dict.update(
         {name: "model" for name in MODEL_NAMES}
@@ -269,6 +273,7 @@ def get_rename_dict(
         | {name: "mlp" for name in MLP_NAMES}
         | {name: "ln_final" for name in LN_NAMES}
         | {name: "lm_head" for name in LM_HEAD_NAMES}
+        | {name: "router" for name in ROUTER_NAMES}
     )
     return rename_dict
 
@@ -299,7 +304,8 @@ class LayerAccessor:
     def get_module(self, layer: int) -> Envoy:
         module = self.model.layers[layer]
         if self.attr_name is not None:
-            module = getattr(module, self.attr_name)
+            for attr in self.attr_name.split('.'):
+                module = getattr(module, attr)
         return module
 
     def __getitem__(self, layer: int) -> TraceTensor | Envoy:
@@ -508,6 +514,197 @@ class AttentionProbabilitiesAccessor:
             display_markdown(markdown_text)
 
 
+def detect_router_attr_name(model, rename_config: RenameConfig | None = None) -> str | None:
+    """
+    Detect the router attribute name for MoE models by scanning multiple layers.
+    
+    Handles different naming conventions:
+    - "router" (e.g., Llama4: model.layers[0].feed_forward.router)
+    - "gate" (e.g., OLMoE: model.layers[0].feed_forward.gate)
+    
+    Returns the router attribute name if found, None otherwise.
+    """
+    try:
+        # Check if router is explicitly ignored
+        if rename_config and rename_config.ignore_router:
+            logger.debug("Router access is explicitly ignored in configuration")
+            return None
+        
+        # Try different router naming conventions
+        router_names = ROUTER_NAMES.copy()
+        if rename_config and rename_config.router_name:
+            if isinstance(rename_config.router_name, str):
+                router_names.insert(0, rename_config.router_name)
+            else:
+                router_names = list(rename_config.router_name) + router_names
+        
+        # Check multiple layers since some models (like Llama4) have mixed dense/MoE layers
+        for layer_idx in range(len(model.layers)):
+            layer = model.layers[layer_idx]
+            if not hasattr(layer, 'mlp'):
+                continue
+                
+            mlp = layer.mlp
+            
+            for router_name in router_names:
+                if hasattr(mlp, router_name):
+                    logger.info(f"Detected router component '{router_name}' in layer {layer_idx}")
+                    return router_name
+        
+        # No router found in any layer - this is not a MoE model
+        logger.debug("No router component found in any layer - not a MoE model")
+        return None
+        
+    except Exception as e:
+        logger.warning(f"Failed to detect router structure: {e}")
+        return None
+
+
+
+
+
+class RouterProbabilitiesAccessor:
+    """
+    Specialized accessor for MoE router probability distributions.
+    Similar to AttentionProbabilitiesAccessor but for router outputs.
+    """
+    
+    def __init__(self, model):
+        self.model = model
+        self.enabled = True
+    
+    def disable(self):
+        """Disable router probabilities access."""
+        self.enabled = False
+    
+    def _get_router_module(self, layer: int):
+        """Get the router module for a specific layer, handling mixed architectures."""
+        if not self.enabled:
+            raise RenamingError("Router probabilities are disabled for this model.")
+        
+        layer_module = self.model.layers[layer]
+        if not hasattr(layer_module, 'mlp'):
+            raise RenamingError(f"Layer {layer} does not have an MLP component.")
+        
+        mlp = layer_module.mlp
+        if not hasattr(mlp, 'router'):
+            raise RenamingError(f"Layer {layer} does not have a router component ('router').")
+        
+        return mlp.router
+    
+    def __getitem__(self, layer: int) -> TraceTensor:
+        """Get router probability output for the specified layer."""
+        router = self._get_router_module(layer)
+        return router.output
+    
+    def __setitem__(self, layer: int, value: TraceTensor):
+        """Set router probability output for the specified layer."""
+        router = self._get_router_module(layer)
+        router.output = value
+    
+    def get_top_k(self, layer: int = 0) -> int:
+        """Get the top_k parameter for the router at the specified layer."""
+        if not self.enabled:
+            raise RenamingError("Router probabilities are disabled for this model.")
+        
+        # First try to find a layer with a router
+        router = None
+        for check_layer in range(layer, len(self.model.layers)):
+            try:
+                router = self._get_router_module(check_layer)
+                break
+            except RenamingError:
+                continue
+        
+        if router is None:
+            raise RenamingError(f"Could not find any router component starting from layer {layer}")
+        
+        # Try different attribute names for top_k
+        top_k_attrs = ['top_k', 'topk', 'num_experts_per_tok', 'k']
+        for attr in top_k_attrs:
+            if hasattr(router, attr):
+                return getattr(router, attr)
+        
+        # Check if it's in the model config
+        config = self.model.config
+        if hasattr(config, 'num_experts_per_tok'):
+            return config.num_experts_per_tok
+        if hasattr(config, 'top_k'):
+            return config.top_k
+        
+        raise RenamingError(f"Could not find top_k parameter for router")
+
+
+def check_router_structure(model, layer: int = 0):
+    """
+    Validate router structure and shapes for a model.
+    
+    Args:
+        model: The StandardizedTransformer model
+        layer: Starting layer to check (default: 0)
+    
+    Raises:
+        RenamingError: If router structure is invalid
+    """
+    # Find a layer with a router for validation
+    router = None
+    actual_layer = None
+    
+    for check_layer in range(layer, len(model.layers)):
+        try:
+            layer_module = model.layers[check_layer]
+            if hasattr(layer_module, 'mlp'):
+                mlp = layer_module.mlp
+                if hasattr(mlp, 'router'):
+                    router = mlp.router
+                    actual_layer = check_layer
+                    break
+        except Exception:
+            continue
+    
+    if router is None:
+        raise RenamingError(f"Could not find any router component starting from layer {layer}")
+    
+    # Basic structure validation
+    if not hasattr(router, 'weight'):
+        raise RenamingError(f"Router at layer {actual_layer} does not have weight attribute")
+    
+    # Check if router has expected methods/attributes
+    weight = router.weight
+    if not isinstance(weight, th.Tensor):
+        raise RenamingError(f"Router weight at layer {actual_layer} is not a tensor")
+    
+    logger.info(f"Router at layer {actual_layer} validated successfully")
+    logger.info(f"Router weight shape: {weight.shape}")
+    
+    # Try to get top_k parameter
+    try:
+        # Try different attribute names for top_k
+        top_k_attrs = ['top_k', 'topk', 'num_experts_per_tok', 'k']
+        top_k = None
+        for attr in top_k_attrs:
+            if hasattr(router, attr):
+                top_k = getattr(router, attr)
+                break
+        
+        # Check if it's in the model config
+        if top_k is None:
+            config = model.config
+            if hasattr(config, 'num_experts_per_tok'):
+                top_k = config.num_experts_per_tok
+            elif hasattr(config, 'top_k'):
+                top_k = config.top_k
+        
+        if top_k is not None:
+            logger.info(f"Router top_k: {top_k}")
+        else:
+            logger.warning("Could not find top_k parameter for router")
+    except Exception as e:
+        logger.warning(f"Could not get top_k: {e}")
+
+
+
+
 def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:
     ignores = []
     if isinstance(model, IGNORE_MLP_MODELS):
@@ -521,6 +718,8 @@ def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:
             ignores.append("mlp")
         if rename_config.ignore_attn:
             ignores.append("attention")
+        if rename_config.ignore_router:
+            ignores.append("router")
     return ignores
 
 

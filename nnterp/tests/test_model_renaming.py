@@ -15,6 +15,7 @@ from nnterp.nnsight_utils import (
     get_num_layers,
 )
 from nnterp.rename_utils import get_ignores, mlp_returns_tuple
+from nnterp.tests.utils import TEST_MOE_MODELS
 from transformers import OPTForCausalLM
 from contextlib import nullcontext
 
@@ -201,6 +202,37 @@ def test_standardized_transformer_methods(model_name):
                 if mlp_returns_tuple(model._model):
                     mlps_output_direct = mlps_output_direct[0]
                 mlps_output_direct = mlps_output_direct.save()
+            
+            # Test router access for MoE models
+            if "router" not in ignores:
+                # If router is not ignored, then MoE models should have routers available
+                if model_name in TEST_MOE_MODELS:
+                    assert model.routers_available, f"Router should be available for MoE model {model_name} when not ignored"
+                
+                if model.routers_available:
+                # Use layers_with_routers to find a valid router layer
+                router_layers = model.layers_with_routers
+                assert len(router_layers) > 0, f"Should find router layers for MoE model {model_name}"
+                
+                # Test LayerAccessor-based router access
+                router_layer = router_layers[0]
+                _router_accessor = model.routers[router_layer]
+                router_input_accessor = model.routers_input[router_layer].save()
+                router_output_accessor = model.routers_output[router_layer].save()
+                
+                # Test specialized router probabilities accessor
+                router_probs_accessor = model.router_probabilities[router_layer].save()
+                top_k = model.router_probabilities.get_top_k()
+                assert isinstance(top_k, int) and top_k > 0, "top_k should be positive integer"
+                
+                # Test direct access for comparison (similar to attention probabilities)
+                router_output_direct = model.model.layers[router_layer].mlp.router.output[0].save()
+                
+                # Compare with th.allclose like attention probabilities tests
+                assert th.allclose(
+                    router_output_accessor, router_output_direct
+                ), "Router output mismatch between accessor and direct access"
+            
             layer_output_accessor = model.layers_output[0].save()
             layer_output_direct = model.model.layers[0].output[0].save()
 
@@ -230,6 +262,12 @@ def test_standardized_transformer_methods(model_name):
     assert th.allclose(
         logits, logits_direct
     ), "Logits mismatch between logits and direct access"
+    
+    # Test router accessor vs direct access for MoE models
+    if "router" not in ignores and model.routers_available:
+        assert th.allclose(
+            router_output_accessor, router_output_direct
+        ), "Router output mismatch between accessor and direct access"
 
     # Test shape consistency
     assert next_probs.shape[-1] == model.config.vocab_size
@@ -240,6 +278,20 @@ def test_standardized_transformer_methods(model_name):
     if "mlp" not in ignores:
         assert mlps_output_accessor.shape == layer_output_accessor.shape
     assert attn_output_accessor.shape == layer_input_accessor.shape
+    
+    # Test router shape consistency for MoE models
+    if "router" not in ignores and model.routers_available:
+        batch_size, seq_len = model.input_size
+        assert router_input_accessor.shape[0] == batch_size, "Router input batch size should match input"
+        assert router_input_accessor.shape[1] == seq_len, "Router input seq len should match input"
+        assert router_output_accessor.shape[0] == batch_size, "Router output batch size should match input"
+        assert router_output_accessor.shape[1] == seq_len, "Router output seq len should match input"
+        # Get num_experts from router weights for validation
+        router = model.routers[router_layer]
+        num_experts = router.weight.shape[1]
+        assert router_output_accessor.shape[2] == num_experts, \
+            f"Router should have {num_experts} experts (got {router_output_accessor.shape[2]})"
+        assert router_probs_accessor.shape == router_output_accessor.shape, "Router probabilities should match output shape"
 
     print(
         "StandardizedTransformer both accessor and direct access methods tested successfully."
