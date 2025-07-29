@@ -34,12 +34,12 @@ def test_router_probabilities_normalization(model_name):
             # Test that probabilities are different from logits
             assert not th.allclose(router_probs, router_output), "Probabilities should differ from raw logits"
             
-            # Test normalization using vectorized operations
+            # Test normalization
             prob_sums = router_probs.sum(dim=-1)
             assert th.allclose(prob_sums, th.ones_like(prob_sums), atol=1e-5), \
                 f"All probabilities should sum to 1, got sums: {prob_sums}"
             
-            # Test non-zero count using vectorized operations
+            # Test non-zero count
             non_zero_counts = (router_probs > 1e-8).sum(dim=-1)
             expected_counts = th.full_like(non_zero_counts, top_k)
             assert th.equal(non_zero_counts, expected_counts), \
@@ -74,17 +74,23 @@ def test_router_probabilities_top_k_selection(model_name):
             
             # Get top-k indices from logits (what we expect to be selected)
             _, expected_top_k_indices = th.topk(router_output, k=top_k, dim=-1)
+            expected_sorted = th.sort(expected_top_k_indices, dim=-1)[0]
             
             # Get non-zero indices from probabilities (what was actually selected)
             non_zero_mask = router_probs > 1e-8
             
-            # Verify that the selected experts match
+            # For each token, get the indices of non-zero probabilities
+            actual_indices_list = []
             for token_idx in range(router_output.shape[0]):
-                expected_indices = th.sort(expected_top_k_indices[token_idx])[0]
-                actual_indices = th.sort(th.nonzero(non_zero_mask[token_idx]).squeeze(-1))[0]
-                
-                assert th.equal(expected_indices, actual_indices), \
-                    f"Top-k selection mismatch at token {token_idx}: expected {expected_indices}, got {actual_indices}"
+                actual_indices = th.nonzero(non_zero_mask[token_idx]).squeeze(-1)
+                actual_sorted = th.sort(actual_indices)[0]
+                actual_indices_list.append(actual_sorted)
+            
+            actual_sorted = th.stack(actual_indices_list)
+            
+            # Verify that all tokens have matching top-k selection
+            assert th.equal(expected_sorted, actual_sorted), \
+                f"Top-k selection mismatch: expected {expected_sorted}, got {actual_sorted}"
 
 
 def test_router_probabilities_consistency(model_name):
@@ -129,12 +135,12 @@ def test_compute_default_router_probabilities_function():
     # Test shape
     assert probs.shape == logits.shape, "Output shape should match input shape"
     
-    # Test normalization using vectorized operations
+    # Test normalization
     prob_sums = probs.sum(dim=-1)
     assert th.allclose(prob_sums, th.ones_like(prob_sums), atol=1e-6), \
         "All probabilities should sum to 1"
     
-    # Test non-zero count using vectorized operations
+    # Test non-zero count
     non_zero_counts = (probs > 1e-8).sum(dim=-1)
     expected_counts = th.full_like(non_zero_counts, top_k)
     assert th.equal(non_zero_counts, expected_counts), \

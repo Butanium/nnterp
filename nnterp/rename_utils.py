@@ -597,8 +597,6 @@ def compute_router_probabilities(router_logits: th.Tensor, top_k: int, norm_topk
     # Optionally renormalize to ensure sum to 1
     if norm_topk_prob:
         prob_sum = masked_probs.sum(dim=-1, keepdim=True)
-        # Avoid division by zero
-        prob_sum = th.where(prob_sum > 0, prob_sum, th.ones_like(prob_sum))
         masked_probs = masked_probs / prob_sum
     
     return masked_probs
@@ -622,17 +620,45 @@ def compute_unnormalized_router_probabilities(router_logits: th.Tensor, top_k: i
     return compute_router_probabilities(router_logits, top_k, norm_topk_prob=False)
 
 
+# Model-specific router probability computation functions
+ROUTER_PROBABILITY_FUNCTIONS = {
+    # Default normalized approach for most MoE models
+    'default': compute_default_router_probabilities,
+    # For models that don't renormalize after top-k selection
+    'unnormalized': compute_unnormalized_router_probabilities,
+}
+
+
+def get_router_probability_function(model):
+    """
+    Determine the appropriate router probability function for a given model.
+    
+    Args:
+        model: The model instance
+        
+    Returns:
+        Function to compute router probabilities from logits
+    """
+    # For now, use default for all models
+    # Future: Add model-specific logic here
+    # if isinstance(model._model, SomeSpecificMoEModel):
+    #     return ROUTER_PROBABILITY_FUNCTIONS['unnormalized']
+    
+    return ROUTER_PROBABILITY_FUNCTIONS['default']
+
+
 class RouterProbabilitiesAccessor:
     """
     Specialized accessor for MoE router probability distributions.
     Similar to AttentionProbabilitiesAccessor but for router outputs.
     
     This accessor computes proper probability distributions from router logits
-    by applying softmax, selecting top-k experts, and renormalizing.
+    using model-specific probability computation functions.
     """
     
     def __init__(self, model):
         self.model = model
+        self.probability_function = get_router_probability_function(model)
         self.enabled = True
     
     def disable(self):
@@ -662,8 +688,8 @@ class RouterProbabilitiesAccessor:
         # Get top_k for this router
         top_k = self.get_top_k(layer)
         
-        # Compute normalized probabilities using default approach
-        return compute_default_router_probabilities(router_logits, top_k)
+        # Compute probabilities using model-specific function
+        return self.probability_function(router_logits, top_k)
     
     def __setitem__(self, layer: int, value: TraceTensor):
         """Set router probability output for the specified layer."""
