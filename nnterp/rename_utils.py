@@ -706,10 +706,17 @@ class RouterProbabilitiesAccessor:
         """
         router = self._get_router_module(layer)
         
+        # Validate that value is a proper probability distribution
+        assert th.all(value >= 0), "All probabilities must be non-negative"
+        prob_sums = value.sum(dim=-1)
+        assert th.allclose(prob_sums, th.ones_like(prob_sums), atol=1e-5), \
+            "Probabilities must sum to 1 for each token"
+        
         # Convert probabilities back to logits
-        # Use -inf for zero probabilities (mathematically correct)
-        logits = th.log(value)
-        logits = th.where(value == 0, th.tensor(-float('inf'), device=value.device, dtype=value.dtype), logits)
+        # Use -inf for zero probabilities, log for non-zero values
+        logits = th.where(value == 0, 
+                         th.tensor(-float('inf'), device=value.device, dtype=value.dtype),
+                         th.log(value))
         
         router.output = logits
     

@@ -3,6 +3,7 @@
 import pytest
 import torch as th
 from nnterp import StandardizedTransformer
+from nnterp.rename_utils import RouterProbabilitiesAccessor
 from nnterp.tests.utils import TEST_MOE_MODELS, get_all_test_models, is_moe_model
 
 
@@ -201,11 +202,9 @@ def test_compute_router_probabilities_edge_cases():
     assert th.equal(th.sort(non_zero_indices)[0], th.sort(expected_indices)[0])
 
 
-def test_router_probabilities_setitem_function():
-    """Test the __setitem__ functionality for setting custom probability distributions."""
-    import torch as th
-    
-    # Create mock model structure
+@pytest.fixture
+def mock_moe_model():
+    """Create a mock MoE model for testing."""
     class MockRouter:
         def __init__(self):
             self.output = None
@@ -228,41 +227,14 @@ def test_router_probabilities_setitem_function():
             self._model = None
             self.config = MockConfig()
     
-    # Test the conversion from probabilities to logits
-    from nnterp.rename_utils import RouterProbabilitiesAccessor
-    model = MockModel()
-    accessor = RouterProbabilitiesAccessor(model)
+    return MockModel()
+
+
+def test_router_probabilities_setitem_basic(mock_moe_model):
+    """Test basic __setitem__ functionality with valid top-k distributions."""
+    accessor = RouterProbabilitiesAccessor(mock_moe_model)
     
-    # Create a custom probability distribution
-    custom_probs = th.tensor([[[0.1, 0.3, 0.6, 0.0]]])  # batch=1, seq=1, experts=4
-    
-    # Test 1: Set custom probabilities that respect top-k constraint
-    top_k = accessor.get_top_k(0)  # Should be 2 for our mock model
-    
-    # Create a probability distribution that only has top_k non-zero values
-    topk_probs = th.tensor([[[0.0, 0.4, 0.6, 0.0]]])  # Only 2 non-zero (respects top_k=2)
-    accessor[0] = topk_probs
-    
-    # The key test: when we get the probabilities back, they should match what we set
-    retrieved_probs = accessor[0]
-    assert th.allclose(retrieved_probs, topk_probs, atol=1e-6), \
-        f"Retrieved probabilities {retrieved_probs} should match set probabilities {topk_probs}"
-    
-    # Test 2: Test that top-k normalization works correctly
-    # Set probabilities with more than top_k non-zero values
-    over_topk_probs = th.tensor([[[0.1, 0.3, 0.6, 0.0]]])  # 3 non-zero, but top_k=2
-    accessor[0] = over_topk_probs
-    retrieved = accessor[0]
-    
-    # Should only have top_k=2 non-zero values (the largest ones: 0.6 and 0.3)
-    non_zero_count = (retrieved > 1e-6).sum(dim=-1).item()
-    assert non_zero_count <= top_k, f"Should have at most {top_k} non-zero values, got {non_zero_count}"
-    
-    # Should still sum to 1
-    assert th.allclose(retrieved.sum(dim=-1), th.ones(1), atol=1e-5), \
-        "Probabilities should sum to 1 after top-k normalization"
-    
-    # Test 3: Test with valid top-k distributions
+    # Test with valid top-k distributions
     valid_test_cases = [
         th.tensor([[[0.5, 0.5, 0.0, 0.0]]]),      # Exactly top_k=2 non-zero
         th.tensor([[[1.0, 0.0, 0.0, 0.0]]]),      # One-hot (valid)
@@ -276,25 +248,37 @@ def test_router_probabilities_setitem_function():
             f"Valid test case {i+1}: Retrieved {retrieved.squeeze().tolist()} != Set {test_probs.squeeze().tolist()}"
 
 
-def test_router_probabilities_setitem_integration():
-    """Test __setitem__ integration with actual MoE models."""
-    # Use a known MoE model for integration testing
-    test_model = "allenai/OLMoE-1B-7B-0924"  # Known MoE model
+def test_router_probabilities_setitem_topk_normalization(mock_moe_model):
+    """Test that top-k normalization works correctly."""
+    accessor = RouterProbabilitiesAccessor(mock_moe_model)
+    top_k = accessor.get_top_k(0)  # Should be 2 for our mock model
     
-    if test_model not in TEST_MOE_MODELS:
-        pytest.skip(f"Test model {test_model} not in TEST_MOE_MODELS")
+    # Set probabilities with more than top_k non-zero values
+    over_topk_probs = th.tensor([[[0.1, 0.3, 0.6, 0.0]]])  # 3 non-zero, but top_k=2
+    accessor[0] = over_topk_probs
+    retrieved = accessor[0]
+    
+    # Should only have top_k=2 non-zero values (the largest ones: 0.6 and 0.3)
+    non_zero_count = (retrieved > 1e-6).sum(dim=-1).item()
+    assert non_zero_count <= top_k, f"Should have at most {top_k} non-zero values, got {non_zero_count}"
+    
+    # Should still sum to 1
+    assert th.allclose(retrieved.sum(dim=-1), th.ones(1), atol=1e-5), \
+        "Probabilities should sum to 1 after top-k normalization"
+
+
+def test_router_probabilities_setitem_integration(model_name):
+    """Test __setitem__ integration with actual MoE models."""
+    assert is_moe_model(model_name), f"Model {model_name} is not a MoE model"
     
     with th.no_grad():
-        try:
-            model = StandardizedTransformer(test_model)
-        except Exception as e:
-            pytest.skip(f"Could not load model {test_model}: {e}")
+        model = StandardizedTransformer(model_name)
         
-        assert model.routers_available, f"Router should be available for {test_model}"
+        assert model.routers_available, f"Router should be available for {model_name}"
         
         with model.trace("Hello world test"):
             router_layers = model.layers_with_routers
-            assert len(router_layers) > 0, f"Should have router layers in {test_model}"
+            assert len(router_layers) > 0, f"Should have router layers in {model_name}"
             
             layer = router_layers[0]
             
@@ -331,36 +315,9 @@ def test_router_probabilities_setitem_integration():
                 f"Should have at most {top_k} active experts"
 
 
-def test_router_probabilities_setitem_edge_cases():
+def test_router_probabilities_setitem_edge_cases(mock_moe_model):
     """Test edge cases for __setitem__ functionality."""
-    import torch as th
-    
-    # Create mock model structure
-    class MockRouter:
-        def __init__(self):
-            self.output = None
-    
-    class MockMLP:
-        def __init__(self):
-            self.router = MockRouter()
-    
-    class MockLayer:
-        def __init__(self):
-            self.mlp = MockMLP()
-    
-    class MockConfig:
-        def __init__(self):
-            self.num_experts_per_tok = 2  # Default top_k
-    
-    class MockModel:
-        def __init__(self):
-            self.layers = [MockLayer()]
-            self._model = None
-            self.config = MockConfig()
-    
-    from nnterp.rename_utils import RouterProbabilitiesAccessor
-    model = MockModel()
-    accessor = RouterProbabilitiesAccessor(model)
+    accessor = RouterProbabilitiesAccessor(mock_moe_model)
     
     # Test with very small probabilities that respect top-k constraint
     # Only 2 non-zero values to respect top_k=2
@@ -385,25 +342,18 @@ def test_router_probabilities_setitem_edge_cases():
         "Should handle zero probabilities correctly"
 
 
-def test_router_probabilities_setitem_topk_normalization():
+def test_router_probabilities_setitem_real_model_topk_normalization(model_name):
     """Test that setting probabilities with non-top-k experts gets normalized correctly."""
-    # Use a known MoE model for this test
-    test_model = "yujiepan/mixtral-8xtiny-random"  # Known MoE model
-    
-    if test_model not in TEST_MOE_MODELS:
-        pytest.skip(f"Test model {test_model} not in TEST_MOE_MODELS")
+    assert is_moe_model(model_name), f"Model {model_name} is not a MoE model"
     
     with th.no_grad():
-        try:
-            model = StandardizedTransformer(test_model)
-        except Exception as e:
-            pytest.skip(f"Could not load model {test_model}: {e}")
+        model = StandardizedTransformer(model_name)
         
-        assert model.routers_available, f"Router should be available for {test_model}"
+        assert model.routers_available, f"Router should be available for {model_name}"
         
         with model.trace("Hello world test"):
             router_layers = model.layers_with_routers
-            assert len(router_layers) > 0, f"Should have router layers in {test_model}"
+            assert len(router_layers) > 0, f"Should have router layers in {model_name}"
             
             layer = router_layers[0]
             top_k = model.router_probabilities.get_top_k()
