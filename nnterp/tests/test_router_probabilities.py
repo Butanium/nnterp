@@ -196,6 +196,6 @@ def test_compute_router_probabilities_edge_cases():
     probs = compute_default_router_probabilities(logits, top_k=2)
     assert th.allclose(probs.sum(dim=-1), th.ones(1), atol=1e-6), \
         "Should sum to 1 even with negative logits"
-    non_zero_indices = th.nonzero(probs > 1e-8).squeeze(-1)
+    non_zero_indices = th.nonzero(probs > 1e-8)[:, 1]  # Get column indices
     expected_indices = th.tensor([2, 0])  # -0.5 and -1.0 are the largest
     assert th.equal(th.sort(non_zero_indices)[0], th.sort(expected_indices)[0])
