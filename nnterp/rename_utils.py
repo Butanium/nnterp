@@ -707,10 +707,9 @@ class RouterProbabilitiesAccessor:
         router = self._get_router_module(layer)
         
         # Convert probabilities back to logits
-        # Add small epsilon to avoid log(0)
-        epsilon = 1e-8
-        value_safe = th.clamp(value, min=epsilon)
-        logits = th.log(value_safe)
+        # Use -inf for zero probabilities (mathematically correct)
+        logits = th.log(value)
+        logits = th.where(value == 0, th.tensor(-float('inf'), device=value.device, dtype=value.dtype), logits)
         
         router.output = logits
     
