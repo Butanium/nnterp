@@ -78,15 +78,8 @@ def test_router_probabilities_top_k_selection(model_name):
             
             # Get non-zero indices from probabilities (what was actually selected)
             non_zero_mask = router_probs > 1e-8
-            
-            # For each token, get the indices of non-zero probabilities
-            actual_indices_list = []
-            for token_idx in range(router_output.shape[0]):
-                actual_indices = th.nonzero(non_zero_mask[token_idx]).squeeze(-1)
-                actual_sorted = th.sort(actual_indices)[0]
-                actual_indices_list.append(actual_sorted)
-            
-            actual_sorted = th.stack(actual_indices_list)
+            actual_indices = th.nonzero(non_zero_mask)
+            actual_sorted = th.sort(actual_indices[:, 1].view(router_output.shape[0], top_k), dim=-1)[0]
             
             # Verify that all tokens have matching top-k selection
             assert th.equal(expected_sorted, actual_sorted), \

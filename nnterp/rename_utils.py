@@ -622,10 +622,9 @@ def compute_unnormalized_router_probabilities(router_logits: th.Tensor, top_k: i
 
 # Model-specific router probability computation functions
 ROUTER_PROBABILITY_FUNCTIONS = {
-    # Default normalized approach for most MoE models
-    'default': compute_default_router_probabilities,
-    # For models that don't renormalize after top-k selection
-    'unnormalized': compute_unnormalized_router_probabilities,
+    # Add model-specific mappings here as needed
+    # OlmoeForCausalLM: compute_unnormalized_router_probabilities,
+    # LlamaForCausalLM: compute_sigmoid_router_probabilities,  # Future
 }
 
 
@@ -639,12 +638,13 @@ def get_router_probability_function(model):
     Returns:
         Function to compute router probabilities from logits
     """
-    # For now, use default for all models
-    # Future: Add model-specific logic here
-    # if isinstance(model._model, SomeSpecificMoEModel):
-    #     return ROUTER_PROBABILITY_FUNCTIONS['unnormalized']
+    # Check for model-specific function
+    for model_class, prob_function in ROUTER_PROBABILITY_FUNCTIONS.items():
+        if isinstance(model._model, model_class):
+            return prob_function
     
-    return ROUTER_PROBABILITY_FUNCTIONS['default']
+    # Default fallback for unmatched models
+    return compute_default_router_probabilities
 
 
 class RouterProbabilitiesAccessor:
