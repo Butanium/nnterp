@@ -692,9 +692,27 @@ class RouterProbabilitiesAccessor:
         return self.probability_function(router_logits, top_k)
     
     def __setitem__(self, layer: int, value: TraceTensor):
-        """Set router probability output for the specified layer."""
+        """
+        Set router probability distribution for the specified layer.
+        
+        This method converts the provided probability distribution back to logits
+        and sets the router output, allowing the MoE forward pass to use the
+        custom probabilities.
+        
+        Args:
+            layer: Layer index
+            value: Probability distribution tensor with shape (batch_size, seq_len, num_experts)
+                  Should be normalized (sum to 1.0 across experts dimension)
+        """
         router = self._get_router_module(layer)
-        router.output = value
+        
+        # Convert probabilities back to logits
+        # Add small epsilon to avoid log(0)
+        epsilon = 1e-8
+        value_safe = th.clamp(value, min=epsilon)
+        logits = th.log(value_safe)
+        
+        router.output = logits
     
     def get_top_k(self, layer: int = 0) -> int:
         """Get the top_k parameter for the router at the specified layer."""

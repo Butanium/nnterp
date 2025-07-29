@@ -3,7 +3,11 @@
 import pytest
 import torch as th
 from nnterp import StandardizedTransformer
-from nnterp.tests.utils import TEST_MOE_MODELS
+from nnterp.tests.utils import TEST_MOE_MODELS, get_all_test_models
+
+def is_moe_model(model_name):
+    """Check if a model is a MoE model."""
+    return model_name in TEST_MOE_MODELS
 
 
 def test_router_probabilities_normalization(model_name):
@@ -199,3 +203,160 @@ def test_compute_router_probabilities_edge_cases():
     non_zero_indices = th.nonzero(probs > 1e-8)[:, 1]  # Get column indices
     expected_indices = th.tensor([2, 0])  # -0.5 and -1.0 are the largest
     assert th.equal(th.sort(non_zero_indices)[0], th.sort(expected_indices)[0])
+
+
+def test_router_probabilities_setitem_function():
+    """Test the __setitem__ functionality for setting custom probability distributions."""
+    from nnterp.rename_utils import RouterProbabilitiesAccessor
+    import torch as th
+    
+    # Create mock model structure
+    class MockRouter:
+        def __init__(self):
+            self.output = None
+    
+    class MockMLP:
+        def __init__(self):
+            self.router = MockRouter()
+    
+    class MockLayer:
+        def __init__(self):
+            self.mlp = MockMLP()
+    
+    class MockModel:
+        def __init__(self):
+            self.layers = [MockLayer()]
+            self._model = None
+    
+    # Test the conversion from probabilities to logits
+    model = MockModel()
+    accessor = RouterProbabilitiesAccessor(model)
+    
+    # Create a custom probability distribution
+    custom_probs = th.tensor([[[0.1, 0.3, 0.6, 0.0]]])  # batch=1, seq=1, experts=4
+    
+    # Set the custom probabilities
+    accessor[0] = custom_probs
+    
+    # Verify that router.output was set to logits
+    router_logits = model.layers[0].mlp.router.output
+    assert router_logits is not None, "Router output should be set"
+    
+    # Convert back to probabilities to verify
+    recovered_probs = th.softmax(router_logits, dim=-1)
+    
+    # Should be close to original probabilities (within numerical precision)
+    assert th.allclose(recovered_probs, custom_probs, atol=1e-6), \
+        f"Recovered probabilities {recovered_probs} should match original {custom_probs}"
+    
+    # Test with zero probabilities (should be handled with epsilon)
+    zero_probs = th.tensor([[[1.0, 0.0, 0.0, 0.0]]])
+    accessor[0] = zero_probs
+    
+    router_logits = model.layers[0].mlp.router.output
+    recovered_probs = th.softmax(router_logits, dim=-1)
+    
+    # Should still be close to original (epsilon prevents log(0))
+    assert th.allclose(recovered_probs, zero_probs, atol=1e-5), \
+        "Should handle zero probabilities correctly"
+
+
+@pytest.mark.parametrize("model_name", get_all_test_models())
+def test_router_probabilities_setitem_integration(model_name):
+    """Test __setitem__ integration with actual MoE models."""
+    if not is_moe_model(model_name):
+        pytest.skip(f"Skipping router probability setitem test for non-MoE model {model_name}")
+    
+    with th.no_grad():
+        model = StandardizedTransformer(model_name)
+        
+        if not model.routers_available:
+            pytest.skip(f"Router not available for {model_name}")
+        
+        with model.trace("Hello world test"):
+            router_layers = model.layers_with_routers
+            if len(router_layers) == 0:
+                pytest.skip(f"No router layers found in {model_name}")
+            
+            layer = router_layers[0]
+            
+            # Get original probabilities
+            original_probs = model.router_probabilities[layer]
+            batch_size, seq_len, num_experts = original_probs.shape
+            
+            # Create custom probability distribution (uniform over top-2 experts)
+            top_k = model.router_probabilities.get_top_k()
+            custom_probs = th.zeros_like(original_probs)
+            
+            # Set uniform probabilities for first top_k experts
+            for i in range(min(top_k, num_experts)):
+                custom_probs[:, :, i] = 1.0 / top_k
+            
+            # Set the custom probabilities
+            model.router_probabilities[layer] = custom_probs
+            
+            # Get the probabilities back
+            retrieved_probs = model.router_probabilities[layer]
+            
+            # Should be close to our custom probabilities
+            assert th.allclose(retrieved_probs, custom_probs, atol=1e-4), \
+                f"Retrieved probabilities should match custom probabilities"
+            
+            # Verify they still sum to 1
+            prob_sums = retrieved_probs.sum(dim=-1)
+            assert th.allclose(prob_sums, th.ones_like(prob_sums), atol=1e-5), \
+                "Custom probabilities should still sum to 1"
+            
+            # Verify only top_k experts are active
+            non_zero_counts = (retrieved_probs > 1e-6).sum(dim=-1)
+            assert (non_zero_counts <= top_k).all(), \
+                f"Should have at most {top_k} active experts"
+
+
+def test_router_probabilities_setitem_edge_cases():
+    """Test edge cases for __setitem__ functionality."""
+    from nnterp.rename_utils import RouterProbabilitiesAccessor
+    import torch as th
+    
+    # Create mock model structure
+    class MockRouter:
+        def __init__(self):
+            self.output = None
+    
+    class MockMLP:
+        def __init__(self):
+            self.router = MockRouter()
+    
+    class MockLayer:
+        def __init__(self):
+            self.mlp = MockMLP()
+    
+    class MockModel:
+        def __init__(self):
+            self.layers = [MockLayer()]
+            self._model = None
+    
+    model = MockModel()
+    accessor = RouterProbabilitiesAccessor(model)
+    
+    # Test with very small probabilities (near epsilon)
+    small_probs = th.tensor([[[1e-10, 1e-10, 1.0 - 2e-10, 0.0]]])
+    accessor[0] = small_probs
+    
+    router_logits = model.layers[0].mlp.router.output
+    recovered_probs = th.softmax(router_logits, dim=-1)
+    
+    # Should handle small probabilities gracefully
+    assert th.allclose(recovered_probs, small_probs, atol=1e-6), \
+        "Should handle very small probabilities"
+    
+    # Test with probabilities that don't sum exactly to 1 (numerical precision)
+    imperfect_probs = th.tensor([[[0.33, 0.33, 0.34, 0.0]]])  # Sum = 1.0
+    accessor[0] = imperfect_probs
+    
+    router_logits = model.layers[0].mlp.router.output
+    recovered_probs = th.softmax(router_logits, dim=-1)
+    
+    # Should still work reasonably well
+    assert th.allclose(recovered_probs, imperfect_probs, atol=1e-5), \
+        "Should handle imperfect normalization"
