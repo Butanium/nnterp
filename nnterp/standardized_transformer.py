@@ -180,7 +180,7 @@ class StandardizedTransformer(LanguageModel):
                 self.routers = None
                 self.routers_input = None
                 self.routers_output = None
-                self.router_probabilities = None
+                self.router_probabilities.disable()
         
         warn_about_status(model_name, self._model, model_name)
         self._add_prefix_false_tokenizer = None

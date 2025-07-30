@@ -43,7 +43,7 @@ def test_router_detection_non_moe_models(model_name):
         assert model.routers is None, "Router accessor should be None for non-MoE models"
         assert model.routers_input is None, "Router input accessor should be None for non-MoE models"
         assert model.routers_output is None, "Router output accessor should be None for non-MoE models"
-        assert model.router_probabilities is None, "Router probabilities accessor should be None for non-MoE models"
+        assert not model.router_probabilities.enabled, "Router probabilities accessor should be disabled for non-MoE models"
 
 
 def test_router_module_access(model_name):
@@ -194,7 +194,7 @@ def test_router_ignore_configuration(model_name):
         assert model.routers is None
         assert model.routers_input is None
         assert model.routers_output is None
-        assert model.router_probabilities is None
+        assert not model.router_probabilities.enabled
 
 
 def test_router_structure_validation(model_name):
@@ -273,7 +273,7 @@ def test_router_error_handling(model_name):
         assert model.routers is None, "Router accessor should be None for non-MoE models"
         assert model.routers_input is None, "Router input accessor should be None for non-MoE models"
         assert model.routers_output is None, "Router output accessor should be None for non-MoE models"
-        assert model.router_probabilities is None, "Router probabilities accessor should be None for non-MoE models"
+        assert not model.router_probabilities.enabled, "Router probabilities accessor should be disabled for non-MoE models"
 
 
 def test_router_tensor_shapes_comprehensive(model_name):
