@@ -178,7 +178,7 @@ def test_router_custom_naming(model_name):
     with th.no_grad():
         model = StandardizedTransformer(model_name, rename_config=custom_config)
         # Should not crash, router should be disabled for non-MoE model
-        if model_name not in MOE_MODELS:
+        if model_name not in TEST_MOE_MODELS:
             assert not model.routers_available
 
 

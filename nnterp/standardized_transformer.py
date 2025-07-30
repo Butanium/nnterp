@@ -177,10 +177,10 @@ class StandardizedTransformer(LanguageModel):
                 logger.error(
                     f"Router access is not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
-                self.routers.disable()
-                self.routers_input.disable()
-                self.routers_output.disable()
-                self.router_probabilities.disable()
+                self.routers = None
+                self.routers_input = None
+                self.routers_output = None
+                self.router_probabilities = None
         
         warn_about_status(model_name, self._model, model_name)
         self._add_prefix_false_tokenizer = None
