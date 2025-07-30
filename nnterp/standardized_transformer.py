@@ -177,9 +177,6 @@ class StandardizedTransformer(LanguageModel):
                 logger.error(
                     f"Router access is not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
-                self.routers.disable()
-                self.routers_input.disable()
-                self.routers_output.disable()
                 self.router_probabilities.disable()
         
         warn_about_status(model_name, self._model, model_name)
@@ -199,10 +196,7 @@ class StandardizedTransformer(LanguageModel):
     
     @property
     def routers_available(self) -> bool:
-        return (self.routers is not None and 
-                self.routers_input is not None and 
-                self.routers_output is not None and 
-                self.router_probabilities is not None and
+        return (self.router_probabilities is not None and
                 self.router_probabilities.enabled)
     
     @property

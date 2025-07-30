@@ -39,11 +39,8 @@ def test_router_detection_non_moe_models(model_name):
         # Router should be disabled for non-MoE models
         assert not model.routers_available, f"Router should not be available for non-MoE model {model_name}"
         
-        # Router accessors should be None
-        assert model.routers is None, "Router accessor should be None for non-MoE models"
-        assert model.routers_input is None, "Router input accessor should be None for non-MoE models"
-        assert model.routers_output is None, "Router output accessor should be None for non-MoE models"
-        assert model.router_probabilities is None, "Router probabilities accessor should be None for non-MoE models"
+        # Router probabilities should be disabled
+        assert not model.router_probabilities.enabled, "Router probabilities accessor should be disabled for non-MoE models"
 
 
 def test_router_module_access(model_name):
@@ -178,7 +175,7 @@ def test_router_custom_naming(model_name):
     with th.no_grad():
         model = StandardizedTransformer(model_name, rename_config=custom_config)
         # Should not crash, router should be disabled for non-MoE model
-        if model_name not in MOE_MODELS:
+        if model_name not in TEST_MOE_MODELS:
             assert not model.routers_available
 
 
@@ -191,10 +188,7 @@ def test_router_ignore_configuration(model_name):
         model = StandardizedTransformer(model_name, rename_config=ignore_config)
         # Router should be disabled even for MoE model when ignored
         assert not model.routers_available
-        assert model.routers is None
-        assert model.routers_input is None
-        assert model.routers_output is None
-        assert model.router_probabilities is None
+        assert not model.router_probabilities.enabled
 
 
 def test_router_structure_validation(model_name):
@@ -269,11 +263,8 @@ def test_router_error_handling(model_name):
         # Router should be disabled for non-MoE models
         assert not model.routers_available, f"Router should not be available for non-MoE model {model_name}"
         
-        # Accessing router components should fail gracefully
-        assert model.routers is None, "Router accessor should be None for non-MoE models"
-        assert model.routers_input is None, "Router input accessor should be None for non-MoE models"
-        assert model.routers_output is None, "Router output accessor should be None for non-MoE models"
-        assert model.router_probabilities is None, "Router probabilities accessor should be None for non-MoE models"
+        # Router probabilities should be disabled
+        assert not model.router_probabilities.enabled, "Router probabilities accessor should be disabled for non-MoE models"
 
 
 def test_router_tensor_shapes_comprehensive(model_name):
