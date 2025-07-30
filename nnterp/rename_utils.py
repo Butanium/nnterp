@@ -563,14 +563,102 @@ def detect_router_attr_name(model, rename_config: RenameConfig | None = None) ->
 
 
 
+def compute_router_probabilities(router_logits: th.Tensor, top_k: int, norm_topk_prob: bool = True) -> th.Tensor:
+    """
+    Convert router logits to probability distribution with top-k selection.
+    
+    Implements MoE router probability computation with configurable normalization:
+    1. Apply softmax to logits to get initial probabilities
+    2. Select top-k experts per token
+    3. Set non-selected expert probabilities to 0
+    4. Optionally renormalize to ensure probabilities sum to 1
+    
+    Args:
+        router_logits: Raw router logits of shape [..., num_experts]
+        top_k: Number of experts to select per token
+        norm_topk_prob: Whether to renormalize probabilities after top-k selection
+        
+    Returns:
+        Probability distribution of same shape as input
+    """
+    # Apply softmax to get initial probabilities
+    probs = th.softmax(router_logits, dim=-1)
+    
+    # Get top-k experts per token
+    top_k_probs, top_k_indices = th.topk(probs, k=top_k, dim=-1)
+    
+    # Create mask for top-k experts
+    mask = th.zeros_like(probs)
+    mask.scatter_(-1, top_k_indices, 1.0)
+    
+    # Zero out non-selected experts
+    masked_probs = probs * mask
+    
+    # Optionally renormalize to ensure sum to 1
+    if norm_topk_prob:
+        prob_sum = masked_probs.sum(dim=-1, keepdim=True)
+        masked_probs = masked_probs / prob_sum
+    
+    return masked_probs
+
+
+def compute_default_router_probabilities(router_logits: th.Tensor, top_k: int) -> th.Tensor:
+    """
+    Compute normalized router probabilities using the default MoE approach.
+    
+    This is the standard implementation that normalizes probabilities after top-k selection.
+    """
+    return compute_router_probabilities(router_logits, top_k, norm_topk_prob=True)
+
+
+def compute_unnormalized_router_probabilities(router_logits: th.Tensor, top_k: int) -> th.Tensor:
+    """
+    Compute router probabilities without renormalization after top-k selection.
+    
+    Some models don't renormalize after top-k selection.
+    """
+    return compute_router_probabilities(router_logits, top_k, norm_topk_prob=False)
+
+
+# Model-specific router probability computation functions
+ROUTER_PROBABILITY_FUNCTIONS = {
+    # Add model-specific mappings here as needed
+    # OlmoeForCausalLM: compute_unnormalized_router_probabilities,
+    # LlamaForCausalLM: compute_sigmoid_router_probabilities,  # Future
+}
+
+
+def get_router_probability_function(model):
+    """
+    Determine the appropriate router probability function for a given model.
+    
+    Args:
+        model: The model instance
+        
+    Returns:
+        Function to compute router probabilities from logits
+    """
+    # Check for model-specific function
+    for model_class, prob_function in ROUTER_PROBABILITY_FUNCTIONS.items():
+        if isinstance(model._model, model_class):
+            return prob_function
+    
+    # Default fallback for unmatched models
+    return compute_default_router_probabilities
+
+
 class RouterProbabilitiesAccessor:
     """
     Specialized accessor for MoE router probability distributions.
     Similar to AttentionProbabilitiesAccessor but for router outputs.
+    
+    This accessor computes proper probability distributions from router logits
+    using model-specific probability computation functions.
     """
     
     def __init__(self, model):
         self.model = model
+        self.probability_function = get_router_probability_function(model)
         self.enabled = True
     
     def disable(self):
@@ -593,14 +681,46 @@ class RouterProbabilitiesAccessor:
         return mlp.router
     
     def __getitem__(self, layer: int) -> TraceTensor:
-        """Get router probability output for the specified layer."""
+        """Get router probability distribution for the specified layer."""
         router = self._get_router_module(layer)
-        return router.output
+        router_logits = router.output
+        
+        # Get top_k for this router
+        top_k = self.get_top_k(layer)
+        
+        # Compute probabilities using model-specific function
+        return self.probability_function(router_logits, top_k)
     
     def __setitem__(self, layer: int, value: TraceTensor):
-        """Set router probability output for the specified layer."""
+        """
+        Set router probability distribution for the specified layer.
+        
+        This method converts the provided probability distribution back to logits
+        and sets the router output, allowing the MoE forward pass to use the
+        custom probabilities.
+        
+        Args:
+            layer: Layer index
+            value: Probability distribution tensor with shape (batch_size, seq_len, num_experts)
+                  Should be normalized (sum to 1.0 across experts dimension)
+        """
         router = self._get_router_module(layer)
-        router.output = value
+        
+        # Validate that value is a proper probability distribution
+        assert th.all(value >= 0), "All probabilities must be non-negative"
+        prob_sums = value.sum(dim=-1)
+        assert th.allclose(prob_sums, th.ones_like(prob_sums), atol=1e-5), \
+            "Probabilities must sum to 1 for each token"
+        
+        # Convert probabilities back to logits
+        # Use -inf for zero probabilities, log for non-zero values
+        # Replace zeros with epsilon to avoid log(0) computation
+        value_with_epsilon = th.where(value == 0, th.finfo(value.dtype).eps, value)
+        logits = th.where(value == 0, 
+                         th.tensor(-float('inf'), device=value.device, dtype=value.dtype),
+                         th.log(value_with_epsilon))
+        
+        router.output = logits
     
     def get_top_k(self, layer: int = 0) -> int:
         """Get the top_k parameter for the router at the specified layer."""

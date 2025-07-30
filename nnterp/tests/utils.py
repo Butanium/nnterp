@@ -66,6 +66,11 @@ if missing_models:
     raise ValueError(f"MoE models not found in TEST_MODELS: {missing_models}")
 
 
+def is_moe_model(model_name):
+    """Check if a model is a MoE model."""
+    return model_name in TEST_MOE_MODELS
+
+
 def get_all_toy_models():
     return [
         item.item_id
