@@ -714,9 +714,11 @@ class RouterProbabilitiesAccessor:
         
         # Convert probabilities back to logits
         # Use -inf for zero probabilities, log for non-zero values
+        # Replace zeros with epsilon to avoid log(0) computation
+        value_with_epsilon = th.where(value == 0, th.finfo(value.dtype).eps, value)
         logits = th.where(value == 0, 
                          th.tensor(-float('inf'), device=value.device, dtype=value.dtype),
-                         th.log(value))
+                         th.log(value_with_epsilon))
         
         router.output = logits
     
