@@ -520,7 +520,6 @@ def detect_router_attr_name(model, rename_config: RenameConfig | None = None) ->
             
             for router_name in router_names:
                 if hasattr(mlp, router_name):
-                    logger.info(f"Detected router component '{router_name}' in layer {layer_idx}")
                     return router_name
         
         # No router found in any layer - this is not a MoE model
@@ -727,7 +726,7 @@ class RouterProbabilitiesAccessor:
         raise RenamingError(f"Could not find top_k parameter for router")
 
 
-def check_router_structure(model, layer: int = 0):
+def check_router_structure(model, layer: int = 0) -> None:
     """
     Validate router structure and shapes for a model.
     
@@ -766,35 +765,24 @@ def check_router_structure(model, layer: int = 0):
     if not isinstance(weight, th.Tensor):
         raise RenamingError(f"Router weight at layer {actual_layer} is not a tensor")
     
-    logger.info(f"Router at layer {actual_layer} validated successfully")
-    logger.info(f"Router weight shape: {weight.shape}")
+    # Try different attribute names for top_k
+    top_k_attrs = ['top_k', 'topk', 'num_experts_per_tok', 'k']
+    top_k = None
+    for attr in top_k_attrs:
+        if hasattr(router, attr):
+            top_k = getattr(router, attr)
+            break
     
-    # Try to get top_k parameter
-    try:
-        # Try different attribute names for top_k
-        top_k_attrs = ['top_k', 'topk', 'num_experts_per_tok', 'k']
-        top_k = None
-        for attr in top_k_attrs:
-            if hasattr(router, attr):
-                top_k = getattr(router, attr)
-                break
-        
-        # Check if it's in the model config
-        if top_k is None:
-            config = model.config
-            if hasattr(config, 'num_experts_per_tok'):
-                top_k = config.num_experts_per_tok
-            elif hasattr(config, 'top_k'):
-                top_k = config.top_k
-        
-        if top_k is not None:
-            logger.info(f"Router top_k: {top_k}")
-        else:
-            logger.warning("Could not find top_k parameter for router")
-    except Exception as e:
-        logger.warning(f"Could not get top_k: {e}")
-
-
+    # Check if it's in the model config
+    if top_k is None:
+        config = model.config
+        if hasattr(config, 'num_experts_per_tok'):
+            top_k = config.num_experts_per_tok
+        elif hasattr(config, 'top_k'):
+            top_k = config.top_k
+    
+    if top_k is None:
+        raise RenamingError(f"Could not find top_k parameter for router")
 
 
 def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:

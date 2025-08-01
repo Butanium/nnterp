@@ -107,11 +107,24 @@ with nnterp_gpt2.trace("hello"):
 
 # And expert router outputs for MoE models:
 nnterp_qwen3_moe = StandardizedTransformer("yujiepan/qwen3-moe-tiny-random")
+# First, you can access layer inputs and outputs directly:
+with nnterp_gpt2.trace("hello"):
+    # Access layer 5's output
+    layer_5_output = nnterp_gpt2.layers_output[5]
+    # Set layer 10's output to be layer 5's output
+    nnterp_gpt2.layers_output[10] = layer_5_output
+
+# You can also access attention and MLP outputs:
+with nnterp_gpt2.trace("hello"):
+    attn_output = nnterp_gpt2.attentions_output[3]
+    mlp_output = nnterp_gpt2.mlps_output[3]
+
+# And expert router outputs for MoE models:
+nnterp_qwen3_moe = StandardizedTransformer("yujiepan/qwen3-moe-tiny-random")
 
 with nnterp_qwen3_moe.trace("hello"):
-    router_output = nnterp_qwen3_moe.router_output[0]
-    router_logits = nnterp_qwen3_moe.router_logits[0]
-    router_probabilities = nnterp_qwen3_moe.router_probabilities[0]
+    router_output = nnterp_qwen3_moe.routers_output[1]
+    router_probabilities = nnterp_qwen3_moe.router_probabilities[1]
 
 # %% [markdown]
 # ## 3. `nnterp` Guarantees
