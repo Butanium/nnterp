@@ -9,44 +9,16 @@ from .nnsight_utils import TraceTensor
 from .utils import is_notebook, display_markdown, try_with_scan, dummy_inputs
 
 
-# Dummy class for missing transformer architectures
-class ArchitectureNotFound:
-    pass
-
-
-try:
-    from transformers import OPTForCausalLM
-except ImportError:
-    OPTForCausalLM = ArchitectureNotFound
-
-try:
-    from transformers import MixtralForCausalLM
-except ImportError:
-    MixtralForCausalLM = ArchitectureNotFound
-
-try:
-    from transformers import BloomForCausalLM
-except ImportError:
-    BloomForCausalLM = ArchitectureNotFound
-
-try:
-    from transformers import GPT2LMHeadModel
-except ImportError:
-    GPT2LMHeadModel = ArchitectureNotFound
-
-try:
-    from transformers import Qwen2MoeForCausalLM
-except ImportError:
-    Qwen2MoeForCausalLM = ArchitectureNotFound
-try:
-    from transformers import DbrxForCausalLM
-except ImportError:
-    DbrxForCausalLM = ArchitectureNotFound
-
-try:
-    from transformers import GPTJForCausalLM
-except ImportError:
-    GPTJForCausalLM = ArchitectureNotFound
+from .model_imports import (
+    OPTForCausalLM,
+    MixtralForCausalLM,
+    BloomForCausalLM,
+    GPT2LMHeadModel,
+    Qwen2MoeForCausalLM,
+    DbrxForCausalLM,
+    GPTJForCausalLM,
+    OlmoeForCausalLM,
+)
 
 
 class RenamingError(Exception):
@@ -156,7 +128,7 @@ ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head"]
 HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
 
 # Models that return a tuple for the mlp output
-MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM, DbrxForCausalLM)
+MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM, DbrxForCausalLM, OlmoeForCausalLM)
 # Models with no mlp module
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
 

@@ -26,6 +26,7 @@ from transformers import AutoModelForCausalLM
 
 print(AutoModelForCausalLM.from_pretrained("Maykeye/TinyLLama-v0"))
 print(AutoModelForCausalLM.from_pretrained("gpt2"))
+print(AutoModelForCausalLM.from_pretrained("yujiepan/qwen3-moe-tiny-random"))
 
 # %% [markdown]
 # As you can see, the naming scheme of gpt2 is different from the llama naming convention.
@@ -103,6 +104,14 @@ with nnterp_gpt2.trace("hello"):
 with nnterp_gpt2.trace("hello"):
     attn_output = nnterp_gpt2.attentions_output[3]
     mlp_output = nnterp_gpt2.mlps_output[3]
+
+# And expert router outputs for MoE models:
+nnterp_qwen3_moe = StandardizedTransformer("yujiepan/qwen3-moe-tiny-random")
+
+with nnterp_qwen3_moe.trace("hello"):
+    router_output = nnterp_qwen3_moe.router_output[0]
+    router_logits = nnterp_qwen3_moe.router_logits[0]
+    router_probabilities = nnterp_qwen3_moe.router_probabilities[0]
 
 # %% [markdown]
 # ## 3. `nnterp` Guarantees
