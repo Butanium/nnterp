@@ -331,6 +331,13 @@ def bloom_attention_prob_source(attention_module, return_module_source: bool = F
         return attention_module.source.self_attention_dropout_0
 
 
+def olmoe_attention_prob_source(attention_module, return_module_source: bool = False):
+    if return_module_source:
+        return attention_module.source
+    else:
+        return attention_module.source.nn_functional_dropout_0
+
+
 def default_attention_prob_source(attention_module, return_module_source: bool = False):
     if return_module_source:
         return attention_module.source.attention_interface_0.source
@@ -363,6 +370,8 @@ class AttentionProbabilitiesAccessor:
             self.source_attr = rename_config.attn_prob_source
         elif isinstance(model._model, BloomForCausalLM):
             self.source_attr = bloom_attention_prob_source
+        elif isinstance(model._model, OlmoeForCausalLM):
+            self.source_attr = olmoe_attention_prob_source
         elif isinstance(model._model, GPT2LMHeadModel):
             self.source_attr = gpt2_attention_prob_source
         elif isinstance(model._model, GPTJForCausalLM):
