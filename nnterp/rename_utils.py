@@ -132,6 +132,8 @@ HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
 MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM, DbrxForCausalLM, OlmoeForCausalLM, GptOssForCausalLM)
 # Models with no mlp module
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
+# Models whose layer outputs may be squeezed
+SQUEEZE_LAYER_OUTPUT_MODELS = (GptOssForCausalLM,)
 
 # Alternative names for LLM layers
 ATTENTION_NAMES = ["attn", "self_attention", "attention", "norm_attn_norm"]
@@ -883,10 +885,23 @@ def check_io(std_model, model_name: str, ignores: list[str]):
         raise ValueError(
             f"layers_output[0] is not a tensor in {model_name} architecture. Found type {type(layer_output)}. This means it's not properly initialized."
         )
+
+    bad_layer_output_shape_error = ValueError(
+        f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
+    )
+
     if layer_output.shape != (batch_size, seq_len, hidden_size):
-        raise ValueError(
-            f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
-        )
+        if model_name in SQUEEZE_LAYER_OUTPUT_MODELS:
+            # in this case, it may not be a failure because the model could
+            # simply be squeezing a tensor of shape (1, seq_len, hidden_size)
+            # into a tensor of shape (seq_len, hidden_size)
+            if batch_size != 1:
+                raise bad_layer_output_shape_error
+
+            if layer_output.shape != (seq_len, hidden_size):
+                raise bad_layer_output_shape_error
+        else:
+            raise bad_layer_output_shape_error
 
 
 def check_model_renaming(
