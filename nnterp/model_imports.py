@@ -53,3 +53,8 @@ try:
     from transformers import OlmoeForCausalLM
 except ImportError:
     OlmoeForCausalLM: type[ArchitectureNotFound | OlmoeForCausalLM] = ArchitectureNotFound
+
+try:
+    from transformers import GptOssForCausalLM
+except ImportError:
+    GptOssForCausalLM: type[ArchitectureNotFound | GptOssForCausalLM] = ArchitectureNotFound

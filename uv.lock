@@ -1243,7 +1243,7 @@ wheels = [
 
 [[package]]
 name = "huggingface-hub"
-version = "0.33.2"
+version = "0.34.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "filelock" },
@@ -1255,9 +1255,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fa/42/8a95c5632080ae312c0498744b2b852195e10b05a20b1be11c5141092f4c/huggingface_hub-0.33.2.tar.gz", hash = "sha256:84221defaec8fa09c090390cd68c78b88e3c4c2b7befba68d3dc5aacbc3c2c5f", size = 426637 }
+sdist = { url = "https://files.pythonhosted.org/packages/45/c9/bdbe19339f76d12985bc03572f330a01a93c04dffecaaea3061bdd7fb892/huggingface_hub-0.34.4.tar.gz", hash = "sha256:a4228daa6fb001be3f4f4bdaf9a0db00e1739235702848df00885c9b5742c85c", size = 459768 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/44/f4/5f3f22e762ad1965f01122b42dae5bf0e009286e2dba601ce1d0dba72424/huggingface_hub-0.33.2-py3-none-any.whl", hash = "sha256:3749498bfa91e8cde2ddc2c1db92c79981f40e66434c20133b39e5928ac9bcc5", size = 515373 },
+    { url = "https://files.pythonhosted.org/packages/39/7b/bb06b061991107cd8783f300adff3e7b7f284e330fd82f507f2a1417b11d/huggingface_hub-0.34.4-py3-none-any.whl", hash = "sha256:9b365d781739c93ff90c359844221beef048403f1bc1f1c123c191257c3c890a", size = 561452 },
 ]
 
 [package.optional-dependencies]
@@ -2484,7 +2484,7 @@ requires-dist = [
     { name = "sphinx-copybutton", marker = "extra == 'docs'" },
     { name = "sphinx-design", marker = "extra == 'docs'" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=2.0.0" },
-    { name = "transformers" },
+    { name = "transformers", git = "https://github.com/huggingface/transformers.git" },
     { name = "vllm", marker = "extra == 'vllm'" },
 ]
 provides-extras = ["display", "docs", "dev", "vllm"]
@@ -5285,8 +5285,8 @@ wheels = [
 
 [[package]]
 name = "transformers"
-version = "4.53.2"
-source = { registry = "https://pypi.org/simple" }
+version = "4.56.0.dev0"
+source = { git = "https://github.com/huggingface/transformers.git#cd22550692cabffb037b7e5a956e8da3cbbb2b67" }
 dependencies = [
     { name = "filelock" },
     { name = "huggingface-hub" },
@@ -5299,10 +5299,6 @@ dependencies = [
     { name = "safetensors" },
     { name = "tokenizers" },
     { name = "tqdm" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4c/67/80f51466ec447028fd84469b208eb742533ce06cc8fad2e3181380199e5c/transformers-4.53.2.tar.gz", hash = "sha256:6c3ed95edfb1cba71c4245758f1b4878c93bf8cde77d076307dacb2cbbd72be2", size = 9201233 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/96/88/beb33a79a382fcd2aed0be5222bdc47f41e4bfe7aaa90ae1374f1d8ea2af/transformers-4.53.2-py3-none-any.whl", hash = "sha256:db8f4819bb34f000029c73c3c557e7d06fc1b8e612ec142eecdae3947a9c78bf", size = 10826609 },
 ]
 
 [package.optional-dependencies]

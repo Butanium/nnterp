@@ -18,6 +18,7 @@ from .model_imports import (
     DbrxForCausalLM,
     GPTJForCausalLM,
     OlmoeForCausalLM,
+    GptOssForCausalLM,
 )
 
 
@@ -128,7 +129,7 @@ ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head"]
 HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
 
 # Models that return a tuple for the mlp output
-MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM, DbrxForCausalLM, OlmoeForCausalLM)
+MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM, DbrxForCausalLM, OlmoeForCausalLM, GptOssForCausalLM)
 # Models with no mlp module
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
 
