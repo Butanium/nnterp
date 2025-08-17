@@ -891,7 +891,7 @@ def check_io(std_model, model_name: str, ignores: list[str]):
     )
 
     if layer_output.shape != (batch_size, seq_len, hidden_size):
-        if isinstance(std_model, SQUEEZE_LAYER_OUTPUT_MODELS):
+        if isinstance(std_model._model, SQUEEZE_LAYER_OUTPUT_MODELS):
             # in this case, it may not be a failure because the model could
             # simply be squeezing a tensor of shape (1, seq_len, hidden_size)
             # into a tensor of shape (seq_len, hidden_size)
