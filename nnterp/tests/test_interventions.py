@@ -277,14 +277,14 @@ def test_patch_object_attn_lens(model):
         assert result.shape[1] == get_num_layers(model)
 
 
-def test_patchscope_lens_with_latents(model):
+def test_patchscope_lens_with_latents(model, remote):
     """Test patchscope_lens with pre-computed latents."""
     with th.no_grad():
         # First get some latents
         from nnterp.nnsight_utils import get_token_activations
 
         source_prompts = ["Hello world"]
-        latents = get_token_activations(model, source_prompts)
+        latents = get_token_activations(model, source_prompts, remote=remote)
 
         # Test with these latents
         target_prompt = TargetPrompt("Test prompt", -1)
@@ -300,6 +300,7 @@ def test_patchscope_lens_with_latents(model):
             target_patch_prompts=target_prompt,
             layers=test_layers,
             latents=latents,
+            remote=remote,
         )
 
         expected_shape = (1, len(test_layers), model.config.vocab_size)
