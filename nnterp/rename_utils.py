@@ -2,51 +2,25 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from loguru import logger
+from packaging import version
 
 import torch as th
 from nnsight import Envoy
 from .nnsight_utils import TraceTensor
 from .utils import is_notebook, display_markdown, try_with_scan, dummy_inputs
-
-
-# Dummy class for missing transformer architectures
-class ArchitectureNotFound:
-    pass
-
-
-try:
-    from transformers import OPTForCausalLM
-except ImportError:
-    OPTForCausalLM = ArchitectureNotFound
-
-try:
-    from transformers import MixtralForCausalLM
-except ImportError:
-    MixtralForCausalLM = ArchitectureNotFound
-
-try:
-    from transformers import BloomForCausalLM
-except ImportError:
-    BloomForCausalLM = ArchitectureNotFound
-
-try:
-    from transformers import GPT2LMHeadModel
-except ImportError:
-    GPT2LMHeadModel = ArchitectureNotFound
-
-try:
-    from transformers import Qwen2MoeForCausalLM
-except ImportError:
-    Qwen2MoeForCausalLM = ArchitectureNotFound
-try:
-    from transformers import DbrxForCausalLM
-except ImportError:
-    DbrxForCausalLM = ArchitectureNotFound
-
-try:
-    from transformers import GPTJForCausalLM
-except ImportError:
-    GPTJForCausalLM = ArchitectureNotFound
+from .utils import (
+    TRANSFORMERS_VERSION,
+    OPTForCausalLM,
+    MixtralForCausalLM,
+    BloomForCausalLM,
+    GPT2LMHeadModel,
+    Qwen2MoeForCausalLM,
+    DbrxForCausalLM,
+    GPTJForCausalLM,
+    LlamaForCausalLM,
+    Qwen2ForCausalLM,
+    Qwen3ForCausalLM,
+)
 
 
 class RenamingError(Exception):
@@ -100,6 +74,10 @@ class RenameConfig:
         Whether the MLP module returns a tuple instead of a single tensor.
         Some architectures (e.g., Mixtral, Qwen2MoE, DBRX) return tuples from MLP.
 
+    layer_returns_tuple : bool, optional
+        Whether the layer module returns a tuple instead of a single tensor.
+        Since transformers 4.54, Llama layers don't return a tuple anymore.
+
     attn_prob_source : AttnProbFunction, optional
         Custom function for accessing attention probabilities.
         Should be an instance of AttnProbFunction that defines how to extract
@@ -142,6 +120,7 @@ class RenameConfig:
     model_name: str | list[str] | None = None
     layers_name: str | list[str] | None = None
     mlp_returns_tuple: bool | None = None
+    layer_returns_tuple: bool | None = None
     attn_prob_source: AttnProbFunction | None = None
     ignore_mlp: bool | None = None
     ignore_attn: bool | None = None
@@ -150,13 +129,19 @@ class RenameConfig:
 
 
 # Configuration keys for getting the number of attention heads and hidden size
-ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head"]
+ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head", "num_heads"]
 HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
 
 # Models that return a tuple for the mlp output
 MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM, DbrxForCausalLM)
 # Models with no mlp module
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
+# Models that return a tensor for the layer output since transformers 4.54
+LAYER_RETURNS_TENSOR_AFTER_454_MODELS = (
+    LlamaForCausalLM,
+    Qwen2ForCausalLM,
+    Qwen3ForCausalLM,
+)
 
 # Alternative names for LLM layers
 ATTENTION_NAMES = ["attn", "self_attention", "attention", "norm_attn_norm"]
@@ -179,6 +164,40 @@ LN_NAMES = [
 ]
 LM_HEAD_NAMES = ["embed_out"]
 MLP_NAMES = ["block_sparse_moe", "ffn"]
+EMBED_TOKENS_NAMES = ["wte", "embed_in", ".model.embed_tokens"]
+
+
+def get_rename_dict(
+    rename_config: RenameConfig | None = None,
+) -> dict[str, str]:
+    rename_dict = {}
+    if rename_config is not None:
+
+        def update_rename_dict(renaming: str, value: str | list[str] | None):
+            if value is not None:
+                if isinstance(value, str):
+                    rename_dict[value] = renaming
+                else:
+                    for name in value:
+                        rename_dict[name] = renaming
+
+        update_rename_dict("model", rename_config.model_name)
+        update_rename_dict("layers", rename_config.layers_name)
+        update_rename_dict("self_attn", rename_config.attn_name)
+        update_rename_dict("mlp", rename_config.mlp_name)
+        update_rename_dict("ln_final", rename_config.ln_final_name)
+        update_rename_dict("lm_head", rename_config.lm_head_name)
+
+    rename_dict.update(
+        {name: "model" for name in MODEL_NAMES}
+        | {name: "layers" for name in LAYER_NAMES}
+        | {name: "self_attn" for name in ATTENTION_NAMES}
+        | {name: "mlp" for name in MLP_NAMES}
+        | {name: "ln_final" for name in LN_NAMES}
+        | {name: "lm_head" for name in LM_HEAD_NAMES}
+        | {name: "embed_tokens" for name in EMBED_TOKENS_NAMES}
+    )
+    return rename_dict
 
 
 def text_config(model):
@@ -239,38 +258,6 @@ def get_hidden_size(
             "You should pass the number of attention heads as an integer or look at the config and pass the key in the attn_head_config_key argument of a RenameConfig."
         )
     return None
-
-
-def get_rename_dict(
-    rename_config: RenameConfig | None = None,
-) -> dict[str, str]:
-    rename_dict = {}
-    if rename_config is not None:
-
-        def update_rename_dict(renaming: str, value: str | list[str] | None):
-            if value is not None:
-                if isinstance(value, str):
-                    rename_dict[value] = renaming
-                else:
-                    for name in value:
-                        rename_dict[name] = renaming
-
-        update_rename_dict("model", rename_config.model_name)
-        update_rename_dict("layers", rename_config.layers_name)
-        update_rename_dict("self_attn", rename_config.attn_name)
-        update_rename_dict("mlp", rename_config.mlp_name)
-        update_rename_dict("ln_final", rename_config.ln_final_name)
-        update_rename_dict("lm_head", rename_config.lm_head_name)
-
-    rename_dict.update(
-        {name: "model" for name in MODEL_NAMES}
-        | {name: "layers" for name in LAYER_NAMES}
-        | {name: "self_attn" for name in ATTENTION_NAMES}
-        | {name: "mlp" for name in MLP_NAMES}
-        | {name: "ln_final" for name in LN_NAMES}
-        | {name: "lm_head" for name in LM_HEAD_NAMES}
-    )
-    return rename_dict
 
 
 class IOType(Enum):
@@ -530,6 +517,17 @@ def mlp_returns_tuple(model, rename_config: RenameConfig | None = None) -> bool:
     return isinstance(model, MLP_RETURNS_TUPLE_MODELS)
 
 
+def layer_returns_tuple(model, rename_config: RenameConfig | None = None) -> bool:
+    if rename_config is not None and rename_config.layer_returns_tuple is not None:
+        return rename_config.layer_returns_tuple
+    if version.parse(TRANSFORMERS_VERSION) >= version.parse("4.54") and isinstance(
+        model, LAYER_RETURNS_TENSOR_AFTER_454_MODELS
+    ):
+        return False
+    else:
+        return True
+
+
 def check_io(std_model, model_name: str, ignores: list[str]):
     batch_size, seq_len = std_model.input_size
     hidden_size = std_model.hidden_size
@@ -537,6 +535,15 @@ def check_io(std_model, model_name: str, ignores: list[str]):
         raise RenamingError(
             f"Can't check the shapes of the model internals because the hidden size is not available in {model_name} architecture."
             "You should pass the hidden size as an integer or look at the config and pass the key in the hidden_size_config_key argument of a RenameConfig."
+        )
+    token_embeddings = std_model.token_embeddings
+    if not isinstance(token_embeddings, th.Tensor):
+        raise ValueError(
+            f"token_embeddings is not a tensor in {model_name} architecture. Found type {type(token_embeddings)}. This means it's not properly initialized."
+        )
+    if token_embeddings.shape != (batch_size, seq_len, hidden_size):
+        raise ValueError(
+            f"token_embeddings has shape {token_embeddings.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
         )
     layer_input = std_model.layers_input[0]
     if not isinstance(layer_input, th.Tensor):

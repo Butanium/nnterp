@@ -14,16 +14,17 @@ from .utils import (
     warn_about_status,
 )
 from .rename_utils import (
-    get_rename_dict,
-    LayerAccessor,
     IOType,
+    LayerAccessor,
+    AttentionProbabilitiesAccessor,
+    RenameConfig,
+    get_rename_dict,
     get_ignores,
     mlp_returns_tuple,
+    layer_returns_tuple,
     check_model_renaming,
-    AttentionProbabilitiesAccessor,
     get_num_attention_heads,
     get_hidden_size,
-    RenameConfig,
 )
 
 GetLayerObject = Callable[[int], TraceTensor]
@@ -33,9 +34,10 @@ class StandardizedTransformer(LanguageModel):
     """
     Renames the LanguageModel modules to match a standardized architecture.
 
-    The model structure is organized as follows::
+    The model structure is organized as follows:
 
         StandardizedTransformer
+        ├── embed_tokens
         ├── layers
         │   ├── self_attn
         │   └── mlp
@@ -44,6 +46,7 @@ class StandardizedTransformer(LanguageModel):
 
     In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:
 
+    - token_embeddings: Get/set token embeddings
     - layers[i]: Get layer module at layer i
     - layers_input[i]: Get/set layer input at layer i
     - layers_output[i]: Get/set layer output at layer i
@@ -114,7 +117,10 @@ class StandardizedTransformer(LanguageModel):
         # Create accessor instances
         self.layers_input = LayerAccessor(self, None, IOType.INPUT, returns_tuple=False)
         self.layers_output = LayerAccessor(
-            self, None, IOType.OUTPUT, returns_tuple=True
+            self,
+            None,
+            IOType.OUTPUT,
+            returns_tuple=layer_returns_tuple(self._model, rename_config),
         )
         self.attentions = LayerAccessor(self, "self_attn", None)
         self.attentions_input = LayerAccessor(
@@ -186,6 +192,16 @@ class StandardizedTransformer(LanguageModel):
     def attention_mask(self) -> TraceTensor:
         """Returns the attention mask tensor."""
         return self.inputs[1]["attention_mask"]
+
+    @property
+    def token_embeddings(self) -> TraceTensor:
+        """Returns the token embeddings. Equivalent to self.embed_tokens.output"""
+        return self.embed_tokens.output
+
+    @token_embeddings.setter
+    def token_embeddings(self, value: TraceTensor):
+        """Sets the token embeddings. Equivalent to self.embed_tokens.output = value"""
+        self.embed_tokens.output = value
 
     @property
     def logits(self) -> TraceTensor:
