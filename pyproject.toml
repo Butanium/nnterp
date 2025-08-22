@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "loguru>=0.7.3",
-    "nnsight>=0.5.0.dev8",
+    "nnsight==0.5.0.dev16",
     "transformers",
 ]
 [project.optional-dependencies]
@@ -51,6 +51,11 @@ vllm = [
 [project.urls]
 "Homepage" = "https://github.com/butanium/nnterp"
 
+[dependency-groups]
+dev = [
+    "pytest-cov>=6.2.1",
+]
+
 [tool.setuptools]
 packages = ["nnterp"]
 include-package-data = true
@@ -58,6 +63,9 @@ include-package-data = true
 [tool.setuptools.package-data]
 nnterp = ["py.typed"]
 "*" = ["data/", "tests/*"]
+
+[tool.coverage.run]
+omit = ["nnterp/tests/*"]
 
 [tool.black]
 line-length = 88
