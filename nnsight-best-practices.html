@@ -1,0 +1,694 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" data-theme="dark">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>NNsight Best Practices &#8212; nnterp</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "dark";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "dark";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'nnsight-best-practices';</script>
+    <link rel="canonical" href="https://butanium.github.io/nnterp/nnsight-best-practices.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Documentation" href="api.html" />
+    <link rel="prev" title="NNsight Utils" href="nnsight-utils.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="dark">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">nnterp</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="getting-started/installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="getting-started/quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="basic-usage.html">
+    Basic Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="interventions.html">
+    Interventions
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="model-validation.html">
+    Model Validation & Testing
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="adding-model-support.html">
+    Adding Support for Your Model
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="advanced-features.html">
+    Advanced Features
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="nnsight-utils.html">
+    NNsight Utils
+  </a>
+</li>
+
+
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
+    NNsight Best Practices
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="api.html">
+    Documentation
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/butanium/nnterp" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="getting-started/installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="getting-started/quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="basic-usage.html">
+    Basic Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="interventions.html">
+    Interventions
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="model-validation.html">
+    Model Validation & Testing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="adding-model-support.html">
+    Adding Support for Your Model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="advanced-features.html">
+    Advanced Features
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="nnsight-utils.html">
+    NNsight Utils
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    NNsight Best Practices
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api.html">
+    Documentation
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/butanium/nnterp" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">NNsight Best Practices</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="nnsight-best-practices">
+<h1>NNsight Best Practices<a class="headerlink" href="#nnsight-best-practices" title="Link to this heading">#</a></h1>
+<p>This guide covers essential NNsight patterns and best practices for efficient and correct usage with nnterp. Understanding these patterns will help you avoid common pitfalls and write more performant code.</p>
+<section id="execution-order-requirements">
+<h2>Execution Order Requirements<a class="headerlink" href="#execution-order-requirements" title="Link to this heading">#</a></h2>
+<p><strong>Critical Rule</strong>: You must access model internals in the same order as the model executes them.</p>
+<p>In NNsight, interventions must be written in forward pass order. This means you cannot access layer 2’s output before layer 1’s output.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardizedTransformer</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">StandardizedTransformer</span><span class="p">(</span><span class="s2">&quot;gpt2&quot;</span><span class="p">)</span>
+
+<span class="c1"># ✅ CORRECT: Access layers in forward order</span>
+<span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;My tailor is rich&quot;</span><span class="p">):</span>
+    <span class="n">l1</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Access layer 1 first</span>
+    <span class="n">l2</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># Then layer 2</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">logits</span>        <span class="c1"># Finally the output</span>
+
+<span class="c1"># ❌ INCORRECT: This will fail!</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;My tailor is rich&quot;</span><span class="p">):</span>
+        <span class="n">l2</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># Access layer 2 first</span>
+        <span class="n">l1</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Then layer 1 - ERROR!</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This applies to all model components:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;Hello&quot;</span><span class="p">):</span>
+    <span class="c1"># ✅ CORRECT: Forward pass order</span>
+    <span class="n">attn_0</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">attentions_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>    <span class="c1"># Layer 0 attention</span>
+    <span class="n">mlp_0</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">mlps_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>           <span class="c1"># Layer 0 MLP</span>
+    <span class="n">layer_0</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>       <span class="c1"># Layer 0 output</span>
+    <span class="n">attn_1</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">attentions_output</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>    <span class="c1"># Layer 1 attention</span>
+    <span class="c1"># ... and so on</span>
+</pre></div>
+</div>
+</section>
+<section id="gradient-computation">
+<h2>Gradient Computation<a class="headerlink" href="#gradient-computation" title="Link to this heading">#</a></h2>
+<p>To compute gradients, you must use the <code class="docutils literal notranslate"><span class="pre">.backward()</span></code> context and save gradients inside it.</p>
+<section id="basic-gradient-computation">
+<h3>Basic Gradient Computation<a class="headerlink" href="#basic-gradient-computation" title="Link to this heading">#</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;My tailor is rich&quot;</span><span class="p">):</span>
+    <span class="c1"># Save the activation you want gradients for</span>
+    <span class="n">l1_out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># Access model output (must be after l1_out)</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">logits</span>
+
+    <span class="c1"># Compute gradients inside backward context</span>
+    <span class="k">with</span> <span class="n">logits</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">():</span>
+        <span class="n">l1_grad</span> <span class="o">=</span> <span class="n">l1_out</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="multiple-backward-passes">
+<h3>Multiple Backward Passes<a class="headerlink" href="#multiple-backward-passes" title="Link to this heading">#</a></h3>
+<p>For multiple gradient computations, use <code class="docutils literal notranslate"><span class="pre">retain_graph=True</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;My tailor is rich&quot;</span><span class="p">):</span>
+    <span class="n">l1_out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">logits</span>
+
+    <span class="c1"># First backward pass</span>
+    <span class="k">with</span> <span class="n">logits</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">retain_graph</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">l1_grad_1</span> <span class="o">=</span> <span class="n">l1_out</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+
+    <span class="c1"># Second backward pass with different objective</span>
+    <span class="k">with</span> <span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">backward</span><span class="p">():</span>
+        <span class="n">l1_grad_2</span> <span class="o">=</span> <span class="n">l1_out</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+
+<span class="c1"># Gradients will be different</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">l1_grad_1</span><span class="p">,</span> <span class="n">l1_grad_2</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="don-t-forget-the-execution-order">
+<h3>Don’t forget the execution order!<a class="headerlink" href="#don-t-forget-the-execution-order" title="Link to this heading">#</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ❌ INCORRECT: Accessing layers_output[1] after logits</span>
+<span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;My tailor is rich&quot;</span><span class="p">):</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">logits</span>
+    <span class="k">with</span> <span class="n">logits</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">():</span>
+        <span class="c1"># This would fail - can&#39;t access layers_output[1] after output</span>
+        <span class="n">l1_grad</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+
+<span class="c1"># ✅ CORRECT: Save activation first</span>
+<span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;My tailor is rich&quot;</span><span class="p">):</span>
+    <span class="n">l1_out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Save first</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">logits</span>
+    <span class="k">with</span> <span class="n">logits</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">():</span>
+        <span class="n">l1_grad</span> <span class="o">=</span> <span class="n">l1_out</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>  <span class="c1"># Use saved activation</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-optimization">
+<h2>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading">#</a></h2>
+<section id="use-tracer-stop-to-skip-unnecessary-computations">
+<h3>Use <code class="docutils literal notranslate"><span class="pre">tracer.stop()</span></code> to Skip Unnecessary Computations<a class="headerlink" href="#use-tracer-stop-to-skip-unnecessary-computations" title="Link to this heading">#</a></h3>
+<p>When you only need intermediate activations, use <code class="docutils literal notranslate"><span class="pre">tracer.stop()</span></code> to prevent the model from computing subsequent layers:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="c1"># Without tracer.stop() - computes all layers</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;Hello world&quot;</span><span class="p">):</span>
+        <span class="n">layer_5_out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+<span class="n">time_without_stop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+
+<span class="c1"># With tracer.stop() - only computes up to layer 5</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;Hello world&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tracer</span><span class="p">:</span>
+        <span class="n">layer_5_out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        <span class="n">tracer</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>  <span class="c1"># Stop here - don&#39;t compute remaining layers</span>
+<span class="n">time_with_stop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Speedup: </span><span class="si">{</span><span class="n">time_without_stop</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">time_with_stop</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">x&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This can provide significant speedups (often 2-5x) when working with large models and only analyzing intermediate layers.</p>
+</section>
+</section>
+<section id="caching-activations">
+<h2>Caching Activations<a class="headerlink" href="#caching-activations" title="Link to this heading">#</a></h2>
+<p>NNsight 0.5+ includes built-in caching for collecting multiple activations efficiently:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Cache activations from multiple layers</span>
+<span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;Hello world&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tracer</span><span class="p">:</span>
+    <span class="c1"># Cache every other layer</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">tracer</span><span class="o">.</span><span class="n">cache</span><span class="p">(</span>
+        <span class="n">modules</span><span class="o">=</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+
+    <span class="c1"># Don&#39;t call tracer.stop() before cache is accessed!</span>
+
+<span class="c1"># Access cached activations</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cache</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>  <span class="c1"># Shows module names</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cache</span><span class="p">[</span><span class="s2">&quot;model.layers.0&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># Layer 0 output</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cache</span><span class="p">[</span><span class="s2">&quot;model.layers.2&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># Layer 2 output</span>
+</pre></div>
+</div>
+<p><strong>Important</strong>: As of 0.5.dev8, the cache uses original module names, not nnterp’s renamed names.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#execution-order-requirements">Execution Order Requirements</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gradient-computation">Gradient Computation</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-gradient-computation">Basic Gradient Computation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#multiple-backward-passes">Multiple Backward Passes</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#don-t-forget-the-execution-order">Don’t forget the execution order!</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#performance-optimization">Performance Optimization</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#use-tracer-stop-to-skip-unnecessary-computations">Use <code class="docutils literal notranslate"><span class="pre">tracer.stop()</span></code> to Skip Unnecessary Computations</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#caching-activations">Caching Activations</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Clément Dumas.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
