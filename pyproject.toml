@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "loguru>=0.7.3",
-    "nnsight==0.5.0.dev16",
+    "nnsight>=0.5",
     "transformers",
 ]
 [project.optional-dependencies]
