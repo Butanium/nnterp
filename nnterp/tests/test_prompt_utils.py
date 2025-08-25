@@ -130,7 +130,7 @@ def test_next_token_probs_unsqueeze(model):
         assert probs.shape[2] == model.config.vocab_size
 
 
-def test_run_prompts(model):
+def test_run_prompts(model, remote):
     """Test run_prompts function."""
     with th.no_grad():
         # Create test prompts
@@ -140,7 +140,7 @@ def test_run_prompts(model):
         ]
 
         # Test basic functionality
-        result = run_prompts(model, prompts, batch_size=2)
+        result = run_prompts(model, prompts, batch_size=2, remote=remote)
 
         assert isinstance(result, dict)
         assert "target" in result
@@ -149,10 +149,10 @@ def test_run_prompts(model):
 
         # Test with custom get_probs function
         def custom_get_probs(nn_model, batch_prompts, **kwargs):
-            return logit_lens(nn_model, batch_prompts)
+            return logit_lens(nn_model, batch_prompts, remote=kwargs.get('remote', False))
 
         result = run_prompts(
-            model, prompts, batch_size=1, get_probs_func=custom_get_probs
+            model, prompts, batch_size=1, get_probs_func=custom_get_probs, remote=remote
         )
 
         assert isinstance(result, dict)
@@ -160,7 +160,7 @@ def test_run_prompts(model):
         assert result["target"].shape[0] == len(prompts)
 
 
-def test_run_prompts_multiple_targets(model):
+def test_run_prompts_multiple_targets(model, remote):
     """Test run_prompts with multiple targets per prompt."""
     with th.no_grad():
         prompts = [
@@ -174,7 +174,7 @@ def test_run_prompts_multiple_targets(model):
             ),
         ]
 
-        result = run_prompts(model, prompts, batch_size=2)
+        result = run_prompts(model, prompts, batch_size=2, remote=remote)
 
         assert isinstance(result, dict)
         assert "animal" in result
@@ -186,12 +186,12 @@ def test_run_prompts_multiple_targets(model):
             assert target_probs.shape[0] == len(prompts)
 
 
-def test_run_prompts_single_prompt(model):
+def test_run_prompts_single_prompt(model, remote):
     """Test run_prompts with a single prompt."""
     with th.no_grad():
         prompt = Prompt.from_strings("Test prompt", {"target": "word"}, model)
 
-        result = run_prompts(model, [prompt], batch_size=1)
+        result = run_prompts(model, [prompt], batch_size=1, remote=remote)
 
         assert isinstance(result, dict)
         assert "target" in result
