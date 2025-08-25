@@ -73,7 +73,7 @@ def test_basic_utils(llama_like_model_name):
         assert attn_output.shape == layer_input.shape
 
 
-def test_activation_collection(llama_like_model_name):
+def test_activation_collection(llama_like_model_name, remote):
     """Test activation collection functions"""
     with th.no_grad():
         model = LanguageModel(llama_like_model_name, device_map="auto")
@@ -81,27 +81,27 @@ def test_activation_collection(llama_like_model_name):
 
         # Test activation collection with session
         acts_session = collect_last_token_activations_session(
-            model, prompts, batch_size=1
+            model, prompts, batch_size=1, remote=remote
         )
         assert acts_session.shape[:2] == (get_num_layers(model), len(prompts))
         # Test basic activation collection
-        acts = get_token_activations(model, prompts)
+        acts = get_token_activations(model, prompts, remote=remote)
         assert acts.shape[:2] == (
             get_num_layers(model),
             len(prompts),
         )  # Batch dimension
 
         # Test batched activation collection
-        acts_batched = collect_token_activations_batched(model, prompts, batch_size=1)
+        acts_batched = collect_token_activations_batched(model, prompts, batch_size=1, remote=remote)
         assert acts_batched.shape[:2] == (get_num_layers(model), len(prompts))
 
         acts_batched_no_batch = collect_token_activations_batched(
-            model, prompts, batch_size=len(prompts)
+            model, prompts, batch_size=len(prompts), remote=remote
         )
         assert th.allclose(acts, acts_batched_no_batch)
 
         # Test next token probabilities
-        probs = compute_next_token_probs(model, prompts)
+        probs = compute_next_token_probs(model, prompts, remote=remote)
         assert probs.shape == (len(prompts), model.config.vocab_size)
 
 
