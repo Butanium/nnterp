@@ -59,8 +59,8 @@ def pytest_generate_tests(metafunc):
         "model_name" in metafunc.fixturenames
         or "llama_like_model_name" in metafunc.fixturenames
     ):
-        model_names = metafunc.config.getoption("model_names")
-        class_names = metafunc.config.getoption("class_names")
+        model_names = metafunc.config.getoption("model_names", default=None)
+        class_names = metafunc.config.getoption("class_names", default=None)
         if model_names is not None or class_names is not None:
             all_models = []
             if model_names is not None:
@@ -105,10 +105,17 @@ def pytest_configure(config):
     config._fail_prompt_utils_models = defaultdict(list)
     config._tested_models = defaultdict(list)
     config._is_model_specific = (
-        config.getoption("model_names") is not None
-        or config.getoption("class_names") is not None
+        config.getoption("model_names", default=None) is not None
+        or config.getoption("class_names", default=None) is not None
     )
-    config._save_test_logs = config.getoption("save_test_logs")
+    config._is_full_run = (
+        any(
+            Path(p).resolve() == PROJECT_ROOT / "tests"
+            for p in config.option.file_or_dir
+        )
+        or len(config.option.file_or_dir) == 0
+    )
+    config._save_test_logs = config.getoption("save_test_logs", default=False)
 
 
 def pytest_runtest_makereport(item, call):
@@ -168,16 +175,6 @@ def pytest_runtest_makereport(item, call):
         config._fail_test_models[arch].append(model_name)
 
 
-def pytest_cmdline_main(config):
-    config._is_full_run = (
-        any(
-            Path(p).resolve() == PROJECT_ROOT / "tests"
-            for p in config.option.file_or_dir
-        )
-        or len(config.option.file_or_dir) == 0
-    )
-
-
 def pytest_deselected(items):
     if items:
         items[0].session.config._has_deselected = True
@@ -187,6 +184,12 @@ def pytest_sessionfinish(session, exitstatus):
     """Hook called after whole test session finishes."""
     success = exitstatus <= 1
     config = session.config
+    if not hasattr(config, "_is_full_run"):
+        logger.warning(
+            "pytest_sessionfinish called without pytest_configure. Skipping status update."
+            "You probably called that with --lf"
+        )
+        return
     is_partial = not config._is_full_run or config._has_deselected or not success
     existing_data = {}
     if not is_partial:

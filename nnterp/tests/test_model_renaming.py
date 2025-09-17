@@ -310,7 +310,10 @@ def test_renamed_model_methods(model_name):
         assert num_layers > 0
         ignores = get_ignores(model._model)
         with model.trace(prompt):
-            # Test layer count and access
+            batch_size = model.input_size[0].save()
+            seq_len = model.input_size[1].save()
+            embed_tokens = model.token_embeddings.save()
+            embed_tokens_out = model.embed_tokens.output.save()
 
             # Test layer 0 methods
             _layer = get_layer(model, 0)
@@ -336,17 +339,17 @@ def test_renamed_model_methods(model_name):
             logits = get_logits(model).save()
             logits_output = model.output.logits.save()
 
-        assert next_probs.shape[-1] == model.config.vocab_size
-        assert projected.shape[-1] == model.config.vocab_size
-        assert layer_input.shape == layer_output.shape
-        assert logits.shape[-1] == model.config.vocab_size
-        assert next_probs.shape == (logits.shape[0], logits.shape[2])
-        assert logits_output.shape == projected.shape
+        assert next_probs.shape == (batch_size, model.config.vocab_size)
+        assert projected.shape == (batch_size, seq_len, model.config.vocab_size)
+        assert embed_tokens.shape == (batch_size, seq_len, model.config.hidden_size)
+        assert embed_tokens_out.shape == (batch_size, seq_len, model.config.hidden_size)
+        assert th.allclose(embed_tokens, embed_tokens_out)
+        assert layer_input.shape == (batch_size, seq_len, model.config.hidden_size)
+        assert logits.shape == (batch_size, seq_len, model.config.vocab_size)
+        assert logits_output.shape == (batch_size, seq_len, model.config.vocab_size)
         if "mlp" not in ignores:
-            assert mlps_output.shape == layer_output.shape
-        assert attn_output.shape == layer_input.shape
-
-        print("Renamed model methods tested successfully.")
+            assert mlps_output.shape == (batch_size, seq_len, model.config.hidden_size)
+        assert attn_output.shape == (batch_size, seq_len, model.config.hidden_size)
 
 
 def test_standardized_transformer_input_accessors(model_name):

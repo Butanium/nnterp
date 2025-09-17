@@ -14,18 +14,19 @@ from .utils import (
     warn_about_status,
 )
 from .rename_utils import (
-    get_rename_dict,
-    LayerAccessor,
     IOType,
+    LayerAccessor,
+    AttentionProbabilitiesAccessor,
+    RenameConfig,
+    get_rename_dict,
     get_ignores,
     mlp_returns_tuple,
+    layer_returns_tuple,
     check_model_renaming,
-    AttentionProbabilitiesAccessor,
     RouterProbabilitiesAccessor,
     check_router_structure,
     get_num_attention_heads,
     get_hidden_size,
-    RenameConfig,
 )
 
 GetLayerObject = Callable[[int], TraceTensor]
@@ -35,9 +36,10 @@ class StandardizedTransformer(LanguageModel):
     """
     Renames the LanguageModel modules to match a standardized architecture.
 
-    The model structure is organized as follows::
+    The model structure is organized as follows:
 
         StandardizedTransformer
+        ├── embed_tokens
         ├── layers
         │   ├── self_attn
         │   └── mlp
@@ -46,6 +48,7 @@ class StandardizedTransformer(LanguageModel):
 
     In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:
 
+    - token_embeddings: Get/set token embeddings
     - layers[i]: Get layer module at layer i
     - layers_input[i]: Get/set layer input at layer i
     - layers_output[i]: Get/set layer output at layer i
@@ -120,7 +123,10 @@ class StandardizedTransformer(LanguageModel):
         # Create accessor instances
         self.layers_input = LayerAccessor(self, None, IOType.INPUT, returns_tuple=False)
         self.layers_output = LayerAccessor(
-            self, None, IOType.OUTPUT, returns_tuple=True
+            self,
+            None,
+            IOType.OUTPUT,
+            returns_tuple=layer_returns_tuple(self._model, rename_config),
         )
         self.attentions = LayerAccessor(self, "self_attn", None)
         self.attentions_input = LayerAccessor(
@@ -162,14 +168,14 @@ class StandardizedTransformer(LanguageModel):
                     f"Attention probabilities is not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
                 self.attention_probabilities.disable()
-        
+
         # Initialize router accessors for MoE models (similar to attention_probabilities)
         # First assign the accessors (router, input, and output accessors should be simple layer accessors)
         self.routers = LayerAccessor(self, "mlp.router", None)
         self.routers_input = LayerAccessor(self, "mlp.router", IOType.INPUT)
         self.routers_output = LayerAccessor(self, "mlp.router", IOType.OUTPUT)
         self.router_probabilities = RouterProbabilitiesAccessor(self)
-        
+
         if check_renaming:
             try:
                 check_router_structure(self)
@@ -178,7 +184,7 @@ class StandardizedTransformer(LanguageModel):
                     f"Router access is not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
                 self.router_probabilities.disable()
-        
+
         warn_about_status(model_name, self._model, model_name)
         self._add_prefix_false_tokenizer = None
 
@@ -193,18 +199,19 @@ class StandardizedTransformer(LanguageModel):
     @property
     def attn_probs_available(self) -> bool:
         return self.attention_probabilities.enabled
-    
+
     @property
     def routers_available(self) -> bool:
-        return (self.router_probabilities is not None and
-                self.router_probabilities.enabled)
-    
+        return (
+            self.router_probabilities is not None and self.router_probabilities.enabled
+        )
+
     @property
     def layers_with_routers(self) -> list[int]:
         """Get ordered list of layer indices that contain routers."""
         if not self.routers_available:
             return []
-        
+
         router_layers = []
         for layer_idx in range(self.num_layers):
             try:
@@ -214,7 +221,7 @@ class StandardizedTransformer(LanguageModel):
                     router_layers.append(layer_idx)
             except:
                 continue
-        
+
         return router_layers
 
     @property
@@ -232,6 +239,16 @@ class StandardizedTransformer(LanguageModel):
     def attention_mask(self) -> TraceTensor:
         """Returns the attention mask tensor."""
         return self.inputs[1]["attention_mask"]
+
+    @property
+    def token_embeddings(self) -> TraceTensor:
+        """Returns the token embeddings. Equivalent to self.embed_tokens.output"""
+        return self.embed_tokens.output
+
+    @token_embeddings.setter
+    def token_embeddings(self, value: TraceTensor):
+        """Sets the token embeddings. Equivalent to self.embed_tokens.output = value"""
+        self.embed_tokens.output = value
 
     @property
     def logits(self) -> TraceTensor:
@@ -294,9 +311,9 @@ class StandardizedTransformer(LanguageModel):
             layers = [layers]
         for layer in layers:
             layer_device = get_layer_object_to_steer(layer).device
-            get_layer_object_to_steer(layer)[
-                :, positions
-            ] += factor * steering_vector.to(layer_device)
+            get_layer_object_to_steer(layer)[:, positions] += (
+                factor * steering_vector.to(layer_device)
+            )
 
     def project_on_vocab(self, hidden_state: TraceTensor) -> TraceTensor:
         hidden_state = self.ln_final(hidden_state)

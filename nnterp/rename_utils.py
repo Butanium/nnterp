@@ -1,24 +1,31 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from loguru import logger
 
 import torch as th
+from loguru import logger
 from nnsight import Envoy
+from packaging import version
+
 from .nnsight_utils import TraceTensor
-from .utils import is_notebook, display_markdown, try_with_scan, dummy_inputs
-
-
-from .model_imports import (
-    OPTForCausalLM,
-    MixtralForCausalLM,
+from .utils import (
+    TRANSFORMERS_VERSION,
     BloomForCausalLM,
-    GPT2LMHeadModel,
-    Qwen2MoeForCausalLM,
     DbrxForCausalLM,
+    GPT2LMHeadModel,
     GPTJForCausalLM,
-    OlmoeForCausalLM,
     GptOssForCausalLM,
+    LlamaForCausalLM,
+    MixtralForCausalLM,
+    OlmoeForCausalLM,
+    OPTForCausalLM,
+    Qwen2ForCausalLM,
+    Qwen2MoeForCausalLM,
+    Qwen3ForCausalLM,
+    display_markdown,
+    dummy_inputs,
+    is_notebook,
+    try_with_scan,
 )
 
 
@@ -73,6 +80,10 @@ class RenameConfig:
         Whether the MLP module returns a tuple instead of a single tensor.
         Some architectures (e.g., Mixtral, Qwen2MoE, DBRX) return tuples from MLP.
 
+    layer_returns_tuple : bool, optional
+        Whether the layer module returns a tuple instead of a single tensor.
+        Since transformers 4.54, Llama layers don't return a tuple anymore.
+
     attn_prob_source : AttnProbFunction, optional
         Custom function for accessing attention probabilities.
         Should be an instance of AttnProbFunction that defines how to extract
@@ -115,6 +126,7 @@ class RenameConfig:
     model_name: str | list[str] | None = None
     layers_name: str | list[str] | None = None
     mlp_returns_tuple: bool | None = None
+    layer_returns_tuple: bool | None = None
     attn_prob_source: AttnProbFunction | None = None
     ignore_mlp: bool | None = None
     ignore_attn: bool | None = None
@@ -125,15 +137,27 @@ class RenameConfig:
 
 
 # Configuration keys for getting the number of attention heads and hidden size
-ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head"]
+ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head", "num_heads"]
 HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
 
 # Models that return a tuple for the mlp output
-MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM, DbrxForCausalLM, OlmoeForCausalLM, GptOssForCausalLM)
+MLP_RETURNS_TUPLE_MODELS = (
+    MixtralForCausalLM,
+    Qwen2MoeForCausalLM,
+    DbrxForCausalLM,
+    OlmoeForCausalLM,
+    GptOssForCausalLM,
+)
 # Models with no mlp module
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
-# Models whose layer outputs may be squeezed
+# Models whose layer outputs may need to be squeezed
 SQUEEZE_LAYER_OUTPUT_MODELS = (GptOssForCausalLM,)
+# Models that return a tensor for the layer output since transformers 4.54
+LAYER_RETURNS_TENSOR_AFTER_454_MODELS = (
+    LlamaForCausalLM,
+    Qwen2ForCausalLM,
+    Qwen3ForCausalLM,
+)
 
 # Alternative names for LLM layers
 ATTENTION_NAMES = ["attn", "self_attention", "attention", "norm_attn_norm"]
@@ -157,6 +181,41 @@ LN_NAMES = [
 LM_HEAD_NAMES = ["embed_out"]
 MLP_NAMES = ["block_sparse_moe", "ffn"]
 ROUTER_NAMES = ["router", "gate"]
+EMBED_TOKENS_NAMES = ["wte", "embed_in", ".model.embed_tokens"]
+
+
+def get_rename_dict(
+    rename_config: RenameConfig | None = None,
+) -> dict[str, str]:
+    rename_dict = {}
+    if rename_config is not None:
+
+        def update_rename_dict(renaming: str, value: str | list[str] | None):
+            if value is not None:
+                if isinstance(value, str):
+                    rename_dict[value] = renaming
+                else:
+                    for name in value:
+                        rename_dict[name] = renaming
+
+        update_rename_dict("model", rename_config.model_name)
+        update_rename_dict("layers", rename_config.layers_name)
+        update_rename_dict("self_attn", rename_config.attn_name)
+        update_rename_dict("mlp", rename_config.mlp_name)
+        update_rename_dict("ln_final", rename_config.ln_final_name)
+        update_rename_dict("lm_head", rename_config.lm_head_name)
+        update_rename_dict("router", rename_config.router_name)
+
+    rename_dict.update(
+        {name: "model" for name in MODEL_NAMES}
+        | {name: "layers" for name in LAYER_NAMES}
+        | {name: "self_attn" for name in ATTENTION_NAMES}
+        | {name: "mlp" for name in MLP_NAMES}
+        | {name: "ln_final" for name in LN_NAMES}
+        | {name: "lm_head" for name in LM_HEAD_NAMES}
+        | {name: "router" for name in ROUTER_NAMES}
+    )
+    return rename_dict
 
 
 def text_config(model):
@@ -219,40 +278,6 @@ def get_hidden_size(
     return None
 
 
-def get_rename_dict(
-    rename_config: RenameConfig | None = None,
-) -> dict[str, str]:
-    rename_dict = {}
-    if rename_config is not None:
-
-        def update_rename_dict(renaming: str, value: str | list[str] | None):
-            if value is not None:
-                if isinstance(value, str):
-                    rename_dict[value] = renaming
-                else:
-                    for name in value:
-                        rename_dict[name] = renaming
-
-        update_rename_dict("model", rename_config.model_name)
-        update_rename_dict("layers", rename_config.layers_name)
-        update_rename_dict("self_attn", rename_config.attn_name)
-        update_rename_dict("mlp", rename_config.mlp_name)
-        update_rename_dict("ln_final", rename_config.ln_final_name)
-        update_rename_dict("lm_head", rename_config.lm_head_name)
-        update_rename_dict("router", rename_config.router_name)
-
-    rename_dict.update(
-        {name: "model" for name in MODEL_NAMES}
-        | {name: "layers" for name in LAYER_NAMES}
-        | {name: "self_attn" for name in ATTENTION_NAMES}
-        | {name: "mlp" for name in MLP_NAMES}
-        | {name: "ln_final" for name in LN_NAMES}
-        | {name: "lm_head" for name in LM_HEAD_NAMES}
-        | {name: "router" for name in ROUTER_NAMES}
-    )
-    return rename_dict
-
-
 class IOType(Enum):
     """Enum to specify input or output access"""
 
@@ -270,7 +295,6 @@ class LayerAccessor:
         io_type: IOType | None,
         returns_tuple: bool = False,
     ):
-
         self.model = model
         self.attr_name = attr_name
         self.io_type = io_type
@@ -279,7 +303,7 @@ class LayerAccessor:
     def get_module(self, layer: int) -> Envoy:
         module = self.model.layers[layer]
         if self.attr_name is not None:
-            for attr in self.attr_name.split('.'):
+            for attr in self.attr_name.split("."):
                 module = getattr(module, attr)
         return module
 
@@ -498,14 +522,16 @@ class AttentionProbabilitiesAccessor:
             display_markdown(markdown_text)
 
 
-def detect_router_attr_name(model, rename_config: RenameConfig | None = None) -> str | None:
+def detect_router_attr_name(
+    model, rename_config: RenameConfig | None = None
+) -> str | None:
     """
     Detect the router attribute name for MoE models by scanning multiple layers.
-    
+
     Handles different naming conventions:
     - "router" (e.g., Llama4: model.layers[0].feed_forward.router)
     - "gate" (e.g., OLMoE: model.layers[0].feed_forward.gate)
-    
+
     Returns the router attribute name if found, None otherwise.
     """
     try:
@@ -513,7 +539,7 @@ def detect_router_attr_name(model, rename_config: RenameConfig | None = None) ->
         if rename_config and rename_config.ignore_router:
             logger.debug("Router access is explicitly ignored in configuration")
             return None
-        
+
         # Try different router naming conventions
         router_names = ROUTER_NAMES.copy()
         if rename_config and rename_config.router_name:
@@ -521,83 +547,86 @@ def detect_router_attr_name(model, rename_config: RenameConfig | None = None) ->
                 router_names.insert(0, rename_config.router_name)
             else:
                 router_names = list(rename_config.router_name) + router_names
-        
+
         # Check multiple layers since some models (like Llama4) have mixed dense/MoE layers
         for layer_idx in range(len(model.layers)):
             layer = model.layers[layer_idx]
-            if not hasattr(layer, 'mlp'):
+            if not hasattr(layer, "mlp"):
                 continue
-                
+
             mlp = layer.mlp
-            
+
             for router_name in router_names:
                 if hasattr(mlp, router_name):
                     return router_name
-        
+
         # No router found in any layer - this is not a MoE model
         logger.debug("No router component found in any layer - not a MoE model")
         return None
-        
+
     except Exception as e:
         logger.warning(f"Failed to detect router structure: {e}")
         return None
 
 
-
-
-
-def compute_router_probabilities(router_logits: th.Tensor, top_k: int, norm_topk_prob: bool = True) -> th.Tensor:
+def compute_router_probabilities(
+    router_logits: th.Tensor, top_k: int, norm_topk_prob: bool = True
+) -> th.Tensor:
     """
     Convert router logits to probability distribution with top-k selection.
-    
+
     Implements MoE router probability computation with configurable normalization:
     1. Apply softmax to logits to get initial probabilities
     2. Select top-k experts per token
     3. Set non-selected expert probabilities to 0
     4. Optionally renormalize to ensure probabilities sum to 1
-    
+
     Args:
         router_logits: Raw router logits of shape [..., num_experts]
         top_k: Number of experts to select per token
         norm_topk_prob: Whether to renormalize probabilities after top-k selection
-        
+
     Returns:
         Probability distribution of same shape as input
     """
     # Apply softmax to get initial probabilities
     probs = th.softmax(router_logits, dim=-1)
-    
+
     # Get top-k experts per token
     top_k_probs, top_k_indices = th.topk(probs, k=top_k, dim=-1)
-    
+
     # Create mask for top-k experts
     mask = th.zeros_like(probs)
     mask.scatter_(-1, top_k_indices, 1.0)
-    
+
     # Zero out non-selected experts
     masked_probs = probs * mask
-    
+
     # Optionally renormalize to ensure sum to 1
     if norm_topk_prob:
         prob_sum = masked_probs.sum(dim=-1, keepdim=True)
         masked_probs = masked_probs / prob_sum
-    
+
     return masked_probs
 
 
-def compute_default_router_probabilities(router_logits: th.Tensor, top_k: int) -> th.Tensor:
+def compute_default_router_probabilities(
+    router_logits: th.Tensor, top_k: int
+) -> th.Tensor:
     """
     Compute normalized router probabilities using the default MoE approach.
-    
+
     This is the standard implementation that normalizes probabilities after top-k selection.
     """
     return compute_router_probabilities(router_logits, top_k, norm_topk_prob=True)
 
 
-def compute_unnormalized_router_probabilities(router_logits: th.Tensor, top_k: int) -> th.Tensor:
+def compute_unnormalized_router_probabilities(
+    router_logits: th.Tensor, top_k: int
+) -> th.Tensor:
     """
     Compute router probabilities without renormalization after top-k selection.
-    
+
     Some models don't renormalize after top-k selection.
     """
     return compute_router_probabilities(router_logits, top_k, norm_topk_prob=False)
@@ -614,10 +643,10 @@ ROUTER_PROBABILITY_FUNCTIONS = {
 def get_router_probability_function(model):
     """
     Determine the appropriate router probability function for a given model.
-    
+
     Args:
         model: The model instance
-        
+
     Returns:
         Function to compute router probabilities from logits
     """
@@ -625,7 +654,7 @@ def get_router_probability_function(model):
     for model_class, prob_function in ROUTER_PROBABILITY_FUNCTIONS.items():
         if isinstance(model._model, model_class):
             return prob_function
-    
+
     # Default fallback for unmatched models
     return compute_default_router_probabilities
 
@@ -634,82 +663,87 @@ class RouterProbabilitiesAccessor:
     """
     Specialized accessor for MoE router probability distributions.
     Similar to AttentionProbabilitiesAccessor but for router outputs.
-    
+
     This accessor computes proper probability distributions from router logits
     using model-specific probability computation functions.
     """
-    
+
     def __init__(self, model):
         self.model = model
         self.probability_function = get_router_probability_function(model)
         self.enabled = True
-    
+
     def disable(self):
         """Disable router probabilities access."""
         self.enabled = False
-    
+
     def _get_router_module(self, layer: int):
         """Get the router module for a specific layer, handling mixed architectures."""
         if not self.enabled:
             raise RenamingError("Router probabilities are disabled for this model.")
-        
+
         layer_module = self.model.layers[layer]
-        if not hasattr(layer_module, 'mlp'):
+        if not hasattr(layer_module, "mlp"):
             raise RenamingError(f"Layer {layer} does not have an MLP component.")
-        
+
         mlp = layer_module.mlp
-        if not hasattr(mlp, 'router'):
-            raise RenamingError(f"Layer {layer} does not have a router component ('router').")
-        
+        if not hasattr(mlp, "router"):
+            raise RenamingError(
+                f"Layer {layer} does not have a router component ('router')."
+            )
+
         return mlp.router
-    
+
     def __getitem__(self, layer: int) -> TraceTensor:
         """Get router probability distribution for the specified layer."""
         router = self._get_router_module(layer)
         router_logits = router.output
-        
+
         # Get top_k for this router
         top_k = self.get_top_k(layer)
-        
+
         # Compute probabilities using model-specific function
         return self.probability_function(router_logits, top_k)
-    
+
     def __setitem__(self, layer: int, value: TraceTensor):
         """
         Set router probability distribution for the specified layer.
-        
+
         This method converts the provided probability distribution back to logits
         and sets the router output, allowing the MoE forward pass to use the
         custom probabilities.
-        
+
         Args:
             layer: Layer index
             value: Probability distribution tensor with shape (batch_size, seq_len, num_experts)
                   Should be normalized (sum to 1.0 across experts dimension)
         """
         router = self._get_router_module(layer)
-        
+
         # Validate that value is a proper probability distribution
         assert th.all(value >= 0), "All probabilities must be non-negative"
         prob_sums = value.sum(dim=-1)
-        assert th.allclose(prob_sums, th.ones_like(prob_sums), atol=1e-5), \
+        assert th.allclose(prob_sums, th.ones_like(prob_sums), atol=1e-5), (
             "Probabilities must sum to 1 for each token"
-        
+        )
+
         # Convert probabilities back to logits
         # Use -inf for zero probabilities, log for non-zero values
         # Replace zeros with epsilon to avoid log(0) computation
         value_with_epsilon = th.where(value == 0, th.finfo(value.dtype).eps, value)
-        logits = th.where(value == 0, 
-                         th.tensor(-float('inf'), device=value.device, dtype=value.dtype),
-                         th.log(value_with_epsilon))
-        
+        logits = th.where(
+            value == 0,
+            th.tensor(-float("inf"), device=value.device, dtype=value.dtype),
+            th.log(value_with_epsilon),
+        )
+
         router.output = logits
-    
+
     def get_top_k(self, layer: int = 0) -> int:
         """Get the top_k parameter for the router at the specified layer."""
         if not self.enabled:
             raise RenamingError("Router probabilities are disabled for this model.")
-        
+
         # First try to find a layer with a router
         router = None
         for check_layer in range(layer, len(self.model.layers)):
@@ -718,83 +752,89 @@ class RouterProbabilitiesAccessor:
                 break
             except RenamingError:
                 continue
-        
+
         if router is None:
-            raise RenamingError(f"Could not find any router component starting from layer {layer}")
-        
+            raise RenamingError(
+                f"Could not find any router component starting from layer {layer}"
+            )
+
         # Try different attribute names for top_k
-        top_k_attrs = ['top_k', 'topk', 'num_experts_per_tok', 'k']
+        top_k_attrs = ["top_k", "topk", "num_experts_per_tok", "k"]
         for attr in top_k_attrs:
             if hasattr(router, attr):
                 return getattr(router, attr)
-        
+
         # Check if it's in the model config
         config = self.model.config
-        if hasattr(config, 'num_experts_per_tok'):
+        if hasattr(config, "num_experts_per_tok"):
             return config.num_experts_per_tok
-        if hasattr(config, 'top_k'):
+        if hasattr(config, "top_k"):
             return config.top_k
-        
-        raise RenamingError(f"Could not find top_k parameter for router")
+
+        raise RenamingError("Could not find top_k parameter for router")
 
 
 def check_router_structure(model, layer: int = 0) -> None:
     """
     Validate router structure and shapes for a model.
-    
+
     Args:
         model: The StandardizedTransformer model
         layer: Starting layer to check (default: 0)
-    
+
     Raises:
         RenamingError: If router structure is invalid
     """
     # Find a layer with a router for validation
     router = None
     actual_layer = None
-    
+
     for check_layer in range(layer, len(model.layers)):
         try:
             layer_module = model.layers[check_layer]
-            if hasattr(layer_module, 'mlp'):
+            if hasattr(layer_module, "mlp"):
                 mlp = layer_module.mlp
-                if hasattr(mlp, 'router'):
+                if hasattr(mlp, "router"):
                     router = mlp.router
                     actual_layer = check_layer
                     break
         except Exception:
             continue
-    
+
     if router is None:
-        raise RenamingError(f"Could not find any router component starting from layer {layer}")
-    
+        raise RenamingError(
+            f"Could not find any router component starting from layer {layer}"
+        )
+
     # Basic structure validation
-    if not hasattr(router, 'weight'):
-        raise RenamingError(f"Router at layer {actual_layer} does not have weight attribute")
-    
+    if not hasattr(router, "weight"):
+        raise RenamingError(
+            f"Router at layer {actual_layer} does not have weight attribute"
+        )
+
     # Check if router has expected methods/attributes
     weight = router.weight
     if not isinstance(weight, th.Tensor):
         raise RenamingError(f"Router weight at layer {actual_layer} is not a tensor")
-    
+
     # Try different attribute names for top_k
-    top_k_attrs = ['top_k', 'topk', 'num_experts_per_tok', 'k']
+    top_k_attrs = ["top_k", "topk", "num_experts_per_tok", "k"]
     top_k = None
     for attr in top_k_attrs:
         if hasattr(router, attr):
             top_k = getattr(router, attr)
             break
-    
+
     # Check if it's in the model config
     if top_k is None:
         config = model.config
-        if hasattr(config, 'num_experts_per_tok'):
+        if hasattr(config, "num_experts_per_tok"):
             top_k = config.num_experts_per_tok
-        elif hasattr(config, 'top_k'):
+        elif hasattr(config, "top_k"):
             top_k = config.top_k
-    
+
     if top_k is None:
-        raise RenamingError(f"Could not find top_k parameter for router")
+        raise RenamingError("Could not find top_k parameter for router")
 
 
 def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:
@@ -821,6 +861,17 @@ def mlp_returns_tuple(model, rename_config: RenameConfig | None = None) -> bool:
     return isinstance(model, MLP_RETURNS_TUPLE_MODELS)
 
 
+def layer_returns_tuple(model, rename_config: RenameConfig | None = None) -> bool:
+    if rename_config is not None and rename_config.layer_returns_tuple is not None:
+        return rename_config.layer_returns_tuple
+    if version.parse(TRANSFORMERS_VERSION) >= version.parse("4.54") and isinstance(
+        model, LAYER_RETURNS_TENSOR_AFTER_454_MODELS
+    ):
+        return False
+    else:
+        return True
+
+
 def check_io(std_model, model_name: str, ignores: list[str]):
     batch_size, seq_len = std_model.input_size
     hidden_size = std_model.hidden_size
@@ -828,6 +879,15 @@ def check_io(std_model, model_name: str, ignores: list[str]):
         raise RenamingError(
             f"Can't check the shapes of the model internals because the hidden size is not available in {model_name} architecture."
             "You should pass the hidden size as an integer or look at the config and pass the key in the hidden_size_config_key argument of a RenameConfig."
+        )
+    token_embeddings = std_model.token_embeddings
+    if not isinstance(token_embeddings, th.Tensor):
+        raise ValueError(
+            f"token_embeddings is not a tensor in {model_name} architecture. Found type {type(token_embeddings)}. This means it's not properly initialized."
+        )
+    if token_embeddings.shape != (batch_size, seq_len, hidden_size):
+        raise ValueError(
+            f"token_embeddings has shape {token_embeddings.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
         )
     layer_input = std_model.layers_input[0]
     if not isinstance(layer_input, th.Tensor):
@@ -910,7 +970,6 @@ def check_model_renaming(
     ignores: list[str],
     allow_dispatch: bool,
 ):
-
     if not hasattr(std_model, "layers"):
         raise RenamingError(
             f"Could not find layers module in {model_name} architecture. This means that it was not properly renamed.\n"

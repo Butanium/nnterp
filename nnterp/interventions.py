@@ -382,7 +382,6 @@ def patch_object_attn_lens(
         source_prompts = [source_prompts]
     if isinstance(target_prompts, str):
         target_prompts = [target_prompts]
-    global probs_l
     num_layers = get_num_layers(nn_model)
     probs_l = []
 

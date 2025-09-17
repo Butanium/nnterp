@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import importlib.resources
 import json
 import sys
-from loguru import logger
 from typing import Union
-import torch as th
-from nnsight.intervention.tracing.globals import Object
-import transformers
+
 import nnsight
-import importlib.resources
+import torch as th
+import transformers
+from loguru import logger
+from nnsight.intervention.tracing.globals import Object
 from packaging import version
 
 TraceTensor = Union[th.Tensor, Object]
@@ -16,6 +17,66 @@ TraceTensor = Union[th.Tensor, Object]
 
 NNSIGHT_VERSION = nnsight.__version__
 TRANSFORMERS_VERSION = transformers.__version__
+
+
+# Dummy class for missing transformer architectures
+class ArchitectureNotFound:
+    pass
+
+
+try:
+    from transformers import OPTForCausalLM
+except ImportError:
+    OPTForCausalLM = ArchitectureNotFound
+try:
+    from transformers import MixtralForCausalLM
+except ImportError:
+    MixtralForCausalLM = ArchitectureNotFound
+try:
+    from transformers import BloomForCausalLM
+except ImportError:
+    BloomForCausalLM = ArchitectureNotFound
+try:
+    from transformers import GPT2LMHeadModel
+except ImportError:
+    GPT2LMHeadModel = ArchitectureNotFound
+try:
+    from transformers import Qwen2MoeForCausalLM
+except ImportError:
+    Qwen2MoeForCausalLM = ArchitectureNotFound
+try:
+    from transformers import DbrxForCausalLM
+except ImportError:
+    DbrxForCausalLM = ArchitectureNotFound
+try:
+    from transformers import GPTJForCausalLM
+except ImportError:
+    GPTJForCausalLM = ArchitectureNotFound
+try:
+    from transformers import LlamaForCausalLM
+except ImportError:
+    LlamaForCausalLM = ArchitectureNotFound
+
+try:
+    from transformers import Qwen3ForCausalLM
+except ImportError:
+    Qwen3ForCausalLM = ArchitectureNotFound
+
+try:
+    from transformers import Qwen2ForCausalLM
+except ImportError:
+    Qwen2ForCausalLM = ArchitectureNotFound
+
+try:
+    from transformers import OlmoeForCausalLM
+except ImportError:
+    OlmoeForCausalLM = ArchitectureNotFound
+
+try:
+    from transformers import GptOssForCausalLM
+except ImportError:
+    GptOssForCausalLM = ArchitectureNotFound
+
 
 try:
     status_path = importlib.resources.files("nnterp.data").joinpath("status.json")
@@ -56,22 +117,24 @@ if STATUS is None or len(STATUS) == 0:
 else:
     if TRANSFORMERS_VERSION in STATUS:
         transformers_status = STATUS[TRANSFORMERS_VERSION]
+        used_tf_version = TRANSFORMERS_VERSION
     else:
         IS_EXACT_VERSION = False
         available_versions = list(STATUS.keys())
         current_version = TRANSFORMERS_VERSION
-        nns_closest_below, nns_closest_above = _get_closest_version(
+        tf_closest_below, tf_closest_above = _get_closest_version(
             current_version, available_versions
         )
+        used_tf_version = tf_closest_above or tf_closest_below
 
         logger.warning(
             f"nnterp was not tested with Transformers version {current_version}. "
-            f"Closest below: {nns_closest_below}, closest above: {nns_closest_above}\n"
-            f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to {nns_closest_above or nns_closest_below} if possible or:\n"
+            f"Closest below: {tf_closest_below}, closest above: {tf_closest_above}\n"
+            f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to {used_tf_version} if possible or:\n"
             + WARNING_MESSAGE
-            + f"\nUsing test status from {nns_closest_above or nns_closest_below}."
+            + f"\nUsing test status from {used_tf_version}."
         )
-        transformers_status = STATUS[nns_closest_above or nns_closest_below]
+        transformers_status = STATUS[used_tf_version]
 
     if NNSIGHT_VERSION in transformers_status:
         nnterp_status = transformers_status[NNSIGHT_VERSION]
@@ -116,7 +179,7 @@ else:
             advice = f"Using test results from NNsight {nns_closest_below}."
             nnterp_status = transformers_status[nns_closest_below]
         logger.warning(
-            f"nnterp was not tested with NNsight version {current_version} for transformers version {TRANSFORMERS_VERSION}. "
+            f"nnterp was not tested with NNsight version {current_version} for transformers version {used_tf_version}. "
             + nnsight_message
             + f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to NNsight {nns_closest_above or nns_closest_below} if possible.\n"
             + tf_message
@@ -149,7 +212,7 @@ def is_notebook():
 
 
 def display_markdown(text: str):
-    from IPython.display import display, Markdown
+    from IPython.display import Markdown, display
 
     display(Markdown(text))
 
@@ -202,11 +265,7 @@ def try_with_scan(
             tracer.stop()
         return True
     except Exception as e:
-        if (
-            errors_to_raise
-            and errors_to_raise is not None
-            and isinstance(e, errors_to_raise)
-        ):
+        if errors_to_raise is not None and isinstance(e, errors_to_raise):
             raise e
         if not allow_dispatch and not model.dispatched:
             logger.error("Scan failed and trace() fallback is disabled")
@@ -220,6 +279,8 @@ def try_with_scan(
                 function()
                 tracer.stop()
         except Exception as e2:
+            if errors_to_raise is not None and isinstance(e2, errors_to_raise):
+                raise e2
             raise error_to_throw from e2
         logger.warning(
             f"Using trace() succeed! Error when trying to scan the model:\n{e}"
