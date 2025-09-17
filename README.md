@@ -1,4 +1,4 @@
-Try the demo: [![Try Demo in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Butanium/nnterp/blob/main/demo.ipynb)
+Try the demo: [![Try Demo in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Butanium/nnterp/blob/main/demo.ipynb) / read [the doc](https://butanium.github.io/nnterp/)
 
 # nnterp
 
