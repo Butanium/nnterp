@@ -105,8 +105,6 @@ with nnterp_gpt2.trace("hello"):
     attn_output = nnterp_gpt2.attentions_output[3]
     mlp_output = nnterp_gpt2.mlps_output[3]
 
-# And expert router outputs for MoE models:
-nnterp_qwen3_moe = StandardizedTransformer("yujiepan/qwen3-moe-tiny-random")
 # First, you can access layer inputs and outputs directly:
 with nnterp_gpt2.trace("hello"):
     # Access layer 5's output
@@ -231,8 +229,8 @@ with nnterp_gpt2.trace("The weather today is"):
 
 # %%
 from nnterp.nnsight_utils import (
-    get_token_activations,
     collect_token_activations_batched,
+    get_token_activations,
 )
 
 # Collect activations for specific tokens
@@ -297,9 +295,9 @@ for target, probs in results.items():
 
 # %%
 from nnterp.interventions import (
+    TargetPrompt,
     logit_lens,
     patchscope_lens,
-    TargetPrompt,
     repeat_prompt,
     steer,
 )
@@ -446,12 +444,13 @@ print(model)
 # now if we try to use nnterp, the renaming check automatically performed will fail:
 
 # %%
-from nnterp import StandardizedTransformer
 from traceback import print_exc
+
+from nnterp import StandardizedTransformer
 
 try:
     StandardizedTransformer(model)
-except Exception as e:
+except Exception:
     print_exc()
 
 # %% [markdown]
@@ -473,7 +472,7 @@ rename_cfg = RenameConfig(
 )
 try:
     StandardizedTransformer(model, rename_config=rename_cfg)
-except Exception as e:
+except Exception:
     print_exc()
 
 # %% [markdown]
@@ -495,7 +494,7 @@ try:
     StandardizedTransformer(
         model, rename_config=rename_cfg, config=AutoConfig.from_pretrained("gpt2")
     )
-except Exception as e:
+except Exception:
     print_exc()
 
 # %% [markdown]
@@ -569,7 +568,6 @@ from nnterp.rename_utils import AttnProbFunction, RenameConfig
 
 
 class GPTJAttnProbFunction(AttnProbFunction):
-
     def get_attention_prob_source(
         self, attention_module, return_module_source: bool = False
     ):
@@ -625,15 +623,16 @@ assert th.allclose(summed_attn_probs, th.ones_like(summed_attn_probs))
 # In the new `NNsight` versions, it is enforced that you must access to model internals *in the same order* as the model execute them.
 
 # %%
-from nnterp import StandardizedTransformer
 from traceback import print_exc
+
+from nnterp import StandardizedTransformer
 
 nnterp_gpt2 = StandardizedTransformer("gpt2")
 try:
     with nnterp_gpt2.trace("My tailor is rich"):
         l2 = nnterp_gpt2.layers_output[2]
         l1 = nnterp_gpt2.layers_output[1]  # will fail! You need to collect l1 before l2
-except Exception as e:
+except Exception:
     print_exc()
 
 # %% [markdown]
@@ -662,6 +661,7 @@ assert not th.allclose(l1_grad, l1_grad_2)
 
 # %%
 import time
+
 import pandas as pd
 
 print(

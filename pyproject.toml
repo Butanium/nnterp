@@ -18,6 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+    "dill>=0.4.0",
     "ipykernel>=6.29.5",
     "loguru>=0.7.3",
     "nnsight>=0.5",
@@ -54,6 +55,7 @@ vllm = [
 
 [dependency-groups]
 dev = [
+    "nnterp",
     "pytest-cov>=6.2.1",
 ]
 
@@ -88,4 +90,5 @@ exclude = '''
 
 [tool.uv.sources]
 transformers = { git = "https://github.com/huggingface/transformers.git" }
+nnterp = { workspace = true, editable = true }
 
