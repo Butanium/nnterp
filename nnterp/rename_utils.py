@@ -150,7 +150,7 @@ MLP_RETURNS_TUPLE_MODELS = (
 )
 # Models with no mlp module
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
-# Models whose layer outputs may need to be squeezed
+# Models who may squeeze their layer outputs
 SQUEEZE_LAYER_OUTPUT_MODELS = (GptOssForCausalLM,)
 # Models that return a tensor for the layer output since transformers 4.54
 LAYER_RETURNS_TENSOR_AFTER_454_MODELS = (
@@ -634,9 +634,8 @@ def compute_unnormalized_router_probabilities(
 
 # Model-specific router probability computation functions
 ROUTER_PROBABILITY_FUNCTIONS = {
-    # Add model-specific mappings here as needed
-    # OlmoeForCausalLM: compute_unnormalized_router_probabilities,
-    # LlamaForCausalLM: compute_sigmoid_router_probabilities,  # Future
+    OlmoeForCausalLM: compute_unnormalized_router_probabilities,
+    # LlamaForCausalLM: compute_sigmoid_router_probabilities,  # future work
 }
 
 
