@@ -14,7 +14,7 @@ from nnterp.nnsight_utils import (
     get_mlp_output,
     get_num_layers,
 )
-from nnterp.rename_utils import get_ignores, mlp_returns_tuple
+from nnterp.rename_utils import get_ignores
 from transformers import OPTForCausalLM
 from contextlib import nullcontext
 
@@ -198,7 +198,7 @@ def test_standardized_transformer_methods(model_name):
             if "mlp" not in ignores:
                 mlps_output_accessor = model.mlps_output[0].save()
                 mlps_output_direct = model.model.layers[0].mlp.output
-                if mlp_returns_tuple(model._model):
+                if isinstance(mlps_output_direct, tuple):
                     mlps_output_direct = mlps_output_direct[0]
                 mlps_output_direct = mlps_output_direct.save()
             layer_output_accessor = model.layers_output[0].save()
@@ -273,7 +273,7 @@ def test_renamed_model_methods(model_name):
             attn_output = get_attention_output(model, 0).save()
             if "mlp" not in ignores:
                 mlps_output = get_mlp_output(model, 0)
-                if mlp_returns_tuple(model._model):
+                if isinstance(mlps_output, tuple):
                     mlps_output = mlps_output[0]
                 mlps_output = mlps_output.save()
             layer_output = get_layer_output(model, 0).save()

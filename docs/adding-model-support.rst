@@ -36,8 +36,7 @@ When automatic renaming fails, create a custom ``RenameConfig``:
        attn_name="custom_attention",              # Maps to "self_attn"
        mlp_name="custom_ffn",                     # Maps to "mlp"
        ln_final_name="custom_norm",               # Maps to "ln_final"
-       lm_head_name="custom_head",                # Maps to "lm_head"
-       mlp_returns_tuple=True                     # Some models, mostly MoE, have mlps that return tuples where the first element is the d_model output of the MLP
+       lm_head_name="custom_head"                 # Maps to "lm_head"
    )
 
    model = StandardizedTransformer(
@@ -153,7 +152,7 @@ Common issues and solutions:
    Either disable attention probabilities or implement ``AttnProbFunction``
 
 **Shape mismatches**
-   Check if your model's MLP returns tuples: ``mlp_returns_tuple=True``
+   nnterp automatically detects and unwraps tuple outputs from modules during initialization
 
 Testing Your Configuration
 --------------------------

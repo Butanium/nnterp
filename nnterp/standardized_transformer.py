@@ -20,8 +20,6 @@ from .rename_utils import (
     RenameConfig,
     get_rename_dict,
     get_ignores,
-    mlp_returns_tuple,
-    layer_returns_tuple,
     check_model_renaming,
     get_num_attention_heads,
     get_hidden_size,
@@ -115,28 +113,14 @@ class StandardizedTransformer(LanguageModel):
         ignores = get_ignores(self._model, rename_config)
 
         # Create accessor instances
-        self.layers_input = LayerAccessor(self, None, IOType.INPUT, returns_tuple=False)
-        self.layers_output = LayerAccessor(
-            self,
-            None,
-            IOType.OUTPUT,
-            returns_tuple=layer_returns_tuple(self._model, rename_config),
-        )
+        self.layers_input = LayerAccessor(self, None, IOType.INPUT)
+        self.layers_output = LayerAccessor(self, None, IOType.OUTPUT)
         self.attentions = LayerAccessor(self, "self_attn", None)
-        self.attentions_input = LayerAccessor(
-            self, "self_attn", IOType.INPUT, returns_tuple=False
-        )
-        self.attentions_output = LayerAccessor(
-            self, "self_attn", IOType.OUTPUT, returns_tuple=True
-        )
+        self.attentions_input = LayerAccessor(self, "self_attn", IOType.INPUT)
+        self.attentions_output = LayerAccessor(self, "self_attn", IOType.OUTPUT)
         self.mlps = LayerAccessor(self, "mlp", None)
-        self.mlps_input = LayerAccessor(self, "mlp", IOType.INPUT, returns_tuple=False)
-        self.mlps_output = LayerAccessor(
-            self,
-            "mlp",
-            IOType.OUTPUT,
-            returns_tuple=mlp_returns_tuple(self._model, rename_config),
-        )
+        self.mlps_input = LayerAccessor(self, "mlp", IOType.INPUT)
+        self.mlps_output = LayerAccessor(self, "mlp", IOType.OUTPUT)
 
         self.num_layers = len(self.layers)
         self.num_heads = get_num_attention_heads(

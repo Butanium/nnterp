@@ -70,14 +70,6 @@ class RenameConfig:
     layers_name : str or list of str, optional
         Name(s) of the transformer layers container to rename to 'layers'.
 
-    mlp_returns_tuple : bool, optional
-        Whether the MLP module returns a tuple instead of a single tensor.
-        Some architectures (e.g., Mixtral, Qwen2MoE, DBRX) return tuples from MLP.
-
-    layer_returns_tuple : bool, optional
-        Whether the layer module returns a tuple instead of a single tensor.
-        Since transformers 4.54, Llama layers don't return a tuple anymore.
-
     attn_prob_source : AttnProbFunction, optional
         Custom function for accessing attention probabilities.
         Should be an instance of AttnProbFunction that defines how to extract
@@ -107,8 +99,7 @@ class RenameConfig:
 
         config = RenameConfig(
             attn_name="custom_attention",
-            mlp_name=["feed_forward", "ffn"],
-            mlp_returns_tuple=True
+            mlp_name=["feed_forward", "ffn"]
         )
 
     """
@@ -119,8 +110,6 @@ class RenameConfig:
     lm_head_name: str | list[str] | None = None
     model_name: str | list[str] | None = None
     layers_name: str | list[str] | None = None
-    mlp_returns_tuple: bool | None = None
-    layer_returns_tuple: bool | None = None
     attn_prob_source: AttnProbFunction | None = None
     ignore_mlp: bool | None = None
     ignore_attn: bool | None = None
@@ -132,16 +121,8 @@ class RenameConfig:
 ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head", "num_heads"]
 HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
 
-# Models that return a tuple for the mlp output
-MLP_RETURNS_TUPLE_MODELS = (MixtralForCausalLM, Qwen2MoeForCausalLM, DbrxForCausalLM)
 # Models with no mlp module
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
-# Models that return a tensor for the layer output since transformers 4.54
-LAYER_RETURNS_TENSOR_AFTER_454_MODELS = (
-    LlamaForCausalLM,
-    Qwen2ForCausalLM,
-    Qwen3ForCausalLM,
-)
 
 # Alternative names for LLM layers
 ATTENTION_NAMES = ["attn", "self_attention", "attention", "norm_attn_norm"]
@@ -275,13 +256,12 @@ class LayerAccessor:
         model,
         attr_name: str | None,
         io_type: IOType | None,
-        returns_tuple: bool = False,
     ):
 
         self.model = model
         self.attr_name = attr_name
         self.io_type = io_type
-        self.returns_tuple = returns_tuple
+        self._detected_is_tuple: bool | None = None
 
     def get_module(self, layer: int) -> Envoy:
         module = self.model.layers[layer]
@@ -299,7 +279,19 @@ class LayerAccessor:
             target = module.output
         else:
             raise ValueError(f"Invalid io_type: {self.io_type}")
-        if self.returns_tuple:
+
+        # Detect tuple status on first access
+        if self._detected_is_tuple is None:
+            self._detected_is_tuple = isinstance(target, tuple)
+        else:
+            # Validate consistency
+            if isinstance(target, tuple) != self._detected_is_tuple:
+                raise RenamingError(
+                    f"Inconsistent tuple types detected: layer {layer} has {'tuple' if isinstance(target, tuple) else 'non-tuple'} "
+                    f"but expected {'tuple' if self._detected_is_tuple else 'non-tuple'}"
+                )
+
+        if self._detected_is_tuple:
             return target[0]
         else:
             return target
@@ -313,7 +305,7 @@ class LayerAccessor:
         module = self.get_module(layer)
 
         if self.io_type.value == "input":
-            if self.returns_tuple:
+            if self._detected_is_tuple:
                 if len(module.input) > 1:
                     module.input = (value, *module.input[1:])
                 else:
@@ -321,7 +313,7 @@ class LayerAccessor:
             else:
                 module.input = value
         else:
-            if self.returns_tuple:
+            if self._detected_is_tuple:
                 if len(module.output) > 1:
                     module.output = (value, *module.output[1:])
                 else:
@@ -509,23 +501,6 @@ def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:
         if rename_config.ignore_attn:
             ignores.append("attention")
     return ignores
-
-
-def mlp_returns_tuple(model, rename_config: RenameConfig | None = None) -> bool:
-    if rename_config is not None and rename_config.mlp_returns_tuple is not None:
-        return rename_config.mlp_returns_tuple
-    return isinstance(model, MLP_RETURNS_TUPLE_MODELS)
-
-
-def layer_returns_tuple(model, rename_config: RenameConfig | None = None) -> bool:
-    if rename_config is not None and rename_config.layer_returns_tuple is not None:
-        return rename_config.layer_returns_tuple
-    if version.parse(TRANSFORMERS_VERSION) >= version.parse("4.54") and isinstance(
-        model, LAYER_RETURNS_TENSOR_AFTER_454_MODELS
-    ):
-        return False
-    else:
-        return True
 
 
 def check_io(std_model, model_name: str, ignores: list[str]):
