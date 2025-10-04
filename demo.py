@@ -14,6 +14,7 @@
 # The way it's implemented is based on the `NNsight` built-in renaming feature, to make all models look like the llama naming convention, without having to write `model.model`, namely:
 # ```ocaml
 # StandardizedTransformer
+# ├── embed_tokens
 # ├── layers
 # │   ├── self_attn
 # │   └── mlp
@@ -445,7 +446,7 @@ except Exception as e:
 from nnterp.rename_utils import RenameConfig
 
 rename_cfg = RenameConfig(
-    layers_name=".super_transformer.super_h",
+    layers_name="super_transformer.super_h",
     attn_name="super_attn",
     mlp_name="super_mlp",
 )
@@ -465,7 +466,7 @@ rename_cfg = RenameConfig(
     layers_name="super_h",
     attn_name="super_attn",
     mlp_name="super_mlp",
-    ln_final_name=".super_transformer.ln_f",
+    ln_final_name="super_transformer.ln_f",
 )
 from transformers import AutoConfig
 
@@ -703,11 +704,15 @@ print(
 #
 # `NNsight 0.5` introduces a builtin way to cache activations during the forward pass. Be careful not to call `tracer.stop()` before all the module of the cache have been accessed.
 #
-# NOTE: Currently the cache doesn't use the renamed names.
+# The cache supports both renamed and original module names. You can access cached activations using attribute notation or dictionary keys.
 
 # %%
 with nnterp_gpt2.trace("Hello") as tracer:
     cache = tracer.cache(modules=[layer for layer in nnterp_gpt2.layers[::2]]).save()
 
-print(cache.keys())
+# Access with renamed names using attribute notation
+print(cache.model.layers[10].output)
+# Or using dictionary syntax with renamed path
+print(cache["model.layers.10"].output)
+# Original names still work
 print(cache["model.transformer.h.10"].output)

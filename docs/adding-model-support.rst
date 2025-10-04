@@ -11,7 +11,8 @@ Understanding the Target Structure
 .. code-block:: text
 
    StandardizedTransformer
-   ├── model.layers[i]
+   ├── embed_tokens
+   ├── layers[i]
    │   ├── self_attn
    │   └── mlp
    ├── ln_final
@@ -19,10 +20,21 @@ Understanding the Target Structure
 
 All models are automatically renamed to match this pattern using built-in mappings for common architectures.
 
+In addition to these renamed modules, ``nnterp`` provides convenient accessors:
+
+- ``embed_tokens``: Embedding module
+- ``token_embeddings``: Token embeddings (equivalent to ``embed_tokens.output``)
+- ``layers[i]``: Layer module at layer i
+- ``layers_input[i]``, ``layers_output[i]``: Layer input/output at layer i
+- ``attentions[i]``: Attention module at layer i
+- ``attentions_input[i]``, ``attentions_output[i]``: Attention input/output at layer i
+- ``mlps[i]``: MLP module at layer i
+- ``mlps_input[i]``, ``mlps_output[i]``: MLP input/output at layer i
+
 Basic RenameConfig Usage
 ------------------------
 
-When automatic renaming fails, create a custom ``RenameConfig``:
+When automatic renaming fails, create a custom ``RenameConfig`` by specifying the names of modules in YOUR model that correspond to each standardized component:
 
 .. code-block:: python
 
@@ -31,12 +43,12 @@ When automatic renaming fails, create a custom ``RenameConfig``:
 
    # Hypothetical model with custom naming
    rename_config = RenameConfig(
-       model_name="custom_transformer",           # Maps to "model"
-       layers_name="custom_layers",               # Maps to "layers"
-       attn_name="custom_attention",              # Maps to "self_attn"
-       mlp_name="custom_ffn",                     # Maps to "mlp"
-       ln_final_name="custom_norm",               # Maps to "ln_final"
-       lm_head_name="custom_head"                 # Maps to "lm_head"
+       model_name="custom_transformer",           # Name of your model's main module
+       layers_name="custom_layers",               # Name of your model's layer list
+       attn_name="custom_attention",              # Name of your model's attention modules
+       mlp_name="custom_ffn",                     # Name of your model's MLP modules
+       ln_final_name="custom_norm",               # Name of your model's final layer norm
+       lm_head_name="custom_head"                 # Name of your model's language modeling head
    )
 
    model = StandardizedTransformer(
@@ -44,16 +56,18 @@ When automatic renaming fails, create a custom ``RenameConfig``:
        rename_config=rename_config
    )
 
+Each parameter specifies what YOUR model calls the component that will be renamed to the standard name (e.g., ``layers_name="custom_layers"`` means your model has a module called "custom_layers" that will be accessible as "layers").
+
 Path-Based Renaming
 -------------------
 
-For nested modules, use dot notation to specify the full path:
+For nested modules, use dot notation to specify the full path from the model root:
 
 .. code-block:: python
 
    rename_config = RenameConfig(
-       layers_name=".custom_transformer.encoder_layers",
-       ln_final_name=".custom_transformer.final_norm"
+       layers_name="custom_transformer.encoder_layers",
+       ln_final_name="custom_transformer.final_norm"
    )
 
 Multiple Alternative Names

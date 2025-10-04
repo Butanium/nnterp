@@ -44,14 +44,15 @@ class StandardizedTransformer(LanguageModel):
 
     In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:
 
-    - token_embeddings: Get/set token embeddings
+    - embed_tokens: Get embedding module
+    - token_embeddings: Get/set token embeddings (equivalent to embed_tokens.output)
     - layers[i]: Get layer module at layer i
     - layers_input[i]: Get/set layer input at layer i
     - layers_output[i]: Get/set layer output at layer i
-    - attentions_output[i]: Get/set attention output at layer i
     - attentions[i]: Get attention module at layer i
-    - mlps_output[i]: Get/set MLP output at layer i
+    - attentions_input[i] / attentions_output[i]: Get/set attention input/output at layer i
     - mlps[i]: Get MLP module at layer i
+    - mlps_input[i] / mlps_output[i]: Get/set MLP input/output at layer i
 
     Args:
         repo_id (str): Hugging Face repository ID or path of the model to load.

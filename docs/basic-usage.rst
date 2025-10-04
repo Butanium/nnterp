@@ -9,6 +9,7 @@ Different transformer models use different naming conventions. ``nnterp`` standa
 .. code-block:: text
 
    StandardizedTransformer
+   ├── embed_tokens
    ├── layers
    │   ├── self_attn
    │   └── mlp
