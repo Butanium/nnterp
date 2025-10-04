@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from nnsight import LanguageModel
 from nnsight.intervention.envoy import Envoy
 from nnsight.intervention.tracing.globals import Object
-from .utils import TraceTensor, DummyCache
+from .utils import TraceTensor, DummyCache, unpack_tuple
 from .standardized_transformer import StandardizedTransformer
 
 GetModuleOutput = Callable[[LanguageModel, int], TraceTensor]
@@ -59,7 +59,7 @@ def get_layer_input(nn_model: LanguageModel, layer: int) -> Union[int, Object]:
 
 def get_layer_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
     """
-    Get the output of a layer
+    Get the residual stream after the layer
     Args:
         nn_model: The NNSight model
         layer: The layer to get the output of
@@ -67,7 +67,7 @@ def get_layer_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
         The Proxy for the output of the layer
     """
     output = get_layer(nn_model, layer).output
-    return output[0]
+    return unpack_tuple(output)
 
 
 def get_attention(nn_model: LanguageModel, layer: int) -> Envoy:
@@ -91,7 +91,7 @@ def get_attention_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
     Returns:
         The Proxy for the output of the attention block of the layer
     """
-    return get_attention(nn_model, layer).output[0]
+    return unpack_tuple(get_attention(nn_model, layer).output)
 
 
 def get_mlp(nn_model: LanguageModel, layer: int) -> Envoy:
@@ -105,7 +105,7 @@ def get_mlp_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
     """
     Get the output of the MLP of a layer
     """
-    return get_mlp(nn_model, layer).output
+    return unpack_tuple(get_mlp(nn_model, layer).output)
 
 
 def get_logits(nn_model: LanguageModel) -> TraceTensor:
@@ -180,7 +180,7 @@ def skip_layers(
     ```py
     set_layer_output(nn_model, end_layer, get_layer_input(nn_model, start_layer))
     ```
-    But skip the useless computa
+    But skip the useless computation.
 
     Args:
         nn_model: The NNSight model
@@ -213,7 +213,13 @@ def set_layer_output(nn_model: LanguageModel, layer: int, tensor: TraceTensor):
         layer: The layer to set the output of
         tensor: The tensor to set the output of the layer to
     """
-    get_layer(nn_model, layer).output = (tensor, *get_layer_output(nn_model, layer)[1:])
+    if isinstance(get_layer(nn_model, layer).output, tuple):
+        get_layer(nn_model, layer).output = (
+            tensor,
+            *get_layer(nn_model, layer).output[1:],
+        )
+    else:
+        get_layer(nn_model, layer).output = tensor
 
 
 @th.no_grad
