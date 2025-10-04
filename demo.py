@@ -67,12 +67,21 @@ print(nnterp_gpt2.model.device)
 # With `NNsight`, the most robust way to set the residual stream after layer 1 to be the residual stream after layer 0 for a LLama-like model would be:
 
 # %%
+from transformers import __version__ as TRANSFORMERS_VERSION
+from packaging.version import parse
 llama = LanguageModel("Maykeye/TinyLLama-v0")
-with llama.trace("hello"):
-    llama.model.layers[1].output = (
-        llama.model.layers[0].output[0],
-        *llama.model.layers[1].output[1:],
-    )
+# code for transformer "<4.54"
+is_old_transformers = parse(TRANSFORMERS_VERSION) < parse("4.54")
+if is_old_transformers:
+    with llama.trace("hello"):
+        llama.model.layers[1].output = (
+            llama.model.layers[0].output[0],
+            *llama.model.layers[1].output[1:],
+        )
+else:
+    with llama.trace("hello"):
+        llama.model.layers[1].output = llama.model.layers[0].output
+
 
 # %% [markdown]
 # Note that the following can cause issues:
@@ -80,19 +89,24 @@ with llama.trace("hello"):
 # %%
 with llama.trace("hello"):
     # can't do this because .output is a tuple
-    # llama.model.layers[1].output[0] = llama.model.layers[0].output[0]
 
     # Can cause errors with gradient computation
-    llama.model.layers[1].output[0][:] = llama.model.layers[0].output[0]
+    if is_old_transformers:
+        # llama.model.layers[1].output[0] = llama.model.layers[0].output[0]
+        llama.model.layers[1].output[0][:] = llama.model.layers[0].output[0]
+    else:
+        llama.model.layers[1].output[:] = llama.model.layers[0].output
 
-with llama.trace("hello"):
-    # Can cause errors with opt if you do this at its last layer (thanks pytest)
-    llama.model.layers[1].output = (llama.model.layers[0].output[0],)
+if is_old_transformers:
+    with llama.trace("hello"):
+        # Can cause errors with opt if you do this at its last layer (thanks pytest)
+        llama.model.layers[1].output = (llama.model.layers[0].output[0],)
 
 # %% [markdown]
 # `nnterp` makes this much cleaner:
 
 # %%
+# the version of transformers does not matter, the tuple vs not tuple stuff is handled internally
 # First, you can access layer inputs and outputs directly:
 with nnterp_gpt2.trace("hello"):
     # Access layer 5's output
@@ -312,9 +326,9 @@ with nnterp_gpt2.trace("The weather is"):
 # %% [markdown]
 # You can use a combination of run_prompts and interventions to get the probabilities of certain tokens according to your custom intervention.
 # %%
-demo_model = StandardizedTransformer("google/gemma-2-2b")
-# uncomment if you don't have a GPU
-# demo_model = nnterp_gpt2
+demo_model = nnterp_gpt2
+# uncomment if you have a GPU for cooler results
+# demo_model = StandardizedTransformer("google/gemma-2-2b")
 
 prompts_str = [
     "The translation of 'car' in French is",
