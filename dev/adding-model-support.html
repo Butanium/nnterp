@@ -1,0 +1,719 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" data-theme="dark">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Adding Support for Your Model &#8212; nnterp</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "dark";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "dark";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'adding-model-support';</script>
+    <link rel="canonical" href="https://butanium.github.io/nnterp/adding-model-support.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Advanced Features" href="advanced-features.html" />
+    <link rel="prev" title="Model Validation &amp; Testing" href="model-validation.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="dark">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">nnterp</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="getting-started/installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="getting-started/quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="basic-usage.html">
+    Basic Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="interventions.html">
+    Interventions
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="model-validation.html">
+    Model Validation & Testing
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
+    Adding Support for Your Model
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="advanced-features.html">
+    Advanced Features
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="nnsight-best-practices.html">
+    NNsight Best Practices
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="nnsight-utils.html">
+    NNsight Utils
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="api.html">
+    Documentation
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/butanium/nnterp" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="getting-started/installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="getting-started/quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="basic-usage.html">
+    Basic Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="interventions.html">
+    Interventions
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="model-validation.html">
+    Model Validation & Testing
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Adding Support for Your Model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="advanced-features.html">
+    Advanced Features
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="nnsight-best-practices.html">
+    NNsight Best Practices
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="nnsight-utils.html">
+    NNsight Utils
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api.html">
+    Documentation
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/butanium/nnterp" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Adding Support for Your Model</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="adding-support-for-your-model">
+<h1>Adding Support for Your Model<a class="headerlink" href="#adding-support-for-your-model" title="Link to this heading">#</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">nnterp</span></code> uses a standardized naming convention to provide a unified interface across transformer architectures. When your model doesn’t follow the expected naming patterns, you can use <code class="docutils literal notranslate"><span class="pre">RenameConfig</span></code> to map your model’s modules to the standardized names.</p>
+<section id="understanding-the-target-structure">
+<h2>Understanding the Target Structure<a class="headerlink" href="#understanding-the-target-structure" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">nnterp</span></code> expects models to follow this structure:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>StandardizedTransformer
+├── embed_tokens
+├── layers[i]
+│   ├── self_attn
+│   └── mlp
+├── ln_final
+└── lm_head
+</pre></div>
+</div>
+<p>All models are automatically renamed to match this pattern using built-in mappings for common architectures.</p>
+<p>In addition to these renamed modules, <code class="docutils literal notranslate"><span class="pre">nnterp</span></code> provides convenient accessors:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">embed_tokens</span></code>: Embedding module</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">token_embeddings</span></code>: Token embeddings (equivalent to <code class="docutils literal notranslate"><span class="pre">embed_tokens.output</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">layers[i]</span></code>: Layer module at layer i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">layers_input[i]</span></code>, <code class="docutils literal notranslate"><span class="pre">layers_output[i]</span></code>: Layer input/output at layer i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">attentions[i]</span></code>: Attention module at layer i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">attentions_input[i]</span></code>, <code class="docutils literal notranslate"><span class="pre">attentions_output[i]</span></code>: Attention input/output at layer i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mlps[i]</span></code>: MLP module at layer i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mlps_input[i]</span></code>, <code class="docutils literal notranslate"><span class="pre">mlps_output[i]</span></code>: MLP input/output at layer i</p></li>
+</ul>
+</section>
+<section id="basic-renameconfig-usage">
+<h2>Basic RenameConfig Usage<a class="headerlink" href="#basic-renameconfig-usage" title="Link to this heading">#</a></h2>
+<p>When automatic renaming fails, create a custom <code class="docutils literal notranslate"><span class="pre">RenameConfig</span></code> by specifying the names of modules in YOUR model that correspond to each standardized component:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardizedTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nnterp.rename_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">RenameConfig</span>
+
+<span class="c1"># Hypothetical model with custom naming</span>
+<span class="n">rename_config</span> <span class="o">=</span> <span class="n">RenameConfig</span><span class="p">(</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;custom_transformer&quot;</span><span class="p">,</span>           <span class="c1"># Name of your model&#39;s main module</span>
+    <span class="n">layers_name</span><span class="o">=</span><span class="s2">&quot;custom_layers&quot;</span><span class="p">,</span>               <span class="c1"># Name of your model&#39;s layer list</span>
+    <span class="n">attn_name</span><span class="o">=</span><span class="s2">&quot;custom_attention&quot;</span><span class="p">,</span>              <span class="c1"># Name of your model&#39;s attention modules</span>
+    <span class="n">mlp_name</span><span class="o">=</span><span class="s2">&quot;custom_ffn&quot;</span><span class="p">,</span>                     <span class="c1"># Name of your model&#39;s MLP modules</span>
+    <span class="n">ln_final_name</span><span class="o">=</span><span class="s2">&quot;custom_norm&quot;</span><span class="p">,</span>               <span class="c1"># Name of your model&#39;s final layer norm</span>
+    <span class="n">lm_head_name</span><span class="o">=</span><span class="s2">&quot;custom_head&quot;</span>                 <span class="c1"># Name of your model&#39;s language modeling head</span>
+<span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">StandardizedTransformer</span><span class="p">(</span>
+    <span class="s2">&quot;your-model-name&quot;</span><span class="p">,</span>
+    <span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Each parameter specifies what YOUR model calls the component that will be renamed to the standard name (e.g., <code class="docutils literal notranslate"><span class="pre">layers_name=&quot;custom_layers&quot;</span></code> means your model has a module called “custom_layers” that will be accessible as “layers”).</p>
+</section>
+<section id="path-based-renaming">
+<h2>Path-Based Renaming<a class="headerlink" href="#path-based-renaming" title="Link to this heading">#</a></h2>
+<p>For nested modules, use dot notation to specify the full path from the model root:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rename_config</span> <span class="o">=</span> <span class="n">RenameConfig</span><span class="p">(</span>
+    <span class="n">layers_name</span><span class="o">=</span><span class="s2">&quot;custom_transformer.encoder_layers&quot;</span><span class="p">,</span>
+    <span class="n">ln_final_name</span><span class="o">=</span><span class="s2">&quot;custom_transformer.final_norm&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="multiple-alternative-names">
+<h2>Multiple Alternative Names<a class="headerlink" href="#multiple-alternative-names" title="Link to this heading">#</a></h2>
+<p>Provide multiple options for the same component:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rename_config</span> <span class="o">=</span> <span class="n">RenameConfig</span><span class="p">(</span>
+    <span class="n">attn_name</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="s2">&quot;self_attention&quot;</span><span class="p">,</span> <span class="s2">&quot;mha&quot;</span><span class="p">],</span>
+    <span class="n">mlp_name</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ffn&quot;</span><span class="p">,</span> <span class="s2">&quot;feed_forward&quot;</span><span class="p">,</span> <span class="s2">&quot;mlp_block&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="real-example-gpt-j-support">
+<h2>Real Example: GPT-J Support<a class="headerlink" href="#real-example-gpt-j-support" title="Link to this heading">#</a></h2>
+<p>Here’s how GPT-J attention probabilities were added to nnterp:</p>
+<p>First, examine the model architecture:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardizedTransformer</span>
+
+<span class="c1"># GPT-J loads with basic renaming but attention probabilities fail</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">StandardizedTransformer</span><span class="p">(</span><span class="s2">&quot;yujiepan/gptj-tiny-random&quot;</span><span class="p">)</span>
+<span class="c1"># Warning: Attention probabilities test failed</span>
+</pre></div>
+</div>
+<p>Locate the attention probabilities in the forward pass:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find where attention weights are computed</span>
+<span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">attentions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">self__attn_0</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">self_attn_dropout_0</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span>
+    <span class="c1"># Shape: (batch, heads, seq_len, seq_len) - this is what we want</span>
+</pre></div>
+</div>
+<p>Create the attention probabilities function:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp.rename_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">AttnProbFunction</span><span class="p">,</span> <span class="n">RenameConfig</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GPTJAttnProbFunction</span><span class="p">(</span><span class="n">AttnProbFunction</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_attention_prob_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attention_module</span><span class="p">,</span> <span class="n">return_module_source</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">return_module_source</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">attention_module</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">self__attn_0</span><span class="o">.</span><span class="n">source</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">attention_module</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">self__attn_0</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">self_attn_dropout_0</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">StandardizedTransformer</span><span class="p">(</span>
+    <span class="s2">&quot;yujiepan/gptj-tiny-random&quot;</span><span class="p">,</span>
+    <span class="n">rename_config</span><span class="o">=</span><span class="n">RenameConfig</span><span class="p">(</span><span class="n">attn_prob_source</span><span class="o">=</span><span class="n">GPTJAttnProbFunction</span><span class="p">())</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Test the implementation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;Hello world&quot;</span><span class="p">):</span>
+    <span class="n">attn_probs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+    <span class="c1"># Verify shape: (batch, heads, seq_len, seq_len)</span>
+    <span class="c1"># Verify last dimension sums to 1</span>
+    <span class="k">assert</span> <span class="n">attn_probs</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">attn_probs</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)))</span>
+</pre></div>
+</div>
+</section>
+<section id="attention-probabilities-optional">
+<h2>Attention Probabilities (Optional)<a class="headerlink" href="#attention-probabilities-optional" title="Link to this heading">#</a></h2>
+<p>Only implement attention probabilities if you need them for your research. The process requires:</p>
+<ol class="arabic simple">
+<li><p><strong>Find the attention weights</strong>: Use <code class="docutils literal notranslate"><span class="pre">model.scan()</span></code> to explore the forward pass</p></li>
+<li><p><strong>Locate the hook point</strong>: Find where attention probabilities are computed (usually after dropout)</p></li>
+<li><p><strong>Create AttnProbFunction</strong>: Implement the hook location</p></li>
+<li><p><strong>Test thoroughly</strong>: Verify shape and normalization</p></li>
+</ol>
+<p>Key considerations:</p>
+<ul class="simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">scan()</span></code> first, fall back to <code class="docutils literal notranslate"><span class="pre">trace()</span></code> if needed</p></li>
+<li><p>Hook after dropout but before multiplication/masking when possible</p></li>
+<li><p>Avoid hooks inside conditional statements</p></li>
+<li><p>Test with dummy inputs to verify tensor shapes</p></li>
+</ul>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
+<p>Common issues and solutions:</p>
+<dl class="simple">
+<dt><strong>“Could not find layers module”</strong></dt><dd><p>Set <code class="docutils literal notranslate"><span class="pre">layers_name</span></code> in <code class="docutils literal notranslate"><span class="pre">RenameConfig</span></code></p>
+</dd>
+<dt><strong>“Could not find ln_final module”</strong></dt><dd><p>Set <code class="docutils literal notranslate"><span class="pre">ln_final_name</span></code> in <code class="docutils literal notranslate"><span class="pre">RenameConfig</span></code></p>
+</dd>
+<dt><strong>“Attention probabilities test failed”</strong></dt><dd><p>Either disable attention probabilities or implement <code class="docutils literal notranslate"><span class="pre">AttnProbFunction</span></code></p>
+</dd>
+<dt><strong>Shape mismatches</strong></dt><dd><p>nnterp automatically detects and unwraps tuple outputs from modules during initialization</p>
+</dd>
+</dl>
+</section>
+<section id="testing-your-configuration">
+<h2>Testing Your Configuration<a class="headerlink" href="#testing-your-configuration" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">nnterp</span></code> automatically validates your configuration:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># This will run automatic tests</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">StandardizedTransformer</span><span class="p">(</span><span class="s2">&quot;your-model&quot;</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+
+<span class="c1"># Manual validation</span>
+<span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">):</span>
+    <span class="c1"># Check layer I/O shapes</span>
+    <span class="n">layer_out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">layer_out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">)</span>
+
+    <span class="c1"># Check attention probabilities if enabled</span>
+    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+        <span class="n">attn_probs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">attn_probs</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The tests verify:</p>
+<ul class="simple">
+<li><p>Module naming correctness</p></li>
+<li><p>Tensor shapes at each layer</p></li>
+<li><p>Attention probabilities normalization (if enabled)</p></li>
+<li><p>I/O compatibility with nnterp’s accessors</p></li>
+</ul>
+<p>Once your model loads successfully, all <code class="docutils literal notranslate"><span class="pre">nnterp</span></code> features become available with the standard interface.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#understanding-the-target-structure">Understanding the Target Structure</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-renameconfig-usage">Basic RenameConfig Usage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#path-based-renaming">Path-Based Renaming</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multiple-alternative-names">Multiple Alternative Names</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#real-example-gpt-j-support">Real Example: GPT-J Support</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attention-probabilities-optional">Attention Probabilities (Optional)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#troubleshooting">Troubleshooting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#testing-your-configuration">Testing Your Configuration</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Clément Dumas.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
