@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Literal
 from enum import Enum
 from loguru import logger
 from packaging import version
@@ -21,6 +22,8 @@ from .utils import (
     Qwen2ForCausalLM,
     Qwen3ForCausalLM,
 )
+
+IgnoreType = Literal["mlp", "attention"]
 
 
 class RenamingError(Exception):
@@ -117,6 +120,21 @@ class RenameConfig:
     hidden_size_config_key: str | list[str] | int | None = None
 
 
+MODEL_NAMES = ["transformer", "gpt_neox", "decoder", "language_model"]
+
+
+def expand_path_with_model(paths: list[str]) -> list[str]:
+    all_paths = [
+        [
+            (path.replace("model.", f"model.{model_path}."))
+            for path in paths
+            if path.startswith("model.")
+        ]
+        for model_path in MODEL_NAMES
+    ]
+    return paths + sum(all_paths, [])
+
+
 # Configuration keys for getting the number of attention heads and hidden size
 ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head", "num_heads"]
 HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
@@ -126,26 +144,33 @@ IGNORE_MLP_MODELS = (OPTForCausalLM,)
 
 # Alternative names for LLM layers
 ATTENTION_NAMES = ["attn", "self_attention", "attention", "norm_attn_norm"]
-MODEL_NAMES = ["transformer", "gpt_neox", ".model.decoder"]
-LAYER_NAMES = [
-    "h",
-    "blocks",
-    ".decoder.layers",
-    ".model.layers",
-    ".language_model.layers",
-]
-LN_NAMES = [
-    "final_layer_norm",
-    "ln_f",
-    "norm_f",
-    "norm",
-    ".decoder.ln_final",
-    ".model.ln_final",
-    ".language_model.ln_final",
-]
+LAYER_NAMES = expand_path_with_model(
+    [
+        "h",
+        "blocks",
+        "model.layers",
+    ]
+)
+LN_NAMES = expand_path_with_model(
+    [
+        "final_layer_norm",
+        "ln_f",
+        "norm_f",
+        "norm",
+        "embedding_norm",
+        "model.ln_final",
+    ]
+)
 LM_HEAD_NAMES = ["embed_out"]
 MLP_NAMES = ["block_sparse_moe", "ffn"]
-EMBED_TOKENS_NAMES = ["wte", "embed_in", ".model.embed_tokens"]
+EMBED_TOKENS_NAMES = expand_path_with_model(
+    [
+        "wte",
+        "embed_in",
+        "word_embeddings",
+        "model.embed_tokens",
+    ]
+)
 
 
 def get_rename_dict(
@@ -503,7 +528,7 @@ def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:
     return ignores
 
 
-def check_io(std_model, model_name: str, ignores: list[str]):
+def check_io(std_model, model_name: str, ignores: list[IgnoreType]):
     batch_size, seq_len = std_model.input_size
     hidden_size = std_model.hidden_size
     if hidden_size is None:
@@ -585,7 +610,7 @@ def check_io(std_model, model_name: str, ignores: list[str]):
 def check_model_renaming(
     std_model,
     model_name: str,
-    ignores: list[str],
+    ignores: list[IgnoreType],
     allow_dispatch: bool,
 ):
 
