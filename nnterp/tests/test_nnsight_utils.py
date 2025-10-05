@@ -323,3 +323,24 @@ def test_grad_from_mlp(llama_like_model_name):
         assert (
             grad.shape == tensor.shape
         ), f"Gradient shape mismatch for {name}: {grad.shape} != {tensor.shape}"
+
+
+def test_cache_with_renamed_modules(llama_like_model_name):
+    """Test that nnsight cache supports renamed module access"""
+    with th.no_grad():
+        model = LanguageModel(llama_like_model_name, device_map="auto")
+        prompt = "Hello, world!"
+        num_layers = get_num_layers(model)
+
+        # Cache layers using renamed module references
+        with model.trace(prompt) as tracer:
+            layers_to_cache = [get_layer(model, i) for i in range(0, num_layers, 2)]
+            cache = tracer.cache(modules=layers_to_cache).save()
+
+        # Access cached modules using renamed names (attribute notation)
+        layer_0_output_attr = cache.model.layers[0].output
+        assert layer_0_output_attr[0].shape[0] == 1  # batch size
+
+        # Access using dictionary notation with renamed path
+        layer_0_output_dict = cache["model.layers.0"].output
+        assert th.allclose(layer_0_output_attr[0], layer_0_output_dict[0])
