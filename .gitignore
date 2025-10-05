@@ -2,6 +2,8 @@
 data/test_log* 
 data/*.old.json
 nnterp/data/test_loading_status.json
+.coverage
+.idea
 
 # general
 .junk/**
