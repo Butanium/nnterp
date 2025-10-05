@@ -321,6 +321,7 @@ def warn_about_status(class_name: str, model, model_name: str):
             f"{class_name} failed some tests using `nnterp.interventions`. Use interventions at your own risk. You can also run `python -m nnterp run_tests --class-names {class_name} -k test_interventions` to have more information on the failures."
         )
 
+
 def unpack_tuple(tensor_or_tuple: TraceTensor) -> TraceTensor:
     if isinstance(tensor_or_tuple, tuple):
         return tensor_or_tuple[0]
