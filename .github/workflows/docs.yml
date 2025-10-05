@@ -15,7 +15,7 @@ permissions:
 jobs:
   docs:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.head_ref != 'dev'
+    if: github.event_name == 'push' || !(github.head_ref == 'dev' && github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
