@@ -12,6 +12,7 @@ from .utils import (
     TraceTensor,
     DummyCache,
     warn_about_status,
+    try_with_scan,
 )
 from .rename_utils import (
     IOType,
@@ -23,6 +24,7 @@ from .rename_utils import (
     check_model_renaming,
     get_num_attention_heads,
     get_hidden_size,
+    RenamingError,
 )
 
 GetLayerObject = Callable[[int], TraceTensor]
@@ -150,6 +152,21 @@ class StandardizedTransformer(LanguageModel):
         warn_about_status(model_name, self._model, model_name)
         self._add_prefix_false_tokenizer = None
 
+    def detect_layer_output_type(self):
+        if self.layers_output.returns_tuple is None:
+
+            def test_layer_0():
+                _ = self.layers_output[0]
+
+            try_with_scan(
+                self,
+                test_layer_0,
+                RenamingError(
+                    "Unable to access layer outputs. This may indicate an unsupported model architecture."
+                ),
+                warn_if_scan_fails=False,
+            )
+
     @property
     def add_prefix_false_tokenizer(self) -> PreTrainedTokenizerBase:
         if self._add_prefix_false_tokenizer is None:
@@ -210,7 +227,11 @@ class StandardizedTransformer(LanguageModel):
         return self.skip_layers(layer, layer, skip_with)
 
     def skip_layers(
-        self, start_layer: int, end_layer: int, skip_with: TraceTensor | None = None
+        self,
+        start_layer: int,
+        end_layer: int,
+        skip_with: TraceTensor | None = None,
+        layer_returns_tuple: bool | None = None,
     ):
         """
         Skip all layers between start_layer and end_layer (inclusive).
@@ -219,12 +240,23 @@ class StandardizedTransformer(LanguageModel):
             start_layer: The layer to start skipping from
             end_layer: The layer to stop skipping at (inclusive)
             skip_with: The tensor to skip the layers with, will be passed as the output of the layers. If None, the input of start_layer is used.
+            layer_returns_tuple: Whether the layer output is a tuple. Doesn't need to be provided if the model's renaming has been validated or if you ran model.detect_layer_output_type() already.
         """
+        if layer_returns_tuple is None:
+            layer_returns_tuple = self.layers_output.returns_tuple
+        if layer_returns_tuple is None:
+            raise ValueError(
+                "Please run `model.detect_layer_output_type()` before skipping layers or provide the layer_returns_tuple argument."
+            )
         if skip_with is None:
             skip_with = self.layers_input[start_layer]
+        if layer_returns_tuple and not isinstance(skip_with, tuple):
+            skip_with = (skip_with, DummyCache())
+        elif not layer_returns_tuple and isinstance(skip_with, tuple):
+            raise ValueError(
+                "Skipping layer with a tuple while the layer output is not a tuple. This may cause unexpected behavior."
+            )
         for layer in range(start_layer, end_layer + 1):
-            if self.layers_output.returns_tuple:
-                skip_with = (skip_with, DummyCache())
             self.layers[layer].skip(skip_with)
 
     def steer(

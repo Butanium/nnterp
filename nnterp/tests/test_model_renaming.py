@@ -16,7 +16,6 @@ from nnterp.nnsight_utils import (
 )
 from nnterp.rename_utils import get_ignores
 from transformers import OPTForCausalLM
-from contextlib import nullcontext
 
 
 def get_layer_test(model_name, model, renamed, i):

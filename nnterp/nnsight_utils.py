@@ -156,44 +156,6 @@ def project_on_vocab(nn_model: LanguageModel, h: TraceTensor) -> TraceTensor:
     return nn_model.lm_head(ln_out)
 
 
-def skip_layer(
-    nn_model: LanguageModel, layer: int, skip_with: TraceTensor | None = None
-):
-    """
-    Skip the computation of a layer. If skip_with is None, the input of the layer is used as its output.
-    Args:
-        nn_model: The NNSight model
-        layer: The layer to skip
-        skip_with: The input to skip the layer with. If None, the input of the layer is used.
-    """
-    return skip_layers(nn_model, layer, layer, skip_with)
-
-
-def skip_layers(
-    nn_model: LanguageModel,
-    start_layer: int,
-    end_layer: int,
-    skip_with: TraceTensor | None = None,
-):
-    """
-    Skip all layers between start_layer and end_layer (inclusive). Equivalent to:
-    ```py
-    set_layer_output(nn_model, end_layer, get_layer_input(nn_model, start_layer))
-    ```
-    But skip the useless computation.
-
-    Args:
-        nn_model: The NNSight model
-        start_layer: The layer to start skipping from
-        end_layer: The layer to stop skipping at
-    """
-    if skip_with is None:
-        skip_with = get_layer_input(nn_model, start_layer)
-    for layer in range(start_layer, end_layer):
-        get_layer(nn_model, layer).skip((skip_with, DummyCache()))
-    get_layer(nn_model, end_layer).skip((skip_with, DummyCache()))
-
-
 def get_next_token_probs(nn_model: LanguageModel) -> TraceTensor:
     """
     Get the probabilities of the model
