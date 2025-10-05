@@ -467,15 +467,15 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">LanguageModel</span></code></p>
 <p>Renames the LanguageModel modules to match a standardized architecture.</p>
 <p>The model structure is organized as follows:</p>
-<blockquote>
-<div><p>StandardizedTransformer
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>StandardizedTransformer
 ├── embed_tokens
 ├── layers
 │   ├── self_attn
 │   └── mlp
 ├── ln_final
-└── lm_head</p>
-</div></blockquote>
+└── lm_head
+</pre></div>
+</div>
 <p>In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:</p>
 <ul class="simple">
 <li><p>embed_tokens: Get embedding module</p></li>
