@@ -1,0 +1,1242 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" data-theme="dark">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>nnterp.rename_utils &#8212; nnterp</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "dark";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "dark";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/nnterp/rename_utils';</script>
+    <link rel="canonical" href="https://butanium.github.io/nnterp/_modules/nnterp/rename_utils.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="dark">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">nnterp</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting-started/installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting-started/quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../basic-usage.html">
+    Basic Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../interventions.html">
+    Interventions
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../model-validation.html">
+    Model Validation & Testing
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../adding-model-support.html">
+    Adding Support for Your Model
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../advanced-features.html">
+    Advanced Features
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-utils.html">
+    NNsight Utils
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-best-practices.html">
+    NNsight Best Practices
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../api.html">
+    Documentation
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/butanium/nnterp" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting-started/installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting-started/quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../basic-usage.html">
+    Basic Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../interventions.html">
+    Interventions
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../model-validation.html">
+    Model Validation & Testing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../adding-model-support.html">
+    Adding Support for Your Model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../advanced-features.html">
+    Advanced Features
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../nnsight-utils.html">
+    NNsight Utils
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../nnsight-best-practices.html">
+    NNsight Best Practices
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api.html">
+    Documentation
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/butanium/nnterp" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">nnterp.rename_utils</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for nnterp.rename_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">packaging</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">th</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nnsight</span><span class="w"> </span><span class="kn">import</span> <span class="n">Envoy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.nnsight_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TraceTensor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_notebook</span><span class="p">,</span> <span class="n">display_markdown</span><span class="p">,</span> <span class="n">try_with_scan</span><span class="p">,</span> <span class="n">dummy_inputs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TRANSFORMERS_VERSION</span><span class="p">,</span>
+    <span class="n">OPTForCausalLM</span><span class="p">,</span>
+    <span class="n">MixtralForCausalLM</span><span class="p">,</span>
+    <span class="n">BloomForCausalLM</span><span class="p">,</span>
+    <span class="n">GPT2LMHeadModel</span><span class="p">,</span>
+    <span class="n">Qwen2MoeForCausalLM</span><span class="p">,</span>
+    <span class="n">DbrxForCausalLM</span><span class="p">,</span>
+    <span class="n">GPTJForCausalLM</span><span class="p">,</span>
+    <span class="n">LlamaForCausalLM</span><span class="p">,</span>
+    <span class="n">Qwen2ForCausalLM</span><span class="p">,</span>
+    <span class="n">Qwen3ForCausalLM</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="RenamingError">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.RenamingError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RenamingError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Exception raised when the renaming of modules is not properly done.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="AttnProbFunction">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.AttnProbFunction">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AttnProbFunction</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<div class="viewcode-block" id="AttnProbFunction.get_attention_prob_source">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.AttnProbFunction.get_attention_prob_source">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_attention_prob_source</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">attention_module</span><span class="p">,</span> <span class="n">return_module_source</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the attention probabilities source for a given attention module. If return_module_source is True,</span>
+<span class="sd">        return the full module source from where the attention probabilities are computed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attention_module</span><span class="p">,</span> <span class="n">return_module_source</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_attention_prob_source</span><span class="p">(</span><span class="n">attention_module</span><span class="p">,</span> <span class="n">return_module_source</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="RenameConfig">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.RenameConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RenameConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configuration for renaming transformer model modules to standardized names.</span>
+
+<span class="sd">    This dataclass specifies how to map model-specific module names to standardized names</span>
+<span class="sd">    used by nnterp. It allows customization for different transformer architectures.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    attn_name : str or list of str, optional</span>
+<span class="sd">        Name(s) of the attention module to rename to &#39;self_attn&#39;.</span>
+
+<span class="sd">    mlp_name : str or list of str, optional</span>
+<span class="sd">        Name(s) of the MLP/feed-forward module to rename to &#39;mlp&#39;.</span>
+
+<span class="sd">    ln_final_name : str or list of str, optional</span>
+<span class="sd">        Name(s) of the final layer normalization to rename to &#39;ln_final&#39;.</span>
+
+<span class="sd">    lm_head_name : str or list of str, optional</span>
+<span class="sd">        Name(s) of the language model head to rename to &#39;lm_head&#39;.</span>
+
+<span class="sd">    model_name : str or list of str, optional</span>
+<span class="sd">        Name(s) of the main model container to rename to &#39;model&#39;.</span>
+
+<span class="sd">    layers_name : str or list of str, optional</span>
+<span class="sd">        Name(s) of the transformer layers container to rename to &#39;layers&#39;.</span>
+
+<span class="sd">    mlp_returns_tuple : bool, optional</span>
+<span class="sd">        Whether the MLP module returns a tuple instead of a single tensor.</span>
+<span class="sd">        Some architectures (e.g., Mixtral, Qwen2MoE, DBRX) return tuples from MLP.</span>
+
+<span class="sd">    layer_returns_tuple : bool, optional</span>
+<span class="sd">        Whether the layer module returns a tuple instead of a single tensor.</span>
+<span class="sd">        Since transformers 4.54, Llama layers don&#39;t return a tuple anymore.</span>
+
+<span class="sd">    attn_prob_source : AttnProbFunction, optional</span>
+<span class="sd">        Custom function for accessing attention probabilities.</span>
+<span class="sd">        Should be an instance of AttnProbFunction that defines how to extract</span>
+<span class="sd">        attention weights from the attention module.</span>
+
+<span class="sd">    ignore_mlp : bool, optional</span>
+<span class="sd">        Whether to skip MLP module processing for this architecture.</span>
+<span class="sd">        Some models (e.g., OPT) don&#39;t have a unified MLP module.</span>
+
+<span class="sd">    ignore_attn : bool, optional</span>
+<span class="sd">        Whether to skip attention module processing for this architecture.</span>
+<span class="sd">        Rarely used, for architectures without standard attention.</span>
+
+<span class="sd">    attn_head_config_key : str, list of str, or int, optional</span>
+<span class="sd">        Custom key name for the number of attention heads in model config,</span>
+<span class="sd">        or the number of heads directly. Defaults to standard keys:</span>
+<span class="sd">        [&#39;n_heads&#39;, &#39;num_attention_heads&#39;, &#39;n_head&#39;].</span>
+
+<span class="sd">    hidden_size_config_key : str, list of str, or int, optional</span>
+<span class="sd">        Custom key name for hidden size in model config,</span>
+<span class="sd">        or the hidden size directly. Defaults to standard keys:</span>
+<span class="sd">        [&#39;hidden_size&#39;, &#39;d_model&#39;, &#39;n_embd&#39;].</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    Custom configuration for a non-standard architecture::</span>
+
+<span class="sd">        config = RenameConfig(</span>
+<span class="sd">            attn_name=&quot;custom_attention&quot;,</span>
+<span class="sd">            mlp_name=[&quot;feed_forward&quot;, &quot;ffn&quot;],</span>
+<span class="sd">            mlp_returns_tuple=True</span>
+<span class="sd">        )</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">attn_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">mlp_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">ln_final_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">lm_head_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">layers_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">mlp_returns_tuple</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">layer_returns_tuple</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">attn_prob_source</span><span class="p">:</span> <span class="n">AttnProbFunction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">ignore_mlp</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">ignore_attn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">attn_head_config_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">hidden_size_config_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<span class="c1"># Configuration keys for getting the number of attention heads and hidden size</span>
+<span class="n">ATTN_HEAD_CONFIG_KEYS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;n_heads&quot;</span><span class="p">,</span> <span class="s2">&quot;num_attention_heads&quot;</span><span class="p">,</span> <span class="s2">&quot;n_head&quot;</span><span class="p">,</span> <span class="s2">&quot;num_heads&quot;</span><span class="p">]</span>
+<span class="n">HIDDEN_SIZE_CONFIG_KEYS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;hidden_size&quot;</span><span class="p">,</span> <span class="s2">&quot;d_model&quot;</span><span class="p">,</span> <span class="s2">&quot;n_embd&quot;</span><span class="p">]</span>
+
+<span class="c1"># Models that return a tuple for the mlp output</span>
+<span class="n">MLP_RETURNS_TUPLE_MODELS</span> <span class="o">=</span> <span class="p">(</span><span class="n">MixtralForCausalLM</span><span class="p">,</span> <span class="n">Qwen2MoeForCausalLM</span><span class="p">,</span> <span class="n">DbrxForCausalLM</span><span class="p">)</span>
+<span class="c1"># Models with no mlp module</span>
+<span class="n">IGNORE_MLP_MODELS</span> <span class="o">=</span> <span class="p">(</span><span class="n">OPTForCausalLM</span><span class="p">,)</span>
+<span class="c1"># Models that return a tensor for the layer output since transformers 4.54</span>
+<span class="n">LAYER_RETURNS_TENSOR_AFTER_454_MODELS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">LlamaForCausalLM</span><span class="p">,</span>
+    <span class="n">Qwen2ForCausalLM</span><span class="p">,</span>
+    <span class="n">Qwen3ForCausalLM</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Alternative names for LLM layers</span>
+<span class="n">ATTENTION_NAMES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;attn&quot;</span><span class="p">,</span> <span class="s2">&quot;self_attention&quot;</span><span class="p">,</span> <span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="s2">&quot;norm_attn_norm&quot;</span><span class="p">]</span>
+<span class="n">MODEL_NAMES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;transformer&quot;</span><span class="p">,</span> <span class="s2">&quot;gpt_neox&quot;</span><span class="p">,</span> <span class="s2">&quot;.model.decoder&quot;</span><span class="p">]</span>
+<span class="n">LAYER_NAMES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;h&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;blocks&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.decoder.layers&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.model.layers&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.language_model.layers&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">LN_NAMES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;final_layer_norm&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ln_f&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;norm_f&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;norm&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.decoder.ln_final&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.model.ln_final&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.language_model.ln_final&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">LM_HEAD_NAMES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;embed_out&quot;</span><span class="p">]</span>
+<span class="n">MLP_NAMES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_sparse_moe&quot;</span><span class="p">,</span> <span class="s2">&quot;ffn&quot;</span><span class="p">]</span>
+<span class="n">EMBED_TOKENS_NAMES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;wte&quot;</span><span class="p">,</span> <span class="s2">&quot;embed_in&quot;</span><span class="p">,</span> <span class="s2">&quot;.model.embed_tokens&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="get_rename_dict">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.get_rename_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_rename_dict</span><span class="p">(</span>
+    <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="n">rename_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">rename_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">update_rename_dict</span><span class="p">(</span><span class="n">renaming</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">rename_dict</span><span class="p">[</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="n">renaming</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                        <span class="n">rename_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">renaming</span>
+
+        <span class="n">update_rename_dict</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
+        <span class="n">update_rename_dict</span><span class="p">(</span><span class="s2">&quot;layers&quot;</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">layers_name</span><span class="p">)</span>
+        <span class="n">update_rename_dict</span><span class="p">(</span><span class="s2">&quot;self_attn&quot;</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">attn_name</span><span class="p">)</span>
+        <span class="n">update_rename_dict</span><span class="p">(</span><span class="s2">&quot;mlp&quot;</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">mlp_name</span><span class="p">)</span>
+        <span class="n">update_rename_dict</span><span class="p">(</span><span class="s2">&quot;ln_final&quot;</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">ln_final_name</span><span class="p">)</span>
+        <span class="n">update_rename_dict</span><span class="p">(</span><span class="s2">&quot;lm_head&quot;</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">lm_head_name</span><span class="p">)</span>
+
+    <span class="n">rename_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;model&quot;</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">MODEL_NAMES</span><span class="p">}</span>
+        <span class="o">|</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;layers&quot;</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">LAYER_NAMES</span><span class="p">}</span>
+        <span class="o">|</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;self_attn&quot;</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ATTENTION_NAMES</span><span class="p">}</span>
+        <span class="o">|</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;mlp&quot;</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">MLP_NAMES</span><span class="p">}</span>
+        <span class="o">|</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;ln_final&quot;</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">LN_NAMES</span><span class="p">}</span>
+        <span class="o">|</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;lm_head&quot;</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">LM_HEAD_NAMES</span><span class="p">}</span>
+        <span class="o">|</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;embed_tokens&quot;</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">EMBED_TOKENS_NAMES</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rename_dict</span></div>
+
+
+
+<div class="viewcode-block" id="text_config">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.text_config">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">text_config</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span>
+    <span class="k">if</span> <span class="s2">&quot;text_config&quot;</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;text_config&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">cfg</span></div>
+
+
+
+<div class="viewcode-block" id="get_num_attention_heads">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.get_num_attention_heads">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_num_attention_heads</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">text_config</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">attn_cfg_keys</span> <span class="o">=</span> <span class="n">ATTN_HEAD_CONFIG_KEYS</span>
+    <span class="k">if</span> <span class="n">rename_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">attn_head_config_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">attn_head_config_key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">attn_cfg_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">attn_head_config_key</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">attn_head_config_key</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">attn_cfg_keys</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">attn_head_config_key</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">attn_head_config_key</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">attn_head_config_key</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid attn head config key: </span><span class="si">{</span><span class="n">rename_config</span><span class="o">.</span><span class="n">attn_head_config_key</span><span class="si">}</span><span class="s2">, expected None, str, list[str] or int&quot;</span>
+            <span class="p">)</span>
+    <span class="k">for</span> <span class="n">attn_head_key</span> <span class="ow">in</span> <span class="n">attn_cfg_keys</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">attn_head_key</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">attn_head_key</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No attn head config key found in </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="get_hidden_size">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.get_hidden_size">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_hidden_size</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">text_config</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">hidden_size_keys</span> <span class="o">=</span> <span class="n">HIDDEN_SIZE_CONFIG_KEYS</span>
+    <span class="k">if</span> <span class="n">rename_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">hidden_size_config_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">hidden_size_config_key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">hidden_size_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">hidden_size_config_key</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">hidden_size_config_key</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">hidden_size_keys</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">hidden_size_config_key</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">hidden_size_config_key</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">hidden_size_config_key</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid hidden size config key: </span><span class="si">{</span><span class="n">rename_config</span><span class="o">.</span><span class="n">hidden_size_config_key</span><span class="si">}</span><span class="s2">, expected None, str, list[str] or int&quot;</span>
+            <span class="p">)</span>
+    <span class="k">for</span> <span class="n">hidden_size_key</span> <span class="ow">in</span> <span class="n">hidden_size_keys</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">hidden_size_key</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">hidden_size_key</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No hidden size config key found in </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t find the number of attention heads in </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">name_or_path</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="s2">&quot;You should pass the number of attention heads as an integer or look at the config and pass the key in the attn_head_config_key argument of a RenameConfig.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="IOType">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.IOType">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IOType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum to specify input or output access&quot;&quot;&quot;</span>
+
+    <span class="n">INPUT</span> <span class="o">=</span> <span class="s2">&quot;input&quot;</span>
+    <span class="n">OUTPUT</span> <span class="o">=</span> <span class="s2">&quot;output&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="LayerAccessor">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.LayerAccessor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LayerAccessor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;I/O accessor that provides input/output access with setter&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">attr_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">io_type</span><span class="p">:</span> <span class="n">IOType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">returns_tuple</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attr_name</span> <span class="o">=</span> <span class="n">attr_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">io_type</span> <span class="o">=</span> <span class="n">io_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">returns_tuple</span> <span class="o">=</span> <span class="n">returns_tuple</span>
+
+<div class="viewcode-block" id="LayerAccessor.get_module">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.LayerAccessor.get_module">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_module</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Envoy</span><span class="p">:</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">module</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TraceTensor</span> <span class="o">|</span> <span class="n">Envoy</span><span class="p">:</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_module</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">io_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">module</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">io_type</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;input&quot;</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">input</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">io_type</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;output&quot;</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">output</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid io_type: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">io_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">returns_tuple</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">target</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">target</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">TraceTensor</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">io_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_name</span> <span class="ow">or</span> <span class="s2">&quot;layers&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Cannot set the value of a module accessor. Did you mean </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_input/output&quot;</span>
+            <span class="p">)</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_module</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">io_type</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;input&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">returns_tuple</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">input</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">module</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="o">*</span><span class="n">module</span><span class="o">.</span><span class="n">input</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">module</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">,)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">returns_tuple</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">output</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">module</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="o">*</span><span class="n">module</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">module</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">,)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TraceTensor</span> <span class="o">|</span> <span class="n">Envoy</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="bloom_attention_prob_source">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.bloom_attention_prob_source">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">bloom_attention_prob_source</span><span class="p">(</span><span class="n">attention_module</span><span class="p">,</span> <span class="n">return_module_source</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">return_module_source</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">attention_module</span><span class="o">.</span><span class="n">source</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">attention_module</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">self_attention_dropout_0</span></div>
+
+
+
+<div class="viewcode-block" id="default_attention_prob_source">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.default_attention_prob_source">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_attention_prob_source</span><span class="p">(</span><span class="n">attention_module</span><span class="p">,</span> <span class="n">return_module_source</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">return_module_source</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">attention_module</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">attention_interface_0</span><span class="o">.</span><span class="n">source</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">attention_module</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">attention_interface_0</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">nn_functional_dropout_0</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="gpt2_attention_prob_source">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.gpt2_attention_prob_source">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">gpt2_attention_prob_source</span><span class="p">(</span><span class="n">attention_module</span><span class="p">,</span> <span class="n">return_module_source</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">return_module_source</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">attention_module</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">attention_interface_0</span><span class="o">.</span><span class="n">source</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">attention_module</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">attention_interface_0</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">module_attn_dropout_0</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="gptj_attention_prob_source">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.gptj_attention_prob_source">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">gptj_attention_prob_source</span><span class="p">(</span><span class="n">attention_module</span><span class="p">,</span> <span class="n">return_module_source</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">return_module_source</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">attention_module</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">self__attn_0</span><span class="o">.</span><span class="n">source</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">attention_module</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">self__attn_0</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">self_attn_dropout_0</span></div>
+
+
+
+<div class="viewcode-block" id="AttentionProbabilitiesAccessor">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.AttentionProbabilitiesAccessor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AttentionProbabilitiesAccessor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="k">if</span> <span class="n">rename_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">attn_prob_source</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span> <span class="o">=</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">attn_prob_source</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">BloomForCausalLM</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span> <span class="o">=</span> <span class="n">bloom_attention_prob_source</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">GPT2LMHeadModel</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span> <span class="o">=</span> <span class="n">gpt2_attention_prob_source</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">GPTJForCausalLM</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span> <span class="o">=</span> <span class="n">gptj_attention_prob_source</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span> <span class="o">=</span> <span class="n">default_attention_prob_source</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="AttentionProbabilitiesAccessor.disable">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.AttentionProbabilitiesAccessor.disable">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TraceTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span><span class="s2">&quot;Attention probabilities are disabled for this model.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">self_attn</span><span class="p">)</span><span class="o">.</span><span class="n">output</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">TraceTensor</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span><span class="s2">&quot;Attention probabilities are disabled for this model.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">self_attn</span><span class="p">)</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="AttentionProbabilitiesAccessor.check_source">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.AttentionProbabilitiesAccessor.check_source">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_source</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">allow_dispatch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">use_trace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">num_heads</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Can&#39;t check the shapes of the model internals because the number of attention heads is not available in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">repo_id</span><span class="si">}</span><span class="s2"> architecture.&quot;</span>
+                <span class="s2">&quot;You should pass the number of attention heads as an integer or look at the config and pass the key in the attn_head_config_key argument of a RenameConfig.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">test_prob_source</span><span class="p">():</span>
+            <span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">input_size</span>
+            <span class="n">num_heads</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">num_heads</span>
+            <span class="n">probs</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">probs</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Attention probabilities have shape </span><span class="si">{</span><span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="n">num_heads</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">)</span><span class="si">}</span><span class="s2"> (batch_size, n_head, seq_len, seq_len) in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">repo_id</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
+                <span class="p">)</span>
+            <span class="n">rnd</span> <span class="o">=</span> <span class="n">th</span><span class="o">.</span><span class="n">randn_like</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>
+            <span class="n">rnd</span> <span class="o">=</span> <span class="n">rnd</span> <span class="o">/</span> <span class="n">rnd</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span> <span class="o">=</span> <span class="n">rnd</span>
+            <span class="k">if</span> <span class="n">probs</span><span class="o">.</span><span class="n">device</span> <span class="o">!=</span> <span class="n">th</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;meta&quot;</span><span class="p">):</span>
+                <span class="n">sum_last</span> <span class="o">=</span> <span class="n">probs</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">th</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">sum_last</span><span class="p">,</span> <span class="n">th</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">sum_last</span><span class="p">)):</span>
+                    <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span><span class="s2">&quot;Attention probabilities do not sum to 1.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">use_trace</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">dummy_inputs</span><span class="p">()):</span>
+                <span class="n">test_prob_source</span><span class="p">()</span>
+                <span class="n">corr_logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">logits</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">dummy_inputs</span><span class="p">()):</span>
+                <span class="n">clean_logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">logits</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">th</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">corr_logits</span><span class="p">,</span> <span class="n">clean_logits</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span>
+                    <span class="s2">&quot;Attention probabilities are not properly initialized: changing the attention probabilities should change the logits.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">try_with_scan</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">test_prob_source</span><span class="p">,</span>
+            <span class="n">RenamingError</span><span class="p">(</span>
+                <span class="s2">&quot;Can&#39;t access attention probabilities. It is most likely not yet supported for this architecture and transformers version.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">allow_dispatch</span><span class="o">=</span><span class="n">allow_dispatch</span><span class="p">,</span>
+            <span class="n">errors_to_raise</span><span class="o">=</span><span class="p">(</span><span class="n">RenamingError</span><span class="p">,),</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AttentionProbabilitiesAccessor.print_source">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.AttentionProbabilitiesAccessor.print_source">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">print_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">allow_dispatch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="n">in_notebook</span> <span class="o">=</span> <span class="n">is_notebook</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">in_notebook</span><span class="p">:</span>
+            <span class="n">markdown_text</span> <span class="o">=</span> <span class="s2">&quot;## Accessing attention probabilities from:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Accessing attention probabilities from:&quot;</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">print_hook_source</span><span class="p">():</span>
+            <span class="k">nonlocal</span> <span class="n">markdown_text</span>
+            <span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">self_attn</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">in_notebook</span><span class="p">:</span>
+                <span class="n">markdown_text</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;```py</span><span class="se">\n</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="se">\n</span><span class="s2">```&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+
+        <span class="n">used_scan</span> <span class="o">=</span> <span class="n">try_with_scan</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">print_hook_source</span><span class="p">,</span>
+            <span class="n">RenamingError</span><span class="p">(</span>
+                <span class="s2">&quot;Can&#39;t access attention probabilities. It is most likely not yet supported for this architecture and transformers version.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">allow_dispatch</span><span class="o">=</span><span class="n">allow_dispatch</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">in_notebook</span><span class="p">:</span>
+            <span class="n">markdown_text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">## Full module source:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Full module source:&quot;</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">print_attn_source</span><span class="p">():</span>
+            <span class="k">nonlocal</span> <span class="n">markdown_text</span>
+            <span class="n">source</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">self_attn</span><span class="p">,</span> <span class="n">return_module_source</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">in_notebook</span><span class="p">:</span>
+                <span class="n">markdown_text</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;```py</span><span class="se">\n</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="se">\n</span><span class="s2">```&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+
+        <span class="n">try_with_scan</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">print_attn_source</span><span class="p">,</span>
+            <span class="n">RenamingError</span><span class="p">(</span>
+                <span class="s2">&quot;Can&#39;t access attention probabilities. It is most likely not yet supported for this architecture and transformers version.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">allow_dispatch</span><span class="o">=</span><span class="n">allow_dispatch</span><span class="p">,</span>
+            <span class="n">warn_if_scan_fails</span><span class="o">=</span><span class="n">used_scan</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">in_notebook</span><span class="p">:</span>
+            <span class="n">display_markdown</span><span class="p">(</span><span class="n">markdown_text</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="get_ignores">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.get_ignores">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_ignores</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="n">ignores</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">IGNORE_MLP_MODELS</span><span class="p">):</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> does not have a mlp module.&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">OPTForCausalLM</span><span class="p">):</span>
+            <span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot; You&#39;ll have to manually use layers.fc1 and layers.fc2 instead.&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="n">ignores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;mlp&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rename_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">ignore_mlp</span><span class="p">:</span>
+            <span class="n">ignores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;mlp&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">ignore_attn</span><span class="p">:</span>
+            <span class="n">ignores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ignores</span></div>
+
+
+
+<div class="viewcode-block" id="mlp_returns_tuple">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.mlp_returns_tuple">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mlp_returns_tuple</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">rename_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">mlp_returns_tuple</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">mlp_returns_tuple</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">MLP_RETURNS_TUPLE_MODELS</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="layer_returns_tuple">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.layer_returns_tuple">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">layer_returns_tuple</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">rename_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">layer_returns_tuple</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">layer_returns_tuple</span>
+    <span class="k">if</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">TRANSFORMERS_VERSION</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s2">&quot;4.54&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
+        <span class="n">model</span><span class="p">,</span> <span class="n">LAYER_RETURNS_TENSOR_AFTER_454_MODELS</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+
+<div class="viewcode-block" id="check_io">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.check_io">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_io</span><span class="p">(</span><span class="n">std_model</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ignores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+    <span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span> <span class="o">=</span> <span class="n">std_model</span><span class="o">.</span><span class="n">input_size</span>
+    <span class="n">hidden_size</span> <span class="o">=</span> <span class="n">std_model</span><span class="o">.</span><span class="n">hidden_size</span>
+    <span class="k">if</span> <span class="n">hidden_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Can&#39;t check the shapes of the model internals because the hidden size is not available in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture.&quot;</span>
+            <span class="s2">&quot;You should pass the hidden size as an integer or look at the config and pass the key in the hidden_size_config_key argument of a RenameConfig.&quot;</span>
+        <span class="p">)</span>
+    <span class="n">token_embeddings</span> <span class="o">=</span> <span class="n">std_model</span><span class="o">.</span><span class="n">token_embeddings</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">token_embeddings</span><span class="p">,</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;token_embeddings is not a tensor in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. Found type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">token_embeddings</span><span class="p">)</span><span class="si">}</span><span class="s2">. This means it&#39;s not properly initialized.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">token_embeddings</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;token_embeddings has shape </span><span class="si">{</span><span class="n">token_embeddings</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">,</span><span class="w"> </span><span class="n">hidden_size</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
+        <span class="p">)</span>
+    <span class="n">layer_input</span> <span class="o">=</span> <span class="n">std_model</span><span class="o">.</span><span class="n">layers_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer_input</span><span class="p">,</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;layers_input[0] is not a tensor in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. Found type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">layer_input</span><span class="p">)</span><span class="si">}</span><span class="s2">. This means it&#39;s not properly initialized.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">layer_input</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;layers_input[0] has shape </span><span class="si">{</span><span class="n">layer_input</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">,</span><span class="w"> </span><span class="n">hidden_size</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;attention&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignores</span><span class="p">:</span>
+        <span class="n">attention_input</span> <span class="o">=</span> <span class="n">std_model</span><span class="o">.</span><span class="n">attentions_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">attention_output</span> <span class="o">=</span> <span class="n">std_model</span><span class="o">.</span><span class="n">attentions_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attention_input</span><span class="p">,</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;attentions_input[0] is not a tensor in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. Found type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">attention_input</span><span class="p">)</span><span class="si">}</span><span class="s2">. This means it&#39;s not properly initialized.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">attention_input</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;attentions_input[0] has shape </span><span class="si">{</span><span class="n">attention_input</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">,</span><span class="w"> </span><span class="n">hidden_size</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attention_output</span><span class="p">,</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;attentions_output[0] is not a tensor in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. Found type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">attention_output</span><span class="p">)</span><span class="si">}</span><span class="s2">. This means it&#39;s not properly initialized.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">attention_output</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span>
+            <span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">seq_len</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;attentions_output[0] has shape </span><span class="si">{</span><span class="n">attention_output</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">,</span><span class="w"> </span><span class="n">hidden_size</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
+            <span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;mlp&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignores</span><span class="p">:</span>
+        <span class="n">mlp_input</span> <span class="o">=</span> <span class="n">std_model</span><span class="o">.</span><span class="n">mlps_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">mlp_output</span> <span class="o">=</span> <span class="n">std_model</span><span class="o">.</span><span class="n">mlps_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mlp_input</span><span class="p">,</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;mlps_input[0] is not a tensor in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. Found type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">mlp_input</span><span class="p">)</span><span class="si">}</span><span class="s2">. This means it&#39;s not properly initialized.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">mlp_input</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;mlps_input[0] has shape </span><span class="si">{</span><span class="n">mlp_input</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">,</span><span class="w"> </span><span class="n">hidden_size</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mlp_output</span><span class="p">,</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;mlps_output[0] is not a tensor in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. Found type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">mlp_output</span><span class="p">)</span><span class="si">}</span><span class="s2">. This means it&#39;s not properly initialized.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">mlp_output</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;mlps_output[0] has shape </span><span class="si">{</span><span class="n">mlp_output</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">,</span><span class="w"> </span><span class="n">hidden_size</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
+            <span class="p">)</span>
+    <span class="n">layer_output</span> <span class="o">=</span> <span class="n">std_model</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer_output</span><span class="p">,</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;layers_output[0] is not a tensor in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. Found type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">layer_output</span><span class="p">)</span><span class="si">}</span><span class="s2">. This means it&#39;s not properly initialized.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">layer_output</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;layers_output[0] has shape </span><span class="si">{</span><span class="n">layer_output</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">,</span><span class="w"> </span><span class="n">std_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="check_model_renaming">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.check_model_renaming">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_model_renaming</span><span class="p">(</span>
+    <span class="n">std_model</span><span class="p">,</span>
+    <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ignores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">allow_dispatch</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">):</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">std_model</span><span class="p">,</span> <span class="s2">&quot;layers&quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not find layers module in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means that it was not properly renamed.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Please pass the name of the layers module to the layers_rename argument.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">std_model</span><span class="p">,</span> <span class="s2">&quot;ln_final&quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not find ln_final module in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means that it was not properly renamed.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Please pass the name of the ln_final module to the ln_final_rename argument.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">std_model</span><span class="p">,</span> <span class="s2">&quot;lm_head&quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not find lm_head module in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means that it was not properly renamed.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Please pass the name of the lm_head module to the lm_head_rename argument.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;attention&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignores</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">std_model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;self_attn&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Could not find self_attn module in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means that it was not properly renamed.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Please pass the name of the self_attn module to the attn_rename argument.&quot;</span>
+            <span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;mlp&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignores</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">std_model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;mlp&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Could not find mlp module in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means that it was not properly renamed.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Please pass the name of the mlp module to the mlp_rename argument.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="n">try_with_scan</span><span class="p">(</span>
+        <span class="n">std_model</span><span class="p">,</span>
+        <span class="k">lambda</span><span class="p">:</span> <span class="n">check_io</span><span class="p">(</span><span class="n">std_model</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">ignores</span><span class="p">),</span>
+        <span class="n">RenamingError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not check the IO of </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="n">allow_dispatch</span><span class="p">,</span>
+        <span class="n">errors_to_raise</span><span class="o">=</span><span class="p">(</span><span class="n">RenamingError</span><span class="p">,),</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Clément Dumas.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
