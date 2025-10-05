@@ -52,8 +52,8 @@ Quick example:
    model-validation
    adding-model-support
    advanced-features
-   nnsight-utils
    nnsight-best-practices
+   nnsight-utils
 
 .. toctree::
    :maxdepth: 2

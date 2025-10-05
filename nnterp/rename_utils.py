@@ -10,17 +10,10 @@ from nnsight import Envoy
 from .nnsight_utils import TraceTensor
 from .utils import is_notebook, display_markdown, try_with_scan, dummy_inputs
 from .utils import (
-    TRANSFORMERS_VERSION,
     OPTForCausalLM,
-    MixtralForCausalLM,
     BloomForCausalLM,
     GPT2LMHeadModel,
-    Qwen2MoeForCausalLM,
-    DbrxForCausalLM,
     GPTJForCausalLM,
-    LlamaForCausalLM,
-    Qwen2ForCausalLM,
-    Qwen3ForCausalLM,
 )
 
 IgnoreType = Literal["mlp", "attention"]
@@ -344,7 +337,11 @@ class LayerAccessor:
         return self[layer]
 
     @property
-    def returns_tuple(self) -> bool:
+    def returns_tuple(self) -> bool | None:
+        """
+        Returns whether the layer output is a tuple.
+        Returns None if the tuple status has not been detected yet.
+        """
         return self._detected_is_tuple
 
 
