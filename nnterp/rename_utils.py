@@ -331,23 +331,21 @@ class LayerAccessor:
 
         if self.io_type.value == "input":
             if self._detected_is_tuple:
-                if len(module.input) > 1:
-                    module.input = (value, *module.input[1:])
-                else:
-                    module.input = (value,)
+                module.input = (value, *module.input[1:])
             else:
                 module.input = value
         else:
             if self._detected_is_tuple:
-                if len(module.output) > 1:
-                    module.output = (value, *module.output[1:])
-                else:
-                    module.output = (value,)
+                module.output = (value, *module.output[1:])
             else:
                 module.output = value
 
     def __call__(self, layer: int) -> TraceTensor | Envoy:
         return self[layer]
+
+    @property
+    def returns_tuple(self) -> bool:
+        return self._detected_is_tuple
 
 
 def bloom_attention_prob_source(attention_module, return_module_source: bool = False):

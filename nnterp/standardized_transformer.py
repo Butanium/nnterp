@@ -218,12 +218,14 @@ class StandardizedTransformer(LanguageModel):
         Args:
             start_layer: The layer to start skipping from
             end_layer: The layer to stop skipping at (inclusive)
-            skip_with: The input to skip the layers with. If None, the input of start_layer is used.
+            skip_with: The tensor to skip the layers with, will be passed as the output of the layers. If None, the input of start_layer is used.
         """
         if skip_with is None:
             skip_with = self.layers_input[start_layer]
         for layer in range(start_layer, end_layer + 1):
-            self.layers[layer].skip((skip_with, DummyCache()))
+            if self.layers_output.returns_tuple:
+                skip_with = (skip_with, DummyCache())
+            self.layers[layer].skip(skip_with)
 
     def steer(
         self,
