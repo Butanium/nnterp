@@ -34,7 +34,7 @@ class StandardizedTransformer(LanguageModel):
     """
     Renames the LanguageModel modules to match a standardized architecture.
 
-    The model structure is organized as follows:
+    The model structure is organized as follows::
 
         StandardizedTransformer
         ├── embed_tokens
