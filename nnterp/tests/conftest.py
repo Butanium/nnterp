@@ -493,18 +493,22 @@ def model(model_name, failed_model_cache, request):
     If a model fails to load, it is cached and subsequent tests
     for that model are skipped.
     """
-    if model_name in failed_model_cache:
-        pytest.skip(f"Model {model_name} previously failed to load")
+    # Check cache under lock to avoid races in parallel contexts
+    lock = request.session.config.stash[stash_lock_key]
+    with lock:
+        if model_name in failed_model_cache:
+            pytest.skip(f"Model {model_name} previously failed to load")
     
     try:
         return StandardizedTransformer(model_name)
     except Exception as e:
-        failed_model_cache.add(model_name)
+        # Update cache under lock to ensure thread safety
+        with lock:
+            failed_model_cache.add(model_name)
         
         # Thread-safe: Add to failed_test_models immediately
         config = request.session.config
         arch = get_arch(model_name)
-        lock = config.stash[stash_lock_key]
         failure_categories = config.stash[failure_categories_key]
         
         with lock:
@@ -521,18 +525,22 @@ def raw_model(model_name, failed_model_cache, request):
     If a model fails to load, it is cached and subsequent tests
     for that model are skipped.
     """
-    if model_name in failed_model_cache:
-        pytest.skip(f"Model {model_name} previously failed to load")
+    # Check cache under lock to avoid races in parallel contexts
+    lock = request.session.config.stash[stash_lock_key]
+    with lock:
+        if model_name in failed_model_cache:
+            pytest.skip(f"Model {model_name} previously failed to load")
     
     try:
         return LanguageModel(model_name, device_map="auto")
     except Exception as e:
-        failed_model_cache.add(model_name)
+        # Update cache under lock to ensure thread safety
+        with lock:
+            failed_model_cache.add(model_name)
         
         # Thread-safe: Add to failed_test_models immediately
         config = request.session.config
         arch = get_arch(model_name)
-        lock = config.stash[stash_lock_key]
         failure_categories = config.stash[failure_categories_key]
         
         with lock:
