@@ -56,7 +56,7 @@ def test_prompt_get_target_probs(model):
         )
 
         # Create mock probabilities tensor (batch_size, layers, vocab_size)
-        vocab_size = model.config.vocab_size
+        vocab_size = model.vocab_size
         mock_probs = th.rand(1, 3, vocab_size)  # 1 prompt, 3 layers, vocab_size
 
         target_probs = prompt.get_target_probs(mock_probs)
@@ -127,7 +127,7 @@ def test_next_token_probs_unsqueeze(model):
         assert probs.dim() == 3  # Should have 3 dimensions after unsqueeze
         assert probs.shape[0] == 1  # Batch size
         assert probs.shape[1] == 1  # Number of layers
-        assert probs.shape[2] == model.config.vocab_size
+        assert probs.shape[2] == model.vocab_size
 
 
 def test_run_prompts(model):

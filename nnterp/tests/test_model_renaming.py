@@ -219,10 +219,10 @@ def test_standardized_transformer_methods(model_name):
         ), "Logits mismatch between logits and direct access"
 
         # Test shape consistency
-        assert next_probs.shape[-1] == model.config.vocab_size
-        assert projected.shape[-1] == model.config.vocab_size
+        assert next_probs.shape[-1] == model.vocab_size
+        assert projected.shape[-1] == model.vocab_size
         assert layer_input_accessor.shape == layer_output_accessor.shape
-        assert logits.shape[-1] == model.config.vocab_size
+        assert logits.shape[-1] == model.vocab_size
         assert next_probs.shape == (logits.shape[0], logits.shape[2])
         if "mlp" not in ignores:
             assert mlps_output_accessor.shape == layer_output_accessor.shape
@@ -266,17 +266,17 @@ def test_renamed_model_methods(model_name):
             logits = get_logits(model).save()
             logits_output = model.output.logits.save()
 
-        assert next_probs.shape == (batch_size, model.config.vocab_size)
-        assert projected.shape == (batch_size, seq_len, model.config.vocab_size)
-        assert embed_tokens.shape == (batch_size, seq_len, model.config.hidden_size)
-        assert embed_tokens_out.shape == (batch_size, seq_len, model.config.hidden_size)
+        assert next_probs.shape == (batch_size, model.vocab_size)
+        assert projected.shape == (batch_size, seq_len, model.vocab_size)
+        assert embed_tokens.shape == (batch_size, seq_len, model.hidden_size)
+        assert embed_tokens_out.shape == (batch_size, seq_len, model.hidden_size)
         assert th.allclose(embed_tokens, embed_tokens_out)
-        assert layer_input.shape == (batch_size, seq_len, model.config.hidden_size)
-        assert logits.shape == (batch_size, seq_len, model.config.vocab_size)
-        assert logits_output.shape == (batch_size, seq_len, model.config.vocab_size)
+        assert layer_input.shape == (batch_size, seq_len, model.hidden_size)
+        assert logits.shape == (batch_size, seq_len, model.vocab_size)
+        assert logits_output.shape == (batch_size, seq_len, model.vocab_size)
         if "mlp" not in ignores:
-            assert mlps_output.shape == (batch_size, seq_len, model.config.hidden_size)
-        assert attn_output.shape == (batch_size, seq_len, model.config.hidden_size)
+            assert mlps_output.shape == (batch_size, seq_len, model.hidden_size)
+        assert attn_output.shape == (batch_size, seq_len, model.hidden_size)
 
 
 def test_standardized_transformer_input_accessors(model_name):
@@ -441,18 +441,19 @@ def test_standardized_transformer_properties(model_name):
             == (logits.shape[0], logits.shape[-1])
             == (
                 len(prompt),
-                model.config.vocab_size,
+                model.vocab_size,
             )
         )
         assert th.allclose(
             next_token_probs.sum(dim=-1),
-            th.ones(logits.shape[0], device=next_token_probs.device),
+            th.ones(logits.shape[0], device=next_token_probs.device, dtype=next_token_probs.dtype),
             atol=1e-5,
         )
 
 
 def test_standardized_transformer_cache(model_name):
     """Test that StandardizedTransformer works with nnsight cache using renamed names"""
+    pytest.skip("Cache is not supported yet due to a nnsight renaming issue.")  # TODO: Update once nnsight is fixed
     with th.no_grad():
         model = StandardizedTransformer(model_name)
         prompt = "Hello, world!"

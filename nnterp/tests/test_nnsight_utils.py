@@ -18,6 +18,7 @@ from nnterp.nnsight_utils import (
     get_mlp_output,
     set_layer_output,
 )
+from nnterp.rename_utils import get_vocab_size
 
 
 def test_load_model(llama_like_model_name):
@@ -61,11 +62,13 @@ def test_basic_utils(llama_like_model_name):
             projected = project_on_vocab(model, layer_output).save()
             logits_output = model.output.logits.save()
 
-        assert next_probs.shape[-1] == model.config.vocab_size
-        assert projected.shape[-1] == model.config.vocab_size
+        vocab_size = get_vocab_size(model)
+
+        assert next_probs.shape[-1] == vocab_size
+        assert projected.shape[-1] == vocab_size
         assert layer_input.shape == layer_output.shape
-        assert logits.shape[-1] == model.config.vocab_size
-        assert next_probs.shape == (logits.shape[0], model.config.vocab_size)
+        assert logits.shape[-1] == vocab_size
+        assert next_probs.shape == (logits.shape[0], vocab_size)
         assert logits_output.shape == projected.shape
         assert mlps_output.shape == layer_output.shape
         assert attn_output.shape == layer_input.shape
@@ -100,7 +103,7 @@ def test_activation_collection(llama_like_model_name):
 
         # Test next token probabilities
         probs = compute_next_token_probs(model, prompts)
-        assert probs.shape == (len(prompts), model.config.vocab_size)
+        assert probs.shape == (len(prompts), get_vocab_size(model))
 
 
 def test_project_on_vocab_layer_output_backward(llama_like_model_name):
@@ -164,6 +167,9 @@ def test_grad_from_mlp(llama_like_model_name):
 
 def test_cache_with_renamed_modules(llama_like_model_name):
     """Test that nnsight cache supports renamed module access"""
+    pytest.skip(
+        "Cache is not supported yet due to a nnsight renaming issue."
+    )  # TODO: Update once nnsight is fixed
     with th.no_grad():
         model = LanguageModel(llama_like_model_name, device_map="auto")
         prompt = "Hello, world!"

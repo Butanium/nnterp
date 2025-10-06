@@ -26,7 +26,7 @@ def test_access_attn_probabilities(model_name):
             logits = model.logits.save()
         assert attn_probs.shape == (
             logits.shape[0],
-            model.config.num_attention_heads,
+            model.num_heads,
             logits.shape[1],
             logits.shape[1],
         )  # (batch_size, num_heads, seq_len, seq_len)
