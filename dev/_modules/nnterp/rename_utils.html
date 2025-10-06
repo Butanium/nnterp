@@ -462,7 +462,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">packaging</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">th</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nnsight</span><span class="w"> </span><span class="kn">import</span> <span class="n">Envoy</span>
@@ -559,6 +558,11 @@
 <span class="sd">        or the hidden size directly. Defaults to standard keys:</span>
 <span class="sd">        [&#39;hidden_size&#39;, &#39;d_model&#39;, &#39;n_embd&#39;].</span>
 
+<span class="sd">    vocab_size_config_key : str, list of str, or int, optional</span>
+<span class="sd">        Custom key name for vocab size in model config,</span>
+<span class="sd">        or the vocab size directly. Defaults to standard keys:</span>
+<span class="sd">        [&#39;vocab_size&#39;, &#39;n_vocab&#39;, &#39;text_config.vocab_size&#39;].</span>
+
 <span class="sd">    Example</span>
 <span class="sd">    -------</span>
 <span class="sd">    Custom configuration for a non-standard architecture::</span>
@@ -580,7 +584,8 @@
     <span class="n">ignore_mlp</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">ignore_attn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">attn_head_config_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">hidden_size_config_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+    <span class="n">hidden_size_config_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">vocab_size_config_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 
@@ -603,8 +608,26 @@
 
 
 <span class="c1"># Configuration keys for getting the number of attention heads and hidden size</span>
-<span class="n">ATTN_HEAD_CONFIG_KEYS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;n_heads&quot;</span><span class="p">,</span> <span class="s2">&quot;num_attention_heads&quot;</span><span class="p">,</span> <span class="s2">&quot;n_head&quot;</span><span class="p">,</span> <span class="s2">&quot;num_heads&quot;</span><span class="p">]</span>
-<span class="n">HIDDEN_SIZE_CONFIG_KEYS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;hidden_size&quot;</span><span class="p">,</span> <span class="s2">&quot;d_model&quot;</span><span class="p">,</span> <span class="s2">&quot;n_embd&quot;</span><span class="p">]</span>
+<div class="viewcode-block" id="default_attn_head_config_keys">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.default_attn_head_config_keys">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_attn_head_config_keys</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;n_heads&quot;</span><span class="p">,</span> <span class="s2">&quot;num_attention_heads&quot;</span><span class="p">,</span> <span class="s2">&quot;n_head&quot;</span><span class="p">,</span> <span class="s2">&quot;num_heads&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="default_hidden_size_config_keys">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.default_hidden_size_config_keys">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_hidden_size_config_keys</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;hidden_size&quot;</span><span class="p">,</span> <span class="s2">&quot;d_model&quot;</span><span class="p">,</span> <span class="s2">&quot;n_embd&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="default_vocab_size_config_keys">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.default_vocab_size_config_keys">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_vocab_size_config_keys</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;vocab_size&quot;</span><span class="p">,</span> <span class="s2">&quot;n_vocab&quot;</span><span class="p">]</span></div>
+
+
 
 <span class="c1"># Models with no mlp module</span>
 <span class="n">IGNORE_MLP_MODELS</span> <span class="o">=</span> <span class="p">(</span><span class="n">OPTForCausalLM</span><span class="p">,)</span>
@@ -692,7 +715,7 @@
     <span class="n">model</span><span class="p">,</span> <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">cfg</span> <span class="o">=</span> <span class="n">text_config</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-    <span class="n">attn_cfg_keys</span> <span class="o">=</span> <span class="n">ATTN_HEAD_CONFIG_KEYS</span>
+    <span class="n">attn_cfg_keys</span> <span class="o">=</span> <span class="n">default_attn_head_config_keys</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">rename_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">attn_head_config_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">attn_head_config_key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">attn_cfg_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">attn_head_config_key</span><span class="p">)</span>
@@ -719,7 +742,7 @@
     <span class="n">model</span><span class="p">,</span> <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">cfg</span> <span class="o">=</span> <span class="n">text_config</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-    <span class="n">hidden_size_keys</span> <span class="o">=</span> <span class="n">HIDDEN_SIZE_CONFIG_KEYS</span>
+    <span class="n">hidden_size_keys</span> <span class="o">=</span> <span class="n">default_hidden_size_config_keys</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">rename_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">hidden_size_config_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">hidden_size_config_key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">hidden_size_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">hidden_size_config_key</span><span class="p">)</span>
@@ -742,6 +765,30 @@
             <span class="s2">&quot;You should pass the number of attention heads as an integer or look at the config and pass the key in the attn_head_config_key argument of a RenameConfig.&quot;</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="get_vocab_size">
+<a class="viewcode-back" href="../../api.html#nnterp.rename_utils.get_vocab_size">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_vocab_size</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">text_config</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">vocab_size_keys</span> <span class="o">=</span> <span class="n">default_vocab_size_config_keys</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">rename_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">vocab_size_config_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">vocab_size_config_key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">vocab_size_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">vocab_size_config_key</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">vocab_size_config_key</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">vocab_size_keys</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">vocab_size_config_key</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rename_config</span><span class="o">.</span><span class="n">vocab_size_config_key</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">vocab_size_config_key</span>
+    <span class="k">for</span> <span class="n">vocab_size_key</span> <span class="ow">in</span> <span class="n">vocab_size_keys</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">vocab_size_key</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">vocab_size_key</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No vocab size config key found in </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
 
 
 
@@ -1123,7 +1170,34 @@
     <span class="k">if</span> <span class="n">layer_output</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;layers_output[0] has shape </span><span class="si">{</span><span class="n">layer_output</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">,</span><span class="w"> </span><span class="n">std_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span>
+    <span class="n">ln_final_out</span> <span class="o">=</span> <span class="n">std_model</span><span class="o">.</span><span class="n">ln_final</span><span class="o">.</span><span class="n">output</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ln_final_out</span><span class="p">,</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;ln_final.output is not a tensor in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. Found type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">ln_final_out</span><span class="p">)</span><span class="si">}</span><span class="s2">. This means it&#39;s not properly initialized.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">ln_final_out</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;ln_final.output has shape </span><span class="si">{</span><span class="n">ln_final_out</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">,</span><span class="w"> </span><span class="n">hidden_size</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
+        <span class="p">)</span>
+    <span class="n">lm_head_out</span> <span class="o">=</span> <span class="n">std_model</span><span class="o">.</span><span class="n">lm_head</span><span class="o">.</span><span class="n">output</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lm_head_out</span><span class="p">,</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;lm_head.output is not a tensor in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. Found type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">lm_head_out</span><span class="p">)</span><span class="si">}</span><span class="s2">. This means it&#39;s not properly initialized.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">std_model</span><span class="o">.</span><span class="n">vocab_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t find vocab_size in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> config. Couldn&#39;t properly test the shape of lm_head.output.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">lm_head_out</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">lm_head_out</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;lm_head.output has shape </span><span class="si">{</span><span class="n">lm_head_out</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != (</span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="w"> </span><span class="n">seq_len</span><span class="si">}</span><span class="s2">, &lt;vocab_size&gt;) in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
+            <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">lm_head_out</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">std_model</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;lm_head.output has shape </span><span class="si">{</span><span class="n">lm_head_out</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="n">seq_len</span><span class="p">,</span><span class="w"> </span><span class="n">std_model</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. This means it&#39;s not properly initialized.&quot;</span>
+            <span class="p">)</span></div>
 
 
 

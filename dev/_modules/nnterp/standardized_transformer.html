@@ -484,6 +484,7 @@
     <span class="n">get_num_attention_heads</span><span class="p">,</span>
     <span class="n">get_hidden_size</span><span class="p">,</span>
     <span class="n">RenamingError</span><span class="p">,</span>
+    <span class="n">get_vocab_size</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">GetLayerObject</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">],</span> <span class="n">TraceTensor</span><span class="p">]</span>
@@ -591,6 +592,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">raise_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">get_hidden_size</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">raise_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="n">get_vocab_size</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">raise_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span>
         <span class="p">)</span>
 
@@ -786,11 +790,13 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the top-k closest tokens to the hidden state h.</span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            h: The hidden state to project on the vocabulary. Shape (batch_size, hidden_size) or (hidden_size,).</span>
 <span class="sd">            k: The number of top tokens to return.</span>
 <span class="sd">            returns_df: If True, returns a DataFrame instead of a dictionary. Note that you need to have pandas installed for this to work.</span>
 <span class="sd">                Pandas is included in ``pip install nnterp[display]``.</span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary mapping tokens to their probabilities if h is 1D, or a list of dictionaries if h is 2D.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
