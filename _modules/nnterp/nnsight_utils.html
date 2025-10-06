@@ -185,15 +185,15 @@
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-utils.html">
-    NNsight Utils
+  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-best-practices.html">
-    NNsight Best Practices
+  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-utils.html">
+    NNsight Utils
   </a>
 </li>
 
@@ -344,15 +344,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../nnsight-utils.html">
-    NNsight Utils
+  <a class="nav-link nav-internal" href="../../nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../nnsight-best-practices.html">
-    NNsight Best Practices
+  <a class="nav-link nav-internal" href="../../nnsight-utils.html">
+    NNsight Utils
   </a>
 </li>
 
@@ -466,7 +466,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">nnsight</span><span class="w"> </span><span class="kn">import</span> <span class="n">LanguageModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nnsight.intervention.envoy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Envoy</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nnsight.intervention.tracing.globals</span><span class="w"> </span><span class="kn">import</span> <span class="n">Object</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TraceTensor</span><span class="p">,</span> <span class="n">DummyCache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TraceTensor</span><span class="p">,</span> <span class="n">DummyCache</span><span class="p">,</span> <span class="n">unpack_tuple</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.standardized_transformer</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardizedTransformer</span>
 
 <span class="n">GetModuleOutput</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">LanguageModel</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">TraceTensor</span><span class="p">]</span>
@@ -532,7 +532,7 @@
 <a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.get_layer_output">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_layer_output</span><span class="p">(</span><span class="n">nn_model</span><span class="p">:</span> <span class="n">LanguageModel</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TraceTensor</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Get the output of a layer</span>
+<span class="sd">    Get the residual stream after the layer</span>
 <span class="sd">    Args:</span>
 <span class="sd">        nn_model: The NNSight model</span>
 <span class="sd">        layer: The layer to get the output of</span>
@@ -540,7 +540,7 @@
 <span class="sd">        The Proxy for the output of the layer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">output</span> <span class="o">=</span> <span class="n">get_layer</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">output</span>
-    <span class="k">return</span> <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">unpack_tuple</span><span class="p">(</span><span class="n">output</span><span class="p">)</span></div>
 
 
 
@@ -570,7 +570,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The Proxy for the output of the attention block of the layer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">get_attention</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">unpack_tuple</span><span class="p">(</span><span class="n">get_attention</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">output</span><span class="p">)</span></div>
 
 
 
@@ -590,7 +590,7 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get the output of the MLP of a layer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">get_mlp</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">output</span></div>
+    <span class="k">return</span> <span class="n">unpack_tuple</span><span class="p">(</span><span class="n">get_mlp</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">output</span><span class="p">)</span></div>
 
 
 
@@ -654,50 +654,6 @@
 
 
 
-<div class="viewcode-block" id="skip_layer">
-<a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.skip_layer">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">skip_layer</span><span class="p">(</span>
-    <span class="n">nn_model</span><span class="p">:</span> <span class="n">LanguageModel</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">skip_with</span><span class="p">:</span> <span class="n">TraceTensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Skip the computation of a layer. If skip_with is None, the input of the layer is used as its output.</span>
-<span class="sd">    Args:</span>
-<span class="sd">        nn_model: The NNSight model</span>
-<span class="sd">        layer: The layer to skip</span>
-<span class="sd">        skip_with: The input to skip the layer with. If None, the input of the layer is used.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">skip_layers</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">,</span> <span class="n">layer</span><span class="p">,</span> <span class="n">skip_with</span><span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="skip_layers">
-<a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.skip_layers">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">skip_layers</span><span class="p">(</span>
-    <span class="n">nn_model</span><span class="p">:</span> <span class="n">LanguageModel</span><span class="p">,</span>
-    <span class="n">start_layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">end_layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">skip_with</span><span class="p">:</span> <span class="n">TraceTensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Skip all layers between start_layer and end_layer (inclusive). Equivalent to:</span>
-<span class="sd">    ```py</span>
-<span class="sd">    set_layer_output(nn_model, end_layer, get_layer_input(nn_model, start_layer))</span>
-<span class="sd">    ```</span>
-<span class="sd">    But skip the useless computa</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        nn_model: The NNSight model</span>
-<span class="sd">        start_layer: The layer to start skipping from</span>
-<span class="sd">        end_layer: The layer to stop skipping at</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">skip_with</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">skip_with</span> <span class="o">=</span> <span class="n">get_layer_input</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">start_layer</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_layer</span><span class="p">,</span> <span class="n">end_layer</span><span class="p">):</span>
-        <span class="n">get_layer</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">skip</span><span class="p">((</span><span class="n">skip_with</span><span class="p">,</span> <span class="n">DummyCache</span><span class="p">()))</span>
-    <span class="n">get_layer</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">end_layer</span><span class="p">)</span><span class="o">.</span><span class="n">skip</span><span class="p">((</span><span class="n">skip_with</span><span class="p">,</span> <span class="n">DummyCache</span><span class="p">()))</span></div>
-
-
-
 <div class="viewcode-block" id="get_next_token_probs">
 <a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.get_next_token_probs">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_next_token_probs</span><span class="p">(</span><span class="n">nn_model</span><span class="p">:</span> <span class="n">LanguageModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TraceTensor</span><span class="p">:</span>
@@ -722,7 +678,13 @@
 <span class="sd">        layer: The layer to set the output of</span>
 <span class="sd">        tensor: The tensor to set the output of the layer to</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">get_layer</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="o">*</span><span class="n">get_layer_output</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span></div>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">get_layer</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">get_layer</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">tensor</span><span class="p">,</span>
+            <span class="o">*</span><span class="n">get_layer</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">get_layer</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">tensor</span></div>
 
 
 

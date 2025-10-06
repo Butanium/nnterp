@@ -185,15 +185,15 @@
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-utils.html">
-    NNsight Utils
+  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-best-practices.html">
-    NNsight Best Practices
+  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-utils.html">
+    NNsight Utils
   </a>
 </li>
 
@@ -344,15 +344,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../nnsight-utils.html">
-    NNsight Utils
+  <a class="nav-link nav-internal" href="../../nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../nnsight-best-practices.html">
-    NNsight Best Practices
+  <a class="nav-link nav-internal" href="../../nnsight-utils.html">
+    NNsight Utils
   </a>
 </li>
 
@@ -471,6 +471,7 @@
     <span class="n">TraceTensor</span><span class="p">,</span>
     <span class="n">DummyCache</span><span class="p">,</span>
     <span class="n">warn_about_status</span><span class="p">,</span>
+    <span class="n">try_with_scan</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.rename_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">IOType</span><span class="p">,</span>
@@ -479,11 +480,11 @@
     <span class="n">RenameConfig</span><span class="p">,</span>
     <span class="n">get_rename_dict</span><span class="p">,</span>
     <span class="n">get_ignores</span><span class="p">,</span>
-    <span class="n">mlp_returns_tuple</span><span class="p">,</span>
-    <span class="n">layer_returns_tuple</span><span class="p">,</span>
     <span class="n">check_model_renaming</span><span class="p">,</span>
     <span class="n">get_num_attention_heads</span><span class="p">,</span>
     <span class="n">get_hidden_size</span><span class="p">,</span>
+    <span class="n">RenamingError</span><span class="p">,</span>
+    <span class="n">get_vocab_size</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">GetLayerObject</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">],</span> <span class="n">TraceTensor</span><span class="p">]</span>
@@ -495,7 +496,7 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Renames the LanguageModel modules to match a standardized architecture.</span>
 
-<span class="sd">    The model structure is organized as follows:</span>
+<span class="sd">    The model structure is organized as follows::</span>
 
 <span class="sd">        StandardizedTransformer</span>
 <span class="sd">        ├── embed_tokens</span>
@@ -507,14 +508,15 @@
 
 <span class="sd">    In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:</span>
 
-<span class="sd">    - token_embeddings: Get/set token embeddings</span>
+<span class="sd">    - embed_tokens: Get embedding module</span>
+<span class="sd">    - token_embeddings: Get/set token embeddings (equivalent to embed_tokens.output)</span>
 <span class="sd">    - layers[i]: Get layer module at layer i</span>
 <span class="sd">    - layers_input[i]: Get/set layer input at layer i</span>
 <span class="sd">    - layers_output[i]: Get/set layer output at layer i</span>
-<span class="sd">    - attentions_output[i]: Get/set attention output at layer i</span>
 <span class="sd">    - attentions[i]: Get attention module at layer i</span>
-<span class="sd">    - mlps_output[i]: Get/set MLP output at layer i</span>
+<span class="sd">    - attentions_input[i] / attentions_output[i]: Get/set attention input/output at layer i</span>
 <span class="sd">    - mlps[i]: Get MLP module at layer i</span>
+<span class="sd">    - mlps_input[i] / mlps_output[i]: Get/set MLP input/output at layer i</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        repo_id (str): Hugging Face repository ID or path of the model to load.</span>
@@ -576,34 +578,23 @@
         <span class="n">ignores</span> <span class="o">=</span> <span class="n">get_ignores</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">)</span>
 
         <span class="c1"># Create accessor instances</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">layers_input</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">IOType</span><span class="o">.</span><span class="n">INPUT</span><span class="p">,</span> <span class="n">returns_tuple</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">layers_output</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span>
-            <span class="kc">None</span><span class="p">,</span>
-            <span class="n">IOType</span><span class="o">.</span><span class="n">OUTPUT</span><span class="p">,</span>
-            <span class="n">returns_tuple</span><span class="o">=</span><span class="n">layer_returns_tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">),</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers_input</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">IOType</span><span class="o">.</span><span class="n">INPUT</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers_output</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">IOType</span><span class="o">.</span><span class="n">OUTPUT</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">attentions</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;self_attn&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">attentions_input</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;self_attn&quot;</span><span class="p">,</span> <span class="n">IOType</span><span class="o">.</span><span class="n">INPUT</span><span class="p">,</span> <span class="n">returns_tuple</span><span class="o">=</span><span class="kc">False</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">attentions_output</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;self_attn&quot;</span><span class="p">,</span> <span class="n">IOType</span><span class="o">.</span><span class="n">OUTPUT</span><span class="p">,</span> <span class="n">returns_tuple</span><span class="o">=</span><span class="kc">True</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attentions_input</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;self_attn&quot;</span><span class="p">,</span> <span class="n">IOType</span><span class="o">.</span><span class="n">INPUT</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attentions_output</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;self_attn&quot;</span><span class="p">,</span> <span class="n">IOType</span><span class="o">.</span><span class="n">OUTPUT</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mlps</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;mlp&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mlps_input</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;mlp&quot;</span><span class="p">,</span> <span class="n">IOType</span><span class="o">.</span><span class="n">INPUT</span><span class="p">,</span> <span class="n">returns_tuple</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mlps_output</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span>
-            <span class="s2">&quot;mlp&quot;</span><span class="p">,</span>
-            <span class="n">IOType</span><span class="o">.</span><span class="n">OUTPUT</span><span class="p">,</span>
-            <span class="n">returns_tuple</span><span class="o">=</span><span class="n">mlp_returns_tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">),</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mlps_input</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;mlp&quot;</span><span class="p">,</span> <span class="n">IOType</span><span class="o">.</span><span class="n">INPUT</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mlps_output</span> <span class="o">=</span> <span class="n">LayerAccessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;mlp&quot;</span><span class="p">,</span> <span class="n">IOType</span><span class="o">.</span><span class="n">OUTPUT</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">=</span> <span class="n">get_num_attention_heads</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">raise_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">get_hidden_size</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">raise_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="n">get_vocab_size</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">raise_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span>
         <span class="p">)</span>
 
@@ -625,6 +616,24 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
         <span class="n">warn_about_status</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_prefix_false_tokenizer</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="StandardizedTransformer.detect_layer_output_type">
+<a class="viewcode-back" href="../../api.html#nnterp.standardized_transformer.StandardizedTransformer.detect_layer_output_type">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">detect_layer_output_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers_output</span><span class="o">.</span><span class="n">returns_tuple</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">test_layer_0</span><span class="p">():</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">try_with_scan</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="n">test_layer_0</span><span class="p">,</span>
+                <span class="n">RenamingError</span><span class="p">(</span>
+                    <span class="s2">&quot;Unable to access layer outputs. This may indicate an unsupported model architecture.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">warn_if_scan_fails</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">add_prefix_false_tokenizer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PreTrainedTokenizerBase</span><span class="p">:</span>
@@ -691,7 +700,11 @@
 <div class="viewcode-block" id="StandardizedTransformer.skip_layers">
 <a class="viewcode-back" href="../../api.html#nnterp.standardized_transformer.StandardizedTransformer.skip_layers">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">skip_layers</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">start_layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">end_layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">skip_with</span><span class="p">:</span> <span class="n">TraceTensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">start_layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">end_layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">skip_with</span><span class="p">:</span> <span class="n">TraceTensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">layer_returns_tuple</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Skip all layers between start_layer and end_layer (inclusive).</span>
@@ -699,12 +712,25 @@
 <span class="sd">        Args:</span>
 <span class="sd">            start_layer: The layer to start skipping from</span>
 <span class="sd">            end_layer: The layer to stop skipping at (inclusive)</span>
-<span class="sd">            skip_with: The input to skip the layers with. If None, the input of start_layer is used.</span>
+<span class="sd">            skip_with: The tensor to skip the layers with, will be passed as the output of the layers. If None, the input of start_layer is used.</span>
+<span class="sd">            layer_returns_tuple: Whether the layer output is a tuple. Doesn&#39;t need to be provided if the model&#39;s renaming has been validated or if you ran model.detect_layer_output_type() already.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">layer_returns_tuple</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">layer_returns_tuple</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers_output</span><span class="o">.</span><span class="n">returns_tuple</span>
+        <span class="k">if</span> <span class="n">layer_returns_tuple</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Please run `model.detect_layer_output_type()` before skipping layers or provide the layer_returns_tuple argument.&quot;</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="n">skip_with</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">skip_with</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers_input</span><span class="p">[</span><span class="n">start_layer</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">layer_returns_tuple</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">skip_with</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">skip_with</span> <span class="o">=</span> <span class="p">(</span><span class="n">skip_with</span><span class="p">,</span> <span class="n">DummyCache</span><span class="p">())</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">layer_returns_tuple</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">skip_with</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Skipping layer with a tuple while the layer output is not a tuple. This may cause unexpected behavior.&quot;</span>
+            <span class="p">)</span>
         <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_layer</span><span class="p">,</span> <span class="n">end_layer</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">skip</span><span class="p">((</span><span class="n">skip_with</span><span class="p">,</span> <span class="n">DummyCache</span><span class="p">()))</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="n">skip_with</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="StandardizedTransformer.steer">
@@ -764,11 +790,13 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the top-k closest tokens to the hidden state h.</span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            h: The hidden state to project on the vocabulary. Shape (batch_size, hidden_size) or (hidden_size,).</span>
 <span class="sd">            k: The number of top tokens to return.</span>
 <span class="sd">            returns_df: If True, returns a DataFrame instead of a dictionary. Note that you need to have pandas installed for this to work.</span>
 <span class="sd">                Pandas is included in ``pip install nnterp[display]``.</span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary mapping tokens to their probabilities if h is 1D, or a list of dictionaries if h is 2D.</span>
 <span class="sd">        &quot;&quot;&quot;</span>

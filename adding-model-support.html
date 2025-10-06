@@ -188,15 +188,15 @@
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="nnsight-utils.html">
-    NNsight Utils
+  <a class="nav-link dropdown-item nav-internal" href="nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="nnsight-best-practices.html">
-    NNsight Best Practices
+  <a class="nav-link dropdown-item nav-internal" href="nnsight-utils.html">
+    NNsight Utils
   </a>
 </li>
 
@@ -349,15 +349,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="nnsight-utils.html">
-    NNsight Utils
+  <a class="nav-link nav-internal" href="nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="nnsight-best-practices.html">
-    NNsight Best Practices
+  <a class="nav-link nav-internal" href="nnsight-utils.html">
+    NNsight Utils
   </a>
 </li>
 
@@ -465,7 +465,8 @@
 <h2>Understanding the Target Structure<a class="headerlink" href="#understanding-the-target-structure" title="Link to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">nnterp</span></code> expects models to follow this structure:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>StandardizedTransformer
-├── model.layers[i]
+├── embed_tokens
+├── layers[i]
 │   ├── self_attn
 │   └── mlp
 ├── ln_final
@@ -473,22 +474,32 @@
 </pre></div>
 </div>
 <p>All models are automatically renamed to match this pattern using built-in mappings for common architectures.</p>
+<p>In addition to these renamed modules, <code class="docutils literal notranslate"><span class="pre">nnterp</span></code> provides convenient accessors:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">embed_tokens</span></code>: Embedding module</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">token_embeddings</span></code>: Token embeddings (equivalent to <code class="docutils literal notranslate"><span class="pre">embed_tokens.output</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">layers[i]</span></code>: Layer module at layer i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">layers_input[i]</span></code>, <code class="docutils literal notranslate"><span class="pre">layers_output[i]</span></code>: Layer input/output at layer i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">attentions[i]</span></code>: Attention module at layer i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">attentions_input[i]</span></code>, <code class="docutils literal notranslate"><span class="pre">attentions_output[i]</span></code>: Attention input/output at layer i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mlps[i]</span></code>: MLP module at layer i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mlps_input[i]</span></code>, <code class="docutils literal notranslate"><span class="pre">mlps_output[i]</span></code>: MLP input/output at layer i</p></li>
+</ul>
 </section>
 <section id="basic-renameconfig-usage">
 <h2>Basic RenameConfig Usage<a class="headerlink" href="#basic-renameconfig-usage" title="Link to this heading">#</a></h2>
-<p>When automatic renaming fails, create a custom <code class="docutils literal notranslate"><span class="pre">RenameConfig</span></code>:</p>
+<p>When automatic renaming fails, create a custom <code class="docutils literal notranslate"><span class="pre">RenameConfig</span></code> by specifying the names of modules in YOUR model that correspond to each standardized component:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardizedTransformer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nnterp.rename_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">RenameConfig</span>
 
 <span class="c1"># Hypothetical model with custom naming</span>
 <span class="n">rename_config</span> <span class="o">=</span> <span class="n">RenameConfig</span><span class="p">(</span>
-    <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;custom_transformer&quot;</span><span class="p">,</span>           <span class="c1"># Maps to &quot;model&quot;</span>
-    <span class="n">layers_name</span><span class="o">=</span><span class="s2">&quot;custom_layers&quot;</span><span class="p">,</span>               <span class="c1"># Maps to &quot;layers&quot;</span>
-    <span class="n">attn_name</span><span class="o">=</span><span class="s2">&quot;custom_attention&quot;</span><span class="p">,</span>              <span class="c1"># Maps to &quot;self_attn&quot;</span>
-    <span class="n">mlp_name</span><span class="o">=</span><span class="s2">&quot;custom_ffn&quot;</span><span class="p">,</span>                     <span class="c1"># Maps to &quot;mlp&quot;</span>
-    <span class="n">ln_final_name</span><span class="o">=</span><span class="s2">&quot;custom_norm&quot;</span><span class="p">,</span>               <span class="c1"># Maps to &quot;ln_final&quot;</span>
-    <span class="n">lm_head_name</span><span class="o">=</span><span class="s2">&quot;custom_head&quot;</span><span class="p">,</span>                <span class="c1"># Maps to &quot;lm_head&quot;</span>
-    <span class="n">mlp_returns_tuple</span><span class="o">=</span><span class="kc">True</span>                     <span class="c1"># Some models, mostly MoE, have mlps that return tuples where the first element is the d_model output of the MLP</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;custom_transformer&quot;</span><span class="p">,</span>           <span class="c1"># Name of your model&#39;s main module</span>
+    <span class="n">layers_name</span><span class="o">=</span><span class="s2">&quot;custom_layers&quot;</span><span class="p">,</span>               <span class="c1"># Name of your model&#39;s layer list</span>
+    <span class="n">attn_name</span><span class="o">=</span><span class="s2">&quot;custom_attention&quot;</span><span class="p">,</span>              <span class="c1"># Name of your model&#39;s attention modules</span>
+    <span class="n">mlp_name</span><span class="o">=</span><span class="s2">&quot;custom_ffn&quot;</span><span class="p">,</span>                     <span class="c1"># Name of your model&#39;s MLP modules</span>
+    <span class="n">ln_final_name</span><span class="o">=</span><span class="s2">&quot;custom_norm&quot;</span><span class="p">,</span>               <span class="c1"># Name of your model&#39;s final layer norm</span>
+    <span class="n">lm_head_name</span><span class="o">=</span><span class="s2">&quot;custom_head&quot;</span>                 <span class="c1"># Name of your model&#39;s language modeling head</span>
 <span class="p">)</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">StandardizedTransformer</span><span class="p">(</span>
@@ -497,13 +508,14 @@
 <span class="p">)</span>
 </pre></div>
 </div>
+<p>Each parameter specifies what YOUR model calls the component that will be renamed to the standard name (e.g., <code class="docutils literal notranslate"><span class="pre">layers_name=&quot;custom_layers&quot;</span></code> means your model has a module called “custom_layers” that will be accessible as “layers”).</p>
 </section>
 <section id="path-based-renaming">
 <h2>Path-Based Renaming<a class="headerlink" href="#path-based-renaming" title="Link to this heading">#</a></h2>
-<p>For nested modules, use dot notation to specify the full path:</p>
+<p>For nested modules, use dot notation to specify the full path from the model root:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rename_config</span> <span class="o">=</span> <span class="n">RenameConfig</span><span class="p">(</span>
-    <span class="n">layers_name</span><span class="o">=</span><span class="s2">&quot;.custom_transformer.encoder_layers&quot;</span><span class="p">,</span>
-    <span class="n">ln_final_name</span><span class="o">=</span><span class="s2">&quot;.custom_transformer.final_norm&quot;</span>
+    <span class="n">layers_name</span><span class="o">=</span><span class="s2">&quot;custom_transformer.encoder_layers&quot;</span><span class="p">,</span>
+    <span class="n">ln_final_name</span><span class="o">=</span><span class="s2">&quot;custom_transformer.final_norm&quot;</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -588,7 +600,7 @@
 </dd>
 <dt><strong>“Attention probabilities test failed”</strong></dt><dd><p>Either disable attention probabilities or implement <code class="docutils literal notranslate"><span class="pre">AttnProbFunction</span></code></p>
 </dd>
-<dt><strong>Shape mismatches</strong></dt><dd><p>Check if your model’s MLP returns tuples: <code class="docutils literal notranslate"><span class="pre">mlp_returns_tuple=True</span></code></p>
+<dt><strong>Shape mismatches</strong></dt><dd><p>nnterp automatically detects and unwraps tuple outputs from modules during initialization</p>
 </dd>
 </dl>
 </section>

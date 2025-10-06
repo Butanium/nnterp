@@ -51,7 +51,7 @@
     <link rel="canonical" href="https://butanium.github.io/nnterp/api.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="NNsight Best Practices" href="nnsight-best-practices.html" />
+    <link rel="prev" title="NNsight Utils" href="nnsight-utils.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -187,15 +187,15 @@
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="nnsight-utils.html">
-    NNsight Utils
+  <a class="nav-link dropdown-item nav-internal" href="nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="nnsight-best-practices.html">
-    NNsight Best Practices
+  <a class="nav-link dropdown-item nav-internal" href="nnsight-utils.html">
+    NNsight Utils
   </a>
 </li>
 
@@ -348,15 +348,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="nnsight-utils.html">
-    NNsight Utils
+  <a class="nav-link nav-internal" href="nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="nnsight-best-practices.html">
-    NNsight Best Practices
+  <a class="nav-link nav-internal" href="nnsight-utils.html">
+    NNsight Utils
   </a>
 </li>
 
@@ -467,25 +467,26 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">LanguageModel</span></code></p>
 <p>Renames the LanguageModel modules to match a standardized architecture.</p>
 <p>The model structure is organized as follows:</p>
-<blockquote>
-<div><p>StandardizedTransformer
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>StandardizedTransformer
 ├── embed_tokens
 ├── layers
 │   ├── self_attn
 │   └── mlp
 ├── ln_final
-└── lm_head</p>
-</div></blockquote>
+└── lm_head
+</pre></div>
+</div>
 <p>In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:</p>
 <ul class="simple">
-<li><p>token_embeddings: Get/set token embeddings</p></li>
+<li><p>embed_tokens: Get embedding module</p></li>
+<li><p>token_embeddings: Get/set token embeddings (equivalent to embed_tokens.output)</p></li>
 <li><p>layers[i]: Get layer module at layer i</p></li>
 <li><p>layers_input[i]: Get/set layer input at layer i</p></li>
 <li><p>layers_output[i]: Get/set layer output at layer i</p></li>
-<li><p>attentions_output[i]: Get/set attention output at layer i</p></li>
 <li><p>attentions[i]: Get attention module at layer i</p></li>
-<li><p>mlps_output[i]: Get/set MLP output at layer i</p></li>
+<li><p>attentions_input[i] / attentions_output[i]: Get/set attention input/output at layer i</p></li>
 <li><p>mlps[i]: Get MLP module at layer i</p></li>
+<li><p>mlps_input[i] / mlps_output[i]: Get/set MLP input/output at layer i</p></li>
 </ul>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -504,6 +505,11 @@ if you plan to use the model remotely.</p></li>
 </ul>
 </dd>
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.detect_layer_output_type">
+<span class="sig-name descname"><span class="pre">detect_layer_output_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/standardized_transformer.html#StandardizedTransformer.detect_layer_output_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.detect_layer_output_type" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.add_prefix_false_tokenizer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_prefix_false_tokenizer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PreTrainedTokenizerBase</span></em><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.add_prefix_false_tokenizer" title="Link to this definition">#</a></dt>
@@ -566,14 +572,15 @@ Assumes padding_side is “left”.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.skip_layers">
-<span class="sig-name descname"><span class="pre">skip_layers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_with</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/standardized_transformer.html#StandardizedTransformer.skip_layers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.skip_layers" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">skip_layers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_with</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_returns_tuple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/standardized_transformer.html#StandardizedTransformer.skip_layers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.skip_layers" title="Link to this definition">#</a></dt>
 <dd><p>Skip all layers between start_layer and end_layer (inclusive).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>start_layer</strong> (<em>int</em>) – The layer to start skipping from</p></li>
 <li><p><strong>end_layer</strong> (<em>int</em>) – The layer to stop skipping at (inclusive)</p></li>
-<li><p><strong>skip_with</strong> (<em>Tensor</em><em> | </em><em>Object</em><em> | </em><em>None</em>) – The input to skip the layers with. If None, the input of start_layer is used.</p></li>
+<li><p><strong>skip_with</strong> (<em>Tensor</em><em> | </em><em>Object</em><em> | </em><em>None</em>) – The tensor to skip the layers with, will be passed as the output of the layers. If None, the input of start_layer is used.</p></li>
+<li><p><strong>layer_returns_tuple</strong> (<em>bool</em><em> | </em><em>None</em>) – Whether the layer output is a tuple. Doesn’t need to be provided if the model’s renaming has been validated or if you ran model.detect_layer_output_type() already.</p></li>
 </ul>
 </dd>
 </dl>
@@ -629,19 +636,19 @@ Assumes padding_side is “left”.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.get_topk_closest_tokens">
 <span class="sig-name descname"><span class="pre">get_topk_closest_tokens</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hidden_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/standardized_transformer.html#StandardizedTransformer.get_topk_closest_tokens"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.get_topk_closest_tokens" title="Link to this definition">#</a></dt>
-<dd><p>Get the top-k closest tokens to the hidden state h.
-:param h: The hidden state to project on the vocabulary. Shape (batch_size, hidden_size) or (hidden_size,).
-:param k: The number of top tokens to return.
-:param returns_df: If True, returns a DataFrame instead of a dictionary. Note that you need to have pandas installed for this to work.</p>
-<blockquote>
-<div><p>Pandas is included in <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">nnterp[display]</span></code>.</p>
-</div></blockquote>
+<dd><p>Get the top-k closest tokens to the hidden state h.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>A dictionary mapping tokens to their probabilities if h is 1D, or a list of dictionaries if h is 2D.</p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>h</strong> – The hidden state to project on the vocabulary. Shape (batch_size, hidden_size) or (hidden_size,).</p></li>
+<li><p><strong>k</strong> – The number of top tokens to return.</p></li>
+<li><p><strong>returns_df</strong> – If True, returns a DataFrame instead of a dictionary. Note that you need to have pandas installed for this to work.
+Pandas is included in <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">nnterp[display]</span></code>.</p></li>
+<li><p><strong>hidden_state</strong> (<em>Tensor</em>)</p></li>
+</ul>
 </dd>
-<dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>hidden_state</strong> (<em>Tensor</em>)</p>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary mapping tokens to their probabilities if h is 1D, or a list of dictionaries if h is 2D.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>dict[str, float] | list[dict[str, float]]</p>
@@ -1043,8 +1050,46 @@ While hacky, it is still guaranteed to work correctly or raise an error.</p></li
 </dd></dl>
 
 </section>
-<section id="nnterp-display-module">
-<h2>nnterp.display module<a class="headerlink" href="#nnterp-display-module" title="Link to this heading">#</a></h2>
+<section id="module-nnterp.display">
+<span id="nnterp-display-module"></span><h2>nnterp.display module<a class="headerlink" href="#module-nnterp.display" title="Link to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="nnterp.display.plot_topk_tokens">
+<span class="sig-name descname"><span class="pre">plot_topk_tokens</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">next_token_probs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_token_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_html</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">400</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/display.html#plot_topk_tokens"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.display.plot_topk_tokens" title="Link to this definition">#</a></dt>
+<dd><p>Plot the top k tokens for each layer using Plotly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>next_token_probs</strong> (<em>th.Tensor</em>) – Probability tensor of shape (batch_size, num_layers, vocab_size) or (num_layers, vocab_size) or (vocab_size,)</p></li>
+<li><p><strong>tokenizer</strong> – Tokenizer object</p></li>
+<li><p><strong>k</strong> (<em>int</em>) – Number of top tokens to plot</p></li>
+<li><p><strong>title</strong> (<em>str</em>) – Title of the plot</p></li>
+<li><p><strong>use_token_ids</strong> (<em>bool</em>) – If True, use token IDs instead of token strings</p></li>
+<li><p><strong>file</strong> (<em>str</em><em>, </em><em>optional</em>) – File path to save the plot</p></li>
+<li><p><strong>save_html</strong> (<em>bool</em>) – If True, save an HTML file along with the image</p></li>
+<li><p><strong>height</strong> (<em>int</em>)</p></li>
+<li><p><strong>width</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Plotly figure object</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>go.Figure</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnterp.display.prompts_to_df">
+<span class="sig-name descname"><span class="pre">prompts_to_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/display.html#prompts_to_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.display.prompts_to_df" title="Link to this definition">#</a></dt>
+<dd><p>Convert a list of prompts to a pandas DataFrame, visualizing the target tokens and strings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompts</strong> (<em>list</em><em>[</em><a class="reference internal" href="#nnterp.prompt_utils.Prompt" title="nnterp.prompt_utils.Prompt"><em>Prompt</em></a><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="module-nnterp.nnsight_utils">
 <span id="nnterp-nnsight-utils-module"></span><h2>nnterp.nnsight_utils module<a class="headerlink" href="#module-nnterp.nnsight_utils" title="Link to this heading">#</a></h2>
@@ -1124,7 +1169,7 @@ While hacky, it is still guaranteed to work correctly or raise an error.</p></li
 <dl class="py function">
 <dt class="sig sig-object py" id="nnterp.nnsight_utils.get_layer_output">
 <span class="sig-name descname"><span class="pre">get_layer_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#get_layer_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.get_layer_output" title="Link to this definition">#</a></dt>
-<dd><p>Get the output of a layer
+<dd><p>Get the residual stream after the layer
 :param nn_model: The NNSight model
 :param layer: The layer to get the output of</p>
 <dl class="field-list simple">
@@ -1293,44 +1338,6 @@ While hacky, it is still guaranteed to work correctly or raise an error.</p></li
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><em>Tensor</em> | <em>Object</em></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="nnterp.nnsight_utils.skip_layer">
-<span class="sig-name descname"><span class="pre">skip_layer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_with</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#skip_layer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.skip_layer" title="Link to this definition">#</a></dt>
-<dd><p>Skip the computation of a layer. If skip_with is None, the input of the layer is used as its output.
-:param nn_model: The NNSight model
-:param layer: The layer to skip
-:param skip_with: The input to skip the layer with. If None, the input of the layer is used.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>nn_model</strong> (<em>LanguageModel</em>)</p></li>
-<li><p><strong>layer</strong> (<em>int</em>)</p></li>
-<li><p><strong>skip_with</strong> (<em>Tensor</em><em> | </em><em>Object</em><em> | </em><em>None</em>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="nnterp.nnsight_utils.skip_layers">
-<span class="sig-name descname"><span class="pre">skip_layers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_with</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#skip_layers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.skip_layers" title="Link to this definition">#</a></dt>
-<dd><p>Skip all layers between start_layer and end_layer (inclusive). Equivalent to:
-<code class="docutils literal notranslate"><span class="pre">`py</span>
-<span class="pre">set_layer_output(nn_model,</span> <span class="pre">end_layer,</span> <span class="pre">get_layer_input(nn_model,</span> <span class="pre">start_layer))</span>
-<span class="pre">`</span></code>
-But skip the useless computa</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>nn_model</strong> (<em>LanguageModel</em>) – The NNSight model</p></li>
-<li><p><strong>start_layer</strong> (<em>int</em>) – The layer to start skipping from</p></li>
-<li><p><strong>end_layer</strong> (<em>int</em>) – The layer to stop skipping at</p></li>
-<li><p><strong>skip_with</strong> (<em>Tensor</em><em> | </em><em>Object</em><em> | </em><em>None</em>)</p></li>
-</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -1563,6 +1570,19 @@ Logs a warning if the model is partially or not available.</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="nnterp.utils.unpack_tuple">
+<span class="sig-name descname"><span class="pre">unpack_tuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor_or_tuple</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/utils.html#unpack_tuple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.utils.unpack_tuple" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>tensor_or_tuple</strong> (<em>Tensor</em><em> | </em><em>Object</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Tensor</em> | <em>Object</em></p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="module-nnterp.rename_utils">
 <span id="nnterp-rename-utils-module"></span><h2>nnterp.rename_utils module<a class="headerlink" href="#module-nnterp.rename_utils" title="Link to this heading">#</a></h2>
@@ -1593,7 +1613,7 @@ return the full module source from where the attention probabilities are compute
 
 <dl class="py class">
 <dt class="sig sig-object py" id="nnterp.rename_utils.RenameConfig">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RenameConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attn_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ln_final_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lm_head_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layers_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_returns_tuple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_returns_tuple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attn_prob_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mlp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_attn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attn_head_config_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_size_config_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#RenameConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.RenameConfig" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RenameConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attn_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ln_final_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lm_head_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layers_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attn_prob_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mlp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_attn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attn_head_config_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_size_config_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vocab_size_config_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#RenameConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.RenameConfig" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Configuration for renaming transformer model modules to standardized names.</p>
 <p>This dataclass specifies how to map model-specific module names to standardized names
@@ -1607,10 +1627,6 @@ used by nnterp. It allows customization for different transformer architectures.
 <li><p><strong>lm_head_name</strong> (<em>str</em><em> or </em><em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Name(s) of the language model head to rename to ‘lm_head’.</p></li>
 <li><p><strong>model_name</strong> (<em>str</em><em> or </em><em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Name(s) of the main model container to rename to ‘model’.</p></li>
 <li><p><strong>layers_name</strong> (<em>str</em><em> or </em><em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Name(s) of the transformer layers container to rename to ‘layers’.</p></li>
-<li><p><strong>mlp_returns_tuple</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether the MLP module returns a tuple instead of a single tensor.
-Some architectures (e.g., Mixtral, Qwen2MoE, DBRX) return tuples from MLP.</p></li>
-<li><p><strong>layer_returns_tuple</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether the layer module returns a tuple instead of a single tensor.
-Since transformers 4.54, Llama layers don’t return a tuple anymore.</p></li>
 <li><p><strong>attn_prob_source</strong> (<a class="reference internal" href="#nnterp.rename_utils.AttnProbFunction" title="nnterp.rename_utils.AttnProbFunction"><em>AttnProbFunction</em></a><em>, </em><em>optional</em>) – Custom function for accessing attention probabilities.
 Should be an instance of AttnProbFunction that defines how to extract
 attention weights from the attention module.</p></li>
@@ -1624,6 +1640,9 @@ or the number of heads directly. Defaults to standard keys:
 <li><p><strong>hidden_size_config_key</strong> (<em>str</em><em>, </em><em>list</em><em> of </em><em>str</em><em>, or </em><em>int</em><em>, </em><em>optional</em>) – Custom key name for hidden size in model config,
 or the hidden size directly. Defaults to standard keys:
 [‘hidden_size’, ‘d_model’, ‘n_embd’].</p></li>
+<li><p><strong>vocab_size_config_key</strong> (<em>str</em><em>, </em><em>list</em><em> of </em><em>str</em><em>, or </em><em>int</em><em>, </em><em>optional</em>) – Custom key name for vocab size in model config,
+or the vocab size directly. Defaults to standard keys:
+[‘vocab_size’, ‘n_vocab’, ‘text_config.vocab_size’].</p></li>
 </ul>
 </dd>
 </dl>
@@ -1631,8 +1650,7 @@ or the hidden size directly. Defaults to standard keys:
 <p>Custom configuration for a non-standard architecture:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">config</span> <span class="o">=</span> <span class="n">RenameConfig</span><span class="p">(</span>
     <span class="n">attn_name</span><span class="o">=</span><span class="s2">&quot;custom_attention&quot;</span><span class="p">,</span>
-    <span class="n">mlp_name</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;feed_forward&quot;</span><span class="p">,</span> <span class="s2">&quot;ffn&quot;</span><span class="p">],</span>
-    <span class="n">mlp_returns_tuple</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">mlp_name</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;feed_forward&quot;</span><span class="p">,</span> <span class="s2">&quot;ffn&quot;</span><span class="p">]</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -1667,16 +1685,6 @@ or the hidden size directly. Defaults to standard keys:
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="nnterp.rename_utils.RenameConfig.mlp_returns_tuple">
-<span class="sig-name descname"><span class="pre">mlp_returns_tuple</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#nnterp.rename_utils.RenameConfig.mlp_returns_tuple" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="nnterp.rename_utils.RenameConfig.layer_returns_tuple">
-<span class="sig-name descname"><span class="pre">layer_returns_tuple</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#nnterp.rename_utils.RenameConfig.layer_returns_tuple" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
 <dt class="sig sig-object py" id="nnterp.rename_utils.RenameConfig.attn_prob_source">
 <span class="sig-name descname"><span class="pre">attn_prob_source</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#nnterp.rename_utils.AttnProbFunction" title="nnterp.rename_utils.AttnProbFunction"><span class="pre">AttnProbFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#nnterp.rename_utils.RenameConfig.attn_prob_source" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -1701,7 +1709,40 @@ or the hidden size directly. Defaults to standard keys:
 <span class="sig-name descname"><span class="pre">hidden_size_config_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#nnterp.rename_utils.RenameConfig.hidden_size_config_key" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnterp.rename_utils.RenameConfig.vocab_size_config_key">
+<span class="sig-name descname"><span class="pre">vocab_size_config_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#nnterp.rename_utils.RenameConfig.vocab_size_config_key" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnterp.rename_utils.expand_path_with_model">
+<span class="sig-name descname"><span class="pre">expand_path_with_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#expand_path_with_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.expand_path_with_model" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>paths</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnterp.rename_utils.default_attn_head_config_keys">
+<span class="sig-name descname"><span class="pre">default_attn_head_config_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#default_attn_head_config_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.default_attn_head_config_keys" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnterp.rename_utils.default_hidden_size_config_keys">
+<span class="sig-name descname"><span class="pre">default_hidden_size_config_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#default_hidden_size_config_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.default_hidden_size_config_keys" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nnterp.rename_utils.default_vocab_size_config_keys">
+<span class="sig-name descname"><span class="pre">default_vocab_size_config_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#default_vocab_size_config_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.default_vocab_size_config_keys" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nnterp.rename_utils.get_rename_dict">
@@ -1753,6 +1794,22 @@ or the hidden size directly. Defaults to standard keys:
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="nnterp.rename_utils.get_vocab_size">
+<span class="sig-name descname"><span class="pre">get_vocab_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rename_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#get_vocab_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.get_vocab_size" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>raise_error</strong> (<em>bool</em>)</p></li>
+<li><p><strong>rename_config</strong> (<a class="reference internal" href="#nnterp.rename_utils.RenameConfig" title="nnterp.rename_utils.RenameConfig"><em>RenameConfig</em></a><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int | None</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="nnterp.rename_utils.IOType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IOType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#IOType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.IOType" title="Link to this definition">#</a></dt>
@@ -1772,7 +1829,7 @@ or the hidden size directly. Defaults to standard keys:
 
 <dl class="py class">
 <dt class="sig sig-object py" id="nnterp.rename_utils.LayerAccessor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">LayerAccessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">io_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">returns_tuple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#LayerAccessor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.LayerAccessor" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">LayerAccessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">io_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#LayerAccessor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.LayerAccessor" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>I/O accessor that provides input/output access with setter</p>
 <dl class="field-list simple">
@@ -1780,7 +1837,6 @@ or the hidden size directly. Defaults to standard keys:
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>attr_name</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
 <li><p><strong>io_type</strong> (<a class="reference internal" href="#nnterp.rename_utils.IOType" title="nnterp.rename_utils.IOType"><em>IOType</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>returns_tuple</strong> (<em>bool</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1795,6 +1851,13 @@ or the hidden size directly. Defaults to standard keys:
 <dd class="field-even"><p><em>Envoy</em></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="nnterp.rename_utils.LayerAccessor.returns_tuple">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">returns_tuple</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#nnterp.rename_utils.LayerAccessor.returns_tuple" title="Link to this definition">#</a></dt>
+<dd><p>Returns whether the layer output is a tuple.
+Returns None if the tuple status has not been detected yet.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1896,39 +1959,13 @@ or the hidden size directly. Defaults to standard keys:
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="nnterp.rename_utils.mlp_returns_tuple">
-<span class="sig-name descname"><span class="pre">mlp_returns_tuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rename_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#mlp_returns_tuple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.mlp_returns_tuple" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>rename_config</strong> (<a class="reference internal" href="#nnterp.rename_utils.RenameConfig" title="nnterp.rename_utils.RenameConfig"><em>RenameConfig</em></a><em> | </em><em>None</em>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="nnterp.rename_utils.layer_returns_tuple">
-<span class="sig-name descname"><span class="pre">layer_returns_tuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rename_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#layer_returns_tuple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.layer_returns_tuple" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>rename_config</strong> (<a class="reference internal" href="#nnterp.rename_utils.RenameConfig" title="nnterp.rename_utils.RenameConfig"><em>RenameConfig</em></a><em> | </em><em>None</em>)</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="nnterp.rename_utils.check_io">
 <span class="sig-name descname"><span class="pre">check_io</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">std_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignores</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#check_io"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.check_io" title="Link to this definition">#</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>model_name</strong> (<em>str</em>)</p></li>
-<li><p><strong>ignores</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>ignores</strong> (<em>list</em><em>[</em><em>Literal</em><em>[</em><em>'mlp'</em><em>, </em><em>'attention'</em><em>]</em><em>]</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1941,7 +1978,7 @@ or the hidden size directly. Defaults to standard keys:
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>model_name</strong> (<em>str</em>)</p></li>
-<li><p><strong>ignores</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>ignores</strong> (<em>list</em><em>[</em><em>Literal</em><em>[</em><em>'mlp'</em><em>, </em><em>'attention'</em><em>]</em><em>]</em>)</p></li>
 <li><p><strong>allow_dispatch</strong> (<em>bool</em>)</p></li>
 </ul>
 </dd>
@@ -1977,6 +2014,7 @@ or the hidden size directly. Defaults to standard keys:
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Documentation</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-nnterp.standardized_transformer">nnterp.standardized_transformer module</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.detect_layer_output_type"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.detect_layer_output_type()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.add_prefix_false_tokenizer"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.add_prefix_false_tokenizer</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.attn_probs_available"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.attn_probs_available</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.input_ids"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.input_ids</span></code></a></li>
@@ -2035,7 +2073,11 @@ or the hidden size directly. Defaults to standard keys:
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.prompt_utils.run_prompts"><code class="docutils literal notranslate"><span class="pre">run_prompts()</span></code></a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp-display-module">nnterp.display module</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-nnterp.display">nnterp.display module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.display.plot_topk_tokens"><code class="docutils literal notranslate"><span class="pre">plot_topk_tokens()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.display.prompts_to_df"><code class="docutils literal notranslate"><span class="pre">prompts_to_df()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-nnterp.nnsight_utils">nnterp.nnsight_utils module</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_layers"><code class="docutils literal notranslate"><span class="pre">get_layers()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_num_layers"><code class="docutils literal notranslate"><span class="pre">get_num_layers()</span></code></a></li>
@@ -2050,8 +2092,6 @@ or the hidden size directly. Defaults to standard keys:
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_unembed_norm"><code class="docutils literal notranslate"><span class="pre">get_unembed_norm()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_unembed"><code class="docutils literal notranslate"><span class="pre">get_unembed()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.project_on_vocab"><code class="docutils literal notranslate"><span class="pre">project_on_vocab()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.skip_layer"><code class="docutils literal notranslate"><span class="pre">skip_layer()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.skip_layers"><code class="docutils literal notranslate"><span class="pre">skip_layers()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_next_token_probs"><code class="docutils literal notranslate"><span class="pre">get_next_token_probs()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.set_layer_output"><code class="docutils literal notranslate"><span class="pre">set_layer_output()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_token_activations"><code class="docutils literal notranslate"><span class="pre">get_token_activations()</span></code></a></li>
@@ -2075,6 +2115,7 @@ or the hidden size directly. Defaults to standard keys:
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.utils.dummy_inputs"><code class="docutils literal notranslate"><span class="pre">dummy_inputs()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.utils.try_with_scan"><code class="docutils literal notranslate"><span class="pre">try_with_scan()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.utils.warn_about_status"><code class="docutils literal notranslate"><span class="pre">warn_about_status()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.utils.unpack_tuple"><code class="docutils literal notranslate"><span class="pre">unpack_tuple()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-nnterp.rename_utils">nnterp.rename_utils module</a><ul class="nav section-nav flex-column">
@@ -2090,19 +2131,23 @@ or the hidden size directly. Defaults to standard keys:
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.RenameConfig.lm_head_name"><code class="docutils literal notranslate"><span class="pre">RenameConfig.lm_head_name</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.RenameConfig.model_name"><code class="docutils literal notranslate"><span class="pre">RenameConfig.model_name</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.RenameConfig.layers_name"><code class="docutils literal notranslate"><span class="pre">RenameConfig.layers_name</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.RenameConfig.mlp_returns_tuple"><code class="docutils literal notranslate"><span class="pre">RenameConfig.mlp_returns_tuple</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.RenameConfig.layer_returns_tuple"><code class="docutils literal notranslate"><span class="pre">RenameConfig.layer_returns_tuple</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.RenameConfig.attn_prob_source"><code class="docutils literal notranslate"><span class="pre">RenameConfig.attn_prob_source</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.RenameConfig.ignore_mlp"><code class="docutils literal notranslate"><span class="pre">RenameConfig.ignore_mlp</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.RenameConfig.ignore_attn"><code class="docutils literal notranslate"><span class="pre">RenameConfig.ignore_attn</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.RenameConfig.attn_head_config_key"><code class="docutils literal notranslate"><span class="pre">RenameConfig.attn_head_config_key</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.RenameConfig.hidden_size_config_key"><code class="docutils literal notranslate"><span class="pre">RenameConfig.hidden_size_config_key</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.RenameConfig.vocab_size_config_key"><code class="docutils literal notranslate"><span class="pre">RenameConfig.vocab_size_config_key</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.expand_path_with_model"><code class="docutils literal notranslate"><span class="pre">expand_path_with_model()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.default_attn_head_config_keys"><code class="docutils literal notranslate"><span class="pre">default_attn_head_config_keys()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.default_hidden_size_config_keys"><code class="docutils literal notranslate"><span class="pre">default_hidden_size_config_keys()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.default_vocab_size_config_keys"><code class="docutils literal notranslate"><span class="pre">default_vocab_size_config_keys()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.get_rename_dict"><code class="docutils literal notranslate"><span class="pre">get_rename_dict()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.text_config"><code class="docutils literal notranslate"><span class="pre">text_config()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.get_num_attention_heads"><code class="docutils literal notranslate"><span class="pre">get_num_attention_heads()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.get_hidden_size"><code class="docutils literal notranslate"><span class="pre">get_hidden_size()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.get_vocab_size"><code class="docutils literal notranslate"><span class="pre">get_vocab_size()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.IOType"><code class="docutils literal notranslate"><span class="pre">IOType</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.IOType.INPUT"><code class="docutils literal notranslate"><span class="pre">IOType.INPUT</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.IOType.OUTPUT"><code class="docutils literal notranslate"><span class="pre">IOType.OUTPUT</span></code></a></li>
@@ -2110,6 +2155,7 @@ or the hidden size directly. Defaults to standard keys:
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.LayerAccessor"><code class="docutils literal notranslate"><span class="pre">LayerAccessor</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.LayerAccessor.get_module"><code class="docutils literal notranslate"><span class="pre">LayerAccessor.get_module()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.LayerAccessor.returns_tuple"><code class="docutils literal notranslate"><span class="pre">LayerAccessor.returns_tuple</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.bloom_attention_prob_source"><code class="docutils literal notranslate"><span class="pre">bloom_attention_prob_source()</span></code></a></li>
@@ -2123,8 +2169,6 @@ or the hidden size directly. Defaults to standard keys:
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.get_ignores"><code class="docutils literal notranslate"><span class="pre">get_ignores()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.mlp_returns_tuple"><code class="docutils literal notranslate"><span class="pre">mlp_returns_tuple()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.layer_returns_tuple"><code class="docutils literal notranslate"><span class="pre">layer_returns_tuple()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.check_io"><code class="docutils literal notranslate"><span class="pre">check_io()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.rename_utils.check_model_renaming"><code class="docutils literal notranslate"><span class="pre">check_model_renaming()</span></code></a></li>
 </ul>

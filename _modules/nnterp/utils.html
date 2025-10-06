@@ -185,15 +185,15 @@
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-utils.html">
-    NNsight Utils
+  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-best-practices.html">
-    NNsight Best Practices
+  <a class="nav-link dropdown-item nav-internal" href="../../nnsight-utils.html">
+    NNsight Utils
   </a>
 </li>
 
@@ -344,15 +344,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../nnsight-utils.html">
-    NNsight Utils
+  <a class="nav-link nav-internal" href="../../nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../nnsight-best-practices.html">
-    NNsight Best Practices
+  <a class="nav-link nav-internal" href="../../nnsight-utils.html">
+    NNsight Utils
   </a>
 </li>
 
@@ -787,7 +787,7 @@
         <span class="k">return</span>
 
     <span class="k">if</span> <span class="p">(</span>
-        <span class="n">class_name</span> <span class="ow">in</span> <span class="n">CLASS_STATUS</span><span class="p">[</span><span class="s2">&quot;no_probs_available_models&quot;</span><span class="p">]</span>
+        <span class="n">class_name</span> <span class="ow">in</span> <span class="n">CLASS_STATUS</span><span class="p">[</span><span class="s2">&quot;no_attn_probs_available_models&quot;</span><span class="p">]</span>
         <span class="ow">and</span> <span class="n">model</span><span class="o">.</span><span class="n">attn_probs_available</span><span class="p">()</span>
     <span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
@@ -805,6 +805,15 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">class_name</span><span class="si">}</span><span class="s2"> failed some tests using `nnterp.interventions`. Use interventions at your own risk. You can also run `python -m nnterp run_tests --class-names </span><span class="si">{</span><span class="n">class_name</span><span class="si">}</span><span class="s2"> -k test_interventions` to have more information on the failures.&quot;</span>
         <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="unpack_tuple">
+<a class="viewcode-back" href="../../api.html#nnterp.utils.unpack_tuple">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">unpack_tuple</span><span class="p">(</span><span class="n">tensor_or_tuple</span><span class="p">:</span> <span class="n">TraceTensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TraceTensor</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tensor_or_tuple</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tensor_or_tuple</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">tensor_or_tuple</span></div>
 
 </pre></div>
 

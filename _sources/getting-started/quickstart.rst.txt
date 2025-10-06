@@ -58,5 +58,3 @@ Next Steps
 
 - :doc:`../basic-usage` - Learn the unified interface and module access
 - :doc:`../interventions` - Logit lens, patchscope, and steering methods
-- :doc:`../advanced-features` - Attention analysis, prompts, and visualization
-- :doc:`../nnsight-utils` - Use utility functions with raw NNsight models

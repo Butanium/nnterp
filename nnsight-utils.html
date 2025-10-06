@@ -51,8 +51,8 @@
     <link rel="canonical" href="https://butanium.github.io/nnterp/nnsight-utils.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="NNsight Best Practices" href="nnsight-best-practices.html" />
-    <link rel="prev" title="Advanced Features" href="advanced-features.html" />
+    <link rel="next" title="Documentation" href="api.html" />
+    <link rel="prev" title="NNsight Best Practices" href="nnsight-best-practices.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -187,16 +187,16 @@
 </li>
 
 
-<li class=" current active">
-  <a class="nav-link dropdown-item nav-internal" href="#">
-    NNsight Utils
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="nnsight-best-practices.html">
-    NNsight Best Practices
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
+    NNsight Utils
   </a>
 </li>
 
@@ -348,16 +348,16 @@
 </li>
 
 
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
-    NNsight Utils
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="nnsight-best-practices.html">
+    NNsight Best Practices
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="nnsight-best-practices.html">
-    NNsight Best Practices
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    NNsight Utils
   </a>
 </li>
 
@@ -460,14 +460,14 @@
                   
   <section id="nnsight-utils">
 <h1>NNsight Utils<a class="headerlink" href="#nnsight-utils" title="Link to this heading">#</a></h1>
-<p>You can use <code class="docutils literal notranslate"><span class="pre">nnterp</span></code> utility functions with regular nnsight models, as long as they use llama or gemma naming conventions.</p>
+<p><code class="docutils literal notranslate"><span class="pre">nnsight_utils</span></code> provides some utility functions to collect activations along with some of the <code class="docutils literal notranslate"><span class="pre">StandardizedTransformer</span></code> utility functions usable with regular nnsight models, as long as they use llama or gemma naming conventions. However, for using those <code class="docutils literal notranslate"><span class="pre">StandardizedTransformer</span></code> functions, we recommend using <code class="docutils literal notranslate"><span class="pre">StandardizedTransformer</span></code> directly, as it is much more robust.</p>
 <section id="setup">
 <h2>Setup<a class="headerlink" href="#setup" title="Link to this heading">#</a></h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnsight</span><span class="w"> </span><span class="kn">import</span> <span class="n">LanguageModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nnterp.nnsight_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">get_layer_output</span><span class="p">,</span> <span class="n">get_attention_output</span><span class="p">,</span> <span class="n">get_mlp_output</span><span class="p">,</span>
     <span class="n">get_token_activations</span><span class="p">,</span> <span class="n">collect_token_activations_batched</span><span class="p">,</span>
-    <span class="n">project_on_vocab</span><span class="p">,</span> <span class="n">skip_layers</span>
+    <span class="n">project_on_vocab</span>
 <span class="p">)</span>
 
 <span class="c1"># Load model with proper renaming</span>
@@ -495,14 +495,6 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;The capital of France is&quot;</span><span class="p">):</span>
     <span class="n">hidden</span> <span class="o">=</span> <span class="n">get_layer_output</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
     <span class="n">logits</span> <span class="o">=</span> <span class="n">project_on_vocab</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">hidden</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="skip-layers">
-<h2>Skip Layers<a class="headerlink" href="#skip-layers" title="Link to this heading">#</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;Hello world&quot;</span><span class="p">):</span>
-    <span class="c1"># Skip layers 2-5</span>
-    <span class="n">skip_layers</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -564,7 +556,6 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#setup">Setup</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#layer-access">Layer Access</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#projection-and-utilities">Projection and Utilities</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skip-layers">Skip Layers</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#activation-collection">Activation Collection</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#requirements">Requirements</a></li>
 </ul>
