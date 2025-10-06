@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Literal
 from enum import Enum
 from loguru import logger
-from packaging import version
 
 import torch as th
 from nnsight import Envoy
@@ -89,6 +88,11 @@ class RenameConfig:
         or the hidden size directly. Defaults to standard keys:
         ['hidden_size', 'd_model', 'n_embd'].
 
+    vocab_size_config_key : str, list of str, or int, optional
+        Custom key name for vocab size in model config,
+        or the vocab size directly. Defaults to standard keys:
+        ['vocab_size', 'n_vocab', 'text_config.vocab_size'].
+
     Example
     -------
     Custom configuration for a non-standard architecture::
@@ -111,6 +115,7 @@ class RenameConfig:
     ignore_attn: bool | None = None
     attn_head_config_key: str | list[str] | int | None = None
     hidden_size_config_key: str | list[str] | int | None = None
+    vocab_size_config_key: str | list[str] | int | None = None
 
 
 MODEL_NAMES = ["transformer", "gpt_neox", "decoder", "language_model"]
@@ -129,8 +134,17 @@ def expand_path_with_model(paths: list[str]) -> list[str]:
 
 
 # Configuration keys for getting the number of attention heads and hidden size
-ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head", "num_heads"]
-HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
+def default_attn_head_config_keys():
+    return ["n_heads", "num_attention_heads", "n_head", "num_heads"]
+
+
+def default_hidden_size_config_keys():
+    return ["hidden_size", "d_model", "n_embd"]
+
+
+def default_vocab_size_config_keys():
+    return ["vocab_size", "n_vocab"]
+
 
 # Models with no mlp module
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
@@ -210,7 +224,7 @@ def get_num_attention_heads(
     model, raise_error: bool = True, rename_config: RenameConfig | None = None
 ) -> int | None:
     cfg = text_config(model)
-    attn_cfg_keys = ATTN_HEAD_CONFIG_KEYS
+    attn_cfg_keys = default_attn_head_config_keys()
     if rename_config is not None and rename_config.attn_head_config_key is not None:
         if isinstance(rename_config.attn_head_config_key, str):
             attn_cfg_keys.append(rename_config.attn_head_config_key)
@@ -234,7 +248,7 @@ def get_hidden_size(
     model, raise_error: bool = True, rename_config: RenameConfig | None = None
 ) -> int | None:
     cfg = text_config(model)
-    hidden_size_keys = HIDDEN_SIZE_CONFIG_KEYS
+    hidden_size_keys = default_hidden_size_config_keys()
     if rename_config is not None and rename_config.hidden_size_config_key is not None:
         if isinstance(rename_config.hidden_size_config_key, str):
             hidden_size_keys.append(rename_config.hidden_size_config_key)
@@ -257,6 +271,27 @@ def get_hidden_size(
             "You should pass the number of attention heads as an integer or look at the config and pass the key in the attn_head_config_key argument of a RenameConfig."
         )
     return None
+
+
+def get_vocab_size(
+    model, raise_error: bool = True, rename_config: RenameConfig | None = None
+) -> int | None:
+    cfg = text_config(model)
+    vocab_size_keys = default_vocab_size_config_keys()
+    if rename_config is not None and rename_config.vocab_size_config_key is not None:
+        if isinstance(rename_config.vocab_size_config_key, str):
+            vocab_size_keys.append(rename_config.vocab_size_config_key)
+        elif isinstance(rename_config.vocab_size_config_key, list):
+            vocab_size_keys.extend(rename_config.vocab_size_config_key)
+        elif isinstance(rename_config.vocab_size_config_key, int):
+            return rename_config.vocab_size_config_key
+    for vocab_size_key in vocab_size_keys:
+        if vocab_size_key in cfg:
+            return getattr(cfg, vocab_size_key)
+    if raise_error:
+        raise ValueError(f"No vocab size config key found in {model}")
+    else:
+        return None
 
 
 class IOType(Enum):
@@ -600,6 +635,33 @@ def check_io(std_model, model_name: str, ignores: list[IgnoreType]):
         raise ValueError(
             f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
         )
+    ln_final_out = std_model.ln_final.output
+    if not isinstance(ln_final_out, th.Tensor):
+        raise ValueError(
+            f"ln_final.output is not a tensor in {model_name} architecture. Found type {type(ln_final_out)}. This means it's not properly initialized."
+        )
+    if ln_final_out.shape != (batch_size, seq_len, hidden_size):
+        raise ValueError(
+            f"ln_final.output has shape {ln_final_out.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
+        )
+    lm_head_out = std_model.lm_head.output
+    if not isinstance(lm_head_out, th.Tensor):
+        raise ValueError(
+            f"lm_head.output is not a tensor in {model_name} architecture. Found type {type(lm_head_out)}. This means it's not properly initialized."
+        )
+    if std_model.vocab_size is None:
+        logger.warning(
+            f"Couldn't find vocab_size in {model_name} config. Couldn't properly test the shape of lm_head.output."
+        )
+        if lm_head_out.dim() != 3 or lm_head_out.shape[:-1] != (batch_size, seq_len):
+            raise ValueError(
+                f"lm_head.output has shape {lm_head_out.shape} != ({batch_size}, { seq_len}, <vocab_size>) in {model_name} architecture. This means it's not properly initialized."
+            )
+    else:
+        if lm_head_out.shape != (batch_size, seq_len, std_model.vocab_size):
+            raise ValueError(
+                f"lm_head.output has shape {lm_head_out.shape} != {(batch_size, seq_len, std_model.vocab_size)} in {model_name} architecture. This means it's not properly initialized."
+            )
 
 
 def check_model_renaming(

@@ -25,6 +25,7 @@ from .rename_utils import (
     get_num_attention_heads,
     get_hidden_size,
     RenamingError,
+    get_vocab_size,
 )
 
 GetLayerObject = Callable[[int], TraceTensor]
@@ -130,6 +131,9 @@ class StandardizedTransformer(LanguageModel):
             self._model, raise_error=False, rename_config=rename_config
         )
         self.hidden_size = get_hidden_size(
+            self._model, raise_error=False, rename_config=rename_config
+        )
+        self.vocab_size = get_vocab_size(
             self._model, raise_error=False, rename_config=rename_config
         )
 
