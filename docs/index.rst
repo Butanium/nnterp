@@ -40,7 +40,6 @@ Quick example:
    :maxdepth: 1
    :caption: Getting Started:
 
-   getting-started/installation
    getting-started/quickstart
 
 .. toctree::
