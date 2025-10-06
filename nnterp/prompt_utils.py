@@ -36,7 +36,13 @@ def get_first_tokens(
     if isinstance(words, str):
         words = [words]
     if isinstance(llm_or_tokenizer, StandardizedTransformer):
-        tokenizer = llm_or_tokenizer.add_prefix_false_tokenizer
+        try:
+            tokenizer = llm_or_tokenizer.add_prefix_false_tokenizer
+        except Exception as e:
+            logger.warning(
+                f"Error getting model.add_prefix_false_tokenizer, using model.tokenizer instead:\n{e}"
+            )
+            tokenizer = llm_or_tokenizer.tokenizer
     elif isinstance(llm_or_tokenizer, LanguageModel):
         tokenizer = llm_or_tokenizer.tokenizer
     else:
