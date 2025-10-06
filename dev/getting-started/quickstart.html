@@ -52,7 +52,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Basic Usage" href="../basic-usage.html" />
-    <link rel="prev" title="Installation" href="installation.html" />
+    <link rel="prev" title="nnterp - NNsight wrapper for Large Language Models" href="../index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -131,13 +131,6 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="installation.html">
-    Installation
-  </a>
-</li>
-
-
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
     Quick Start
@@ -165,6 +158,13 @@
   </a>
 </li>
 
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../adding-model-support.html">
+    Adding Support for Your Model
+  </a>
+</li>
+
             <li class="nav-item dropdown">
                 <button class="btn dropdown-toggle nav-item" type="button"
                 data-bs-toggle="dropdown" aria-expanded="false"
@@ -173,13 +173,6 @@
                 </button>
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../adding-model-support.html">
-    Adding Support for Your Model
-  </a>
-</li>
-
-
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="../advanced-features.html">
     Advanced Features
@@ -299,13 +292,6 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="installation.html">
-    Installation
-  </a>
-</li>
-
-
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
     Quick Start
@@ -461,16 +447,24 @@
   <section id="quick-start">
 <h1>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading">#</a></h1>
 <p>This guide gets you up and running with <code class="docutils literal notranslate"><span class="pre">nnterp</span></code> in 5 minutes.</p>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h2>
+<p>Basic Installation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>nnterp
+</pre></div>
+</div>
+<p>For visualization:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>nnterp<span class="o">[</span>display<span class="o">]</span>
+</pre></div>
+</div>
+</section>
 <section id="your-first-model">
 <h2>Your First Model<a class="headerlink" href="#your-first-model" title="Link to this heading">#</a></h2>
 <p>Load any transformer model with a unified interface:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardizedTransformer</span>
 
-<span class="c1"># Load any model - they all work the same way</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">StandardizedTransformer</span><span class="p">(</span><span class="s2">&quot;gpt2&quot;</span><span class="p">)</span>  <span class="c1"># or &quot;meta-llama/Llama-2-7b-hf&quot;, etc.</span>
-
-<span class="c1"># Models use device_map=&quot;auto&quot; by default</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model loaded on: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">StandardizedTransformer</span><span class="p">(</span><span class="s2">&quot;Maykeye/TinyLLama-v0&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✓ nnterp working!&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -537,6 +531,7 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#your-first-model">Your First Model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-activation-access">Basic Activation Access</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#direct-assignment">Direct Assignment</a></li>
