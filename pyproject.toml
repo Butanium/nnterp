@@ -25,39 +25,13 @@ dependencies = [
 [project.optional-dependencies]
 display = ["plotly", "pandas"]
 
-docs = [
-    "sphinx-rtd-theme>=2.0.0",
-    "sphinx-autodoc-typehints>=1.25.0",
-    "myst-parser>=2.0.0",
-    "sphinx-copybutton",
-    "pydata-sphinx-theme",
-    "sphinx-design",
-    "nbsphinx",
-]
 
-dev = [
-    "sphinx>=7.2.0",
-    "sphinx-rtd-theme>=2.0.0",
-    "sphinx-autodoc-typehints>=1.25.0",
-    "myst-parser>=2.0.0",
-    "sphinx-copybutton",
-    "pydata-sphinx-theme",
-    "sphinx-design",
-    "nbsphinx",
-    "pytest",
-    "ipykernel",
-    "ipywidgets",
-    "pre-commit",
-    "black[jupyter]",
-    "jupytext",
-    "build",
-    "ruff",
-]
 llms = [
     "pillow",
     "timm",
     "flash-attn; sys_platform != 'win32'",
     "hf_xet",
+    "sentencepiece",
 ]
     
 vllm = [
@@ -68,7 +42,35 @@ vllm = [
 
 [dependency-groups]
 dev = [
+    "filelock>=3.19.1",
     "pytest-cov>=6.2.1",
+    "pytest-xdist>=3.8.0",
+    "sphinx>=7.2.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-autodoc-typehints>=1.25.0",
+    "myst-parser>=2.0.0",
+    "sphinx-copybutton",
+    "pydata-sphinx-theme",
+    "sphinx-design",
+    "nbsphinx",
+    "pytest>=7.0",
+    "ipykernel",
+    "ipywidgets",
+    "pre-commit",
+    "black[jupyter]",
+    "jupytext",
+    "build",
+    "ruff",
+]
+
+docs = [
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-autodoc-typehints>=1.25.0",
+    "myst-parser>=2.0.0",
+    "sphinx-copybutton",
+    "pydata-sphinx-theme",
+    "sphinx-design",
+    "nbsphinx",
 ]
 
 [tool.setuptools]

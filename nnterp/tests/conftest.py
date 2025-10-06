@@ -254,8 +254,17 @@ def pytest_testnodedown(node, error):
     Aggregates test results from worker nodes into the master process.
     This runs on the master node when a worker finishes.
     """
-    config = node.config
+    if not hasattr(node, 'workeroutput'):
+        # If worker crashed (error != None), workeroutput won't exist - that's expected
+        # pytest-xdist already handles the crash, so we just skip merging
+        worker_id = getattr(node, 'gateway', {}).id if hasattr(node, 'gateway') else 'unknown'
+        if error is not None:
+            logger.error(f"Worker {worker_id} crashed (error should be reported by pytest-xdist):\n{error}")
+            return
+        # If no error but workeroutput missing, that's unexpected - fail loud
+        raise RuntimeError(f"Worker {worker_id} finished without error but workeroutput is missing")
     
+    config = node.config
     # Get the lock to safely merge worker data
     lock = config.stash[stash_lock_key]
     
@@ -311,6 +320,19 @@ def pytest_sessionfinish(session, exitstatus):
         )
         return
 
+    # pytest-xdist: If this is a worker node, serialize data and send to master
+    if hasattr(config, "workerinput"):
+        # This is a worker - send our collected data to the master
+        config.workeroutput["tested_models"] = dict(config.stash[tested_models_key])
+        config.workeroutput["failure_categories"] = {
+            cat_name: dict(cat_data)
+            for cat_name, cat_data in config.stash[failure_categories_key].items()
+        }
+        config.workeroutput["errors"] = dict(config.stash[errors_key])
+        config.workeroutput["skips"] = dict(config.stash[skips_key])
+        return  # Workers don't write files - only the master does
+
+    # If we get here, we're the master process (or running without xdist)
     is_full_run = config.stash[is_full_run_key]
     has_deselected = config.stash[has_deselected_key]
     is_model_specific = config.stash[is_model_specific_key]
