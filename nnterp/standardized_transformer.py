@@ -309,11 +309,13 @@ class StandardizedTransformer(LanguageModel):
     ) -> dict[str, float] | list[dict[str, float]]:
         """
         Get the top-k closest tokens to the hidden state h.
+
         Args:
             h: The hidden state to project on the vocabulary. Shape (batch_size, hidden_size) or (hidden_size,).
             k: The number of top tokens to return.
             returns_df: If True, returns a DataFrame instead of a dictionary. Note that you need to have pandas installed for this to work.
                 Pandas is included in ``pip install nnterp[display]``.
+
         Returns:
             A dictionary mapping tokens to their probabilities if h is 1D, or a list of dictionaries if h is 2D.
         """

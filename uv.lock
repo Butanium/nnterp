@@ -2777,44 +2777,9 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "black", extra = ["jupyter"] },
-    { name = "build" },
-    { name = "ipykernel" },
-    { name = "ipywidgets" },
-    { name = "jupytext" },
-    { name = "myst-parser", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "myst-parser", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "nbsphinx" },
-    { name = "pre-commit" },
-    { name = "pydata-sphinx-theme" },
-    { name = "pytest" },
-    { name = "ruff" },
-    { name = "sphinx", version = "7.4.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
-    { name = "sphinx", version = "8.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "sphinx-autodoc-typehints", version = "2.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "sphinx-autodoc-typehints", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
-    { name = "sphinx-autodoc-typehints", version = "3.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "sphinx-copybutton" },
-    { name = "sphinx-design" },
-    { name = "sphinx-rtd-theme" },
-]
 display = [
     { name = "pandas" },
     { name = "plotly" },
-]
-docs = [
-    { name = "myst-parser", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "myst-parser", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "nbsphinx" },
-    { name = "pydata-sphinx-theme" },
-    { name = "sphinx-autodoc-typehints", version = "2.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "sphinx-autodoc-typehints", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
-    { name = "sphinx-autodoc-typehints", version = "3.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "sphinx-copybutton" },
-    { name = "sphinx-design" },
-    { name = "sphinx-rtd-theme" },
 ]
 llms = [
     { name = "flash-attn", marker = "sys_platform != 'win32'" },
@@ -2829,55 +2794,94 @@ vllm = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "black", extra = ["jupyter"] },
+    { name = "build" },
     { name = "filelock" },
+    { name = "ipykernel" },
+    { name = "ipywidgets" },
+    { name = "jupytext" },
+    { name = "myst-parser", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "myst-parser", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "nbsphinx" },
+    { name = "pre-commit" },
+    { name = "pydata-sphinx-theme" },
+    { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
+    { name = "ruff" },
+    { name = "sphinx", version = "7.4.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "sphinx", version = "8.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "sphinx-autodoc-typehints", version = "2.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "sphinx-autodoc-typehints", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "sphinx-autodoc-typehints", version = "3.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "sphinx-copybutton" },
+    { name = "sphinx-design" },
+    { name = "sphinx-rtd-theme" },
+]
+docs = [
+    { name = "myst-parser", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "myst-parser", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "nbsphinx" },
+    { name = "pydata-sphinx-theme" },
+    { name = "sphinx", version = "7.4.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "sphinx", version = "8.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "sphinx-autodoc-typehints", version = "2.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "sphinx-autodoc-typehints", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "sphinx-autodoc-typehints", version = "3.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "sphinx-copybutton" },
+    { name = "sphinx-design" },
+    { name = "sphinx-rtd-theme" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "black", extras = ["jupyter"], marker = "extra == 'dev'" },
-    { name = "build", marker = "extra == 'dev'" },
     { name = "flash-attn", marker = "sys_platform != 'win32' and extra == 'llms'" },
     { name = "hf-xet", marker = "extra == 'llms'" },
-    { name = "ipykernel", marker = "extra == 'dev'" },
-    { name = "ipywidgets", marker = "extra == 'dev'" },
-    { name = "jupytext", marker = "extra == 'dev'" },
     { name = "loguru", specifier = ">=0.7.3" },
-    { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=2.0.0" },
-    { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=2.0.0" },
-    { name = "nbsphinx", marker = "extra == 'dev'" },
-    { name = "nbsphinx", marker = "extra == 'docs'" },
     { name = "nnsight", specifier = ">=0.5" },
     { name = "pandas", marker = "extra == 'display'" },
     { name = "pillow", marker = "extra == 'llms'" },
     { name = "plotly", marker = "extra == 'display'" },
-    { name = "pre-commit", marker = "extra == 'dev'" },
-    { name = "pydata-sphinx-theme", marker = "extra == 'dev'" },
-    { name = "pydata-sphinx-theme", marker = "extra == 'docs'" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
-    { name = "ruff", marker = "extra == 'dev'" },
     { name = "sentencepiece", marker = "extra == 'llms'" },
-    { name = "sphinx", marker = "extra == 'dev'", specifier = ">=7.2.0" },
-    { name = "sphinx-autodoc-typehints", marker = "extra == 'dev'", specifier = ">=1.25.0" },
-    { name = "sphinx-autodoc-typehints", marker = "extra == 'docs'", specifier = ">=1.25.0" },
-    { name = "sphinx-copybutton", marker = "extra == 'dev'" },
-    { name = "sphinx-copybutton", marker = "extra == 'docs'" },
-    { name = "sphinx-design", marker = "extra == 'dev'" },
-    { name = "sphinx-design", marker = "extra == 'docs'" },
-    { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=2.0.0" },
-    { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=2.0.0" },
     { name = "timm", marker = "extra == 'llms'" },
     { name = "transformers" },
     { name = "vllm", marker = "extra == 'vllm'" },
 ]
-provides-extras = ["display", "docs", "dev", "llms", "vllm"]
+provides-extras = ["display", "llms", "vllm"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "black", extras = ["jupyter"] },
+    { name = "build" },
     { name = "filelock", specifier = ">=3.19.1" },
+    { name = "ipykernel" },
+    { name = "ipywidgets" },
+    { name = "jupytext" },
+    { name = "myst-parser", specifier = ">=2.0.0" },
+    { name = "nbsphinx" },
+    { name = "pre-commit" },
+    { name = "pydata-sphinx-theme" },
+    { name = "pytest", specifier = ">=7.0" },
     { name = "pytest-cov", specifier = ">=6.2.1" },
     { name = "pytest-xdist", specifier = ">=3.8.0" },
+    { name = "ruff" },
+    { name = "sphinx", specifier = ">=7.2.0" },
+    { name = "sphinx-autodoc-typehints", specifier = ">=1.25.0" },
+    { name = "sphinx-copybutton" },
+    { name = "sphinx-design" },
+    { name = "sphinx-rtd-theme", specifier = ">=2.0.0" },
+]
+docs = [
+    { name = "myst-parser", specifier = ">=2.0.0" },
+    { name = "nbsphinx" },
+    { name = "pydata-sphinx-theme" },
+    { name = "sphinx", specifier = ">=7.2.0" },
+    { name = "sphinx-autodoc-typehints", specifier = ">=1.25.0" },
+    { name = "sphinx-copybutton" },
+    { name = "sphinx-design" },
+    { name = "sphinx-rtd-theme", specifier = ">=2.0.0" },
 ]
 
 [[package]]

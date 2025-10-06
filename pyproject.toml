@@ -46,7 +46,6 @@ dev = [
     "pytest-cov>=6.2.1",
     "pytest-xdist>=3.8.0",
     "sphinx>=7.2.0",
-    "sphinx-build",
     "sphinx-rtd-theme>=2.0.0",
     "sphinx-autodoc-typehints>=1.25.0",
     "myst-parser>=2.0.0",
@@ -66,7 +65,6 @@ dev = [
 
 docs = [
     "sphinx>=7.2.0",
-    "sphinx-build",
     "sphinx-rtd-theme>=2.0.0",
     "sphinx-autodoc-typehints>=1.25.0",
     "myst-parser>=2.0.0",
