@@ -14,6 +14,7 @@
 # The way it's implemented is based on the `NNsight` built-in renaming feature, to make all models look like the llama naming convention, without having to write `model.model`, namely:
 # ```ocaml
 # StandardizedTransformer
+# ├── embed_tokens
 # ├── layers
 # │   ├── self_attn
 # │   └── mlp
@@ -66,12 +67,21 @@ print(nnterp_gpt2.model.device)
 # With `NNsight`, the most robust way to set the residual stream after layer 1 to be the residual stream after layer 0 for a LLama-like model would be:
 
 # %%
+from transformers import __version__ as TRANSFORMERS_VERSION
+from packaging.version import parse
 llama = LanguageModel("Maykeye/TinyLLama-v0")
-with llama.trace("hello"):
-    llama.model.layers[1].output = (
-        llama.model.layers[0].output[0],
-        *llama.model.layers[1].output[1:],
-    )
+# code for transformer "<4.54"
+is_old_transformers = parse(TRANSFORMERS_VERSION) < parse("4.54")
+if is_old_transformers:
+    with llama.trace("hello"):
+        llama.model.layers[1].output = (
+            llama.model.layers[0].output[0],
+            *llama.model.layers[1].output[1:],
+        )
+else:
+    with llama.trace("hello"):
+        llama.model.layers[1].output = llama.model.layers[0].output
+
 
 # %% [markdown]
 # Note that the following can cause issues:
@@ -79,19 +89,24 @@ with llama.trace("hello"):
 # %%
 with llama.trace("hello"):
     # can't do this because .output is a tuple
-    # llama.model.layers[1].output[0] = llama.model.layers[0].output[0]
 
     # Can cause errors with gradient computation
-    llama.model.layers[1].output[0][:] = llama.model.layers[0].output[0]
+    if is_old_transformers:
+        # llama.model.layers[1].output[0] = llama.model.layers[0].output[0]
+        llama.model.layers[1].output[0][:] = llama.model.layers[0].output[0]
+    else:
+        llama.model.layers[1].output[:] = llama.model.layers[0].output
 
-with llama.trace("hello"):
-    # Can cause errors with opt if you do this at its last layer (thanks pytest)
-    llama.model.layers[1].output = (llama.model.layers[0].output[0],)
+if is_old_transformers:
+    with llama.trace("hello"):
+        # Can cause errors with opt if you do this at its last layer (thanks pytest)
+        llama.model.layers[1].output = (llama.model.layers[0].output[0],)
 
 # %% [markdown]
 # `nnterp` makes this much cleaner:
 
 # %%
+# the version of transformers does not matter, the tuple vs not tuple stuff is handled internally
 # First, you can access layer inputs and outputs directly:
 with nnterp_gpt2.trace("hello"):
     # Access layer 5's output
@@ -311,9 +326,9 @@ with nnterp_gpt2.trace("The weather is"):
 # %% [markdown]
 # You can use a combination of run_prompts and interventions to get the probabilities of certain tokens according to your custom intervention.
 # %%
-demo_model = StandardizedTransformer("google/gemma-2-2b")
-# uncomment if you don't have a GPU
-# demo_model = nnterp_gpt2
+demo_model = nnterp_gpt2
+# uncomment if you have a GPU for cooler results
+# demo_model = StandardizedTransformer("google/gemma-2-2b")
 
 prompts_str = [
     "The translation of 'car' in French is",
@@ -445,7 +460,7 @@ except Exception as e:
 from nnterp.rename_utils import RenameConfig
 
 rename_cfg = RenameConfig(
-    layers_name=".super_transformer.super_h",
+    layers_name="super_transformer.super_h",
     attn_name="super_attn",
     mlp_name="super_mlp",
 )
@@ -465,7 +480,7 @@ rename_cfg = RenameConfig(
     layers_name="super_h",
     attn_name="super_attn",
     mlp_name="super_mlp",
-    ln_final_name=".super_transformer.ln_f",
+    ln_final_name="super_transformer.ln_f",
 )
 from transformers import AutoConfig
 
@@ -703,11 +718,15 @@ print(
 #
 # `NNsight 0.5` introduces a builtin way to cache activations during the forward pass. Be careful not to call `tracer.stop()` before all the module of the cache have been accessed.
 #
-# NOTE: Currently the cache doesn't use the renamed names.
+# The cache supports both renamed and original module names. You can access cached activations using attribute notation or dictionary keys.
 
 # %%
 with nnterp_gpt2.trace("Hello") as tracer:
     cache = tracer.cache(modules=[layer for layer in nnterp_gpt2.layers[::2]]).save()
 
-print(cache.keys())
+# Access with renamed names using attribute notation
+print(cache.model.layers[10].output)
+# Or using dictionary syntax with renamed path
+print(cache["model.layers.10"].output)
+# Original names still work
 print(cache["model.transformer.h.10"].output)

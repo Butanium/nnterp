@@ -22,7 +22,7 @@ def test_logit_lens(model):
         result = logit_lens(model, prompts)
 
         # Should return (num_prompts, num_layers, vocab_size)
-        expected_shape = (len(prompts), get_num_layers(model), model.config.vocab_size)
+        expected_shape = (len(prompts), get_num_layers(model), model.vocab_size)
         assert result.shape == expected_shape
 
 
@@ -34,7 +34,7 @@ def test_logit_lens_single_prompt(model):
         result = logit_lens(model, prompt)
 
         # Should return (1, num_layers, vocab_size) for single prompt
-        expected_shape = (1, get_num_layers(model), model.config.vocab_size)
+        expected_shape = (1, get_num_layers(model), model.vocab_size)
         assert result.shape == expected_shape
 
 
@@ -60,7 +60,7 @@ def test_patchscope_lens(model):
         expected_shape = (
             len(source_prompts),
             get_num_layers(model),
-            model.config.vocab_size,
+            model.vocab_size,
         )
         assert result.shape == expected_shape
 
@@ -73,7 +73,7 @@ def test_patchscope_lens_custom_target(model):
 
         result = patchscope_lens(model, source_prompts, target_prompt)
 
-        expected_shape = (1, get_num_layers(model), model.config.vocab_size)
+        expected_shape = (1, get_num_layers(model), model.vocab_size)
         assert result.shape == expected_shape
 
 
@@ -81,7 +81,7 @@ def test_steer(model):
     """Test steering intervention doesn't crash."""
     with th.no_grad():
         prompt = "Hello world"
-        steering_vector = th.randn(model.config.hidden_size)
+        steering_vector = th.randn(model.hidden_size)
 
         # Test that we can run steering without errors
         with model.trace(prompt):
@@ -89,7 +89,7 @@ def test_steer(model):
             output = model.lm_head.output.save()
 
         # Just check it returns something reasonable
-        assert output.shape[-1] == model.config.vocab_size
+        assert output.shape[-1] == model.vocab_size
 
 
 def test_interventions_with_multiple_layers(model):
@@ -301,5 +301,5 @@ def test_patchscope_lens_with_latents(model):
             latents=latents,
         )
 
-        expected_shape = (1, len(test_layers), model.config.vocab_size)
+        expected_shape = (1, len(test_layers), model.vocab_size)
         assert result.shape == expected_shape
