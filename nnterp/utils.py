@@ -302,7 +302,7 @@ def warn_about_status(class_name: str, model, model_name: str):
         return
 
     if (
-        class_name in CLASS_STATUS["no_probs_available_models"]
+        class_name in CLASS_STATUS["no_attn_probs_available_models"]
         and model.attn_probs_available()
     ):
         logger.warning(
