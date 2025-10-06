@@ -5,6 +5,7 @@ import json
 from collections import defaultdict
 import importlib.resources
 from pathlib import Path
+import threading
 import time
 
 import pytest
@@ -24,12 +25,26 @@ from .utils import (
     NNSIGHT_VERSION,
     TRANSFORMERS_VERSION,
     LLAMA_LIKE_MODELS,
+    TEST_FILE_CATEGORIES,
     merge_partial_status,
     rm_empty_list,
     sort_json_recursively,
 )
 
 PROJECT_ROOT = Path(str(importlib.resources.files("nnterp")))
+
+# Define stash keys for custom test session data
+has_deselected_key = pytest.StashKey[bool]()
+errors_key = pytest.StashKey[defaultdict]()
+skips_key = pytest.StashKey[defaultdict]()
+failure_categories_key = pytest.StashKey[dict]()  # Dict of category_name -> defaultdict
+tested_models_key = pytest.StashKey[defaultdict]()
+is_model_specific_key = pytest.StashKey[bool]()
+is_full_run_key = pytest.StashKey[bool]()
+save_test_logs_key = pytest.StashKey[bool]()
+
+# Lock for thread-safe operations on shared data structures
+stash_lock_key = pytest.StashKey[threading.Lock]()
 
 
 def pytest_addoption(parser):
@@ -67,11 +82,14 @@ def pytest_generate_tests(metafunc):
                 all_models = get_available_models(model_names)
             if class_names is not None:
                 all_models += get_all_test_models(class_names)
+            
+            # Deduplicate and sort for deterministic test collection with pytest-xdist
+            all_models = sorted(set(all_models))
 
             if not all_models:
                 raise ValueError(f"No models available in NNsight from {model_names}")
             llama_like_models = get_available_models(
-                [m for m in LLAMA_LIKE_MODELS if m in all_models]
+                sorted([m for m in LLAMA_LIKE_MODELS if m in all_models])
             )
         else:
             all_models = get_all_available_models()
@@ -96,101 +114,208 @@ def pytest_generate_tests(metafunc):
 
 def pytest_configure(config):
     """Initialise per-session flags on the config object."""
-    config._has_deselected = False
-    config._errors = defaultdict(dict)
-    config._skips = defaultdict(dict)
-    config._fail_test_models = defaultdict(list)
-    config._fail_attn_probs_models = defaultdict(list)
-    config._fail_intervention_models = defaultdict(list)
-    config._fail_prompt_utils_models = defaultdict(list)
-    config._tested_models = defaultdict(list)
-    config._is_model_specific = (
+    # Warn if pytest-xdist is being used (not fully supported)
+    
+    config.stash[has_deselected_key] = False
+    config.stash[errors_key] = defaultdict(dict)
+    config.stash[skips_key] = defaultdict(dict)
+    config.stash[tested_models_key] = defaultdict(list)
+    
+    # Initialize lock for thread-safe operations
+    config.stash[stash_lock_key] = threading.Lock()
+
+    # Initialize failure categories dynamically from YAML config
+    # Always include "failed_test_models" as the default category
+    failure_categories = {"failed_test_models": defaultdict(list)}
+    for middle_part in TEST_FILE_CATEGORIES.keys():
+        category_name = f"failed_{middle_part}_models"
+        failure_categories[category_name] = defaultdict(list)
+    config.stash[failure_categories_key] = failure_categories
+
+    config.stash[is_model_specific_key] = (
         config.getoption("model_names", default=None) is not None
         or config.getoption("class_names", default=None) is not None
     )
-    config._is_full_run = (
+    config.stash[is_full_run_key] = (
         any(
             Path(p).resolve() == PROJECT_ROOT / "tests"
             for p in config.option.file_or_dir
         )
         or len(config.option.file_or_dir) == 0
     )
-    config._save_test_logs = config.getoption("save_test_logs", default=False)
+    config.stash[save_test_logs_key] = config.getoption("save_test_logs", default=False)
+
+
+def _extract_model_name(item):
+    """Extract model name from a parametrized test item."""
+    # Try to get from callspec params first (most reliable)
+    if hasattr(item, "callspec") and hasattr(item.callspec, "params"):
+        model_name = item.callspec.params.get("model_name")
+        if model_name:
+            return model_name
+    
+    # Fallback: parse from item name (e.g., "test_foo[model-name]")
+    if "[" in item.name and "]" in item.name:
+        try:
+            # Extract content between first [ and last ]
+            start = item.name.index("[")
+            end = item.name.rindex("]")
+            return item.name[start + 1 : end]
+        except (ValueError, IndexError):
+            pass
+    
+    return None
+
+
+def _categorize_test_failure(test_file_name, model_name, arch, config):
+    """Categorize test failure based on test file and update appropriate config list.
+    
+    Thread-safe: Uses lock to prevent race conditions in parallel execution.
+    Falls back to "failed_test_models" if test file not in any specific category.
+    """
+    lock = config.stash[stash_lock_key]
+    failure_categories = config.stash[failure_categories_key]
+
+    # Check if test file is in any specific category
+    for middle_part, test_files in TEST_FILE_CATEGORIES.items():
+        if test_file_name in test_files:
+            category_name = f"failed_{middle_part}_models"
+            with lock:
+                if model_name not in failure_categories[category_name][arch]:
+                    logger.warning(
+                        f"Model {model_name} failed test in {test_file_name} (category: {category_name})"
+                    )
+                    failure_categories[category_name][arch].append(model_name)
+            return
+
+    # Default category for general test failures
+    with lock:
+        if model_name not in failure_categories["failed_test_models"][arch]:
+            logger.warning(f"Model {model_name} failed a test")
+            failure_categories["failed_test_models"][arch].append(model_name)
 
 
 def pytest_runtest_makereport(item, call):
     if call.when != "call":
         return
 
-    model_name = None
-
-    if hasattr(item, "callspec") and hasattr(item.callspec, "params"):
-        model_name = item.callspec.params.get("model_name")
-
-    if not model_name and "[" in item.name:
-        model_name = item.name.split("[")[1].rstrip("]")
-
+    model_name = _extract_model_name(item)
     if not model_name:
         return
+
     config = item.session.config
     arch = get_arch(model_name)
-    if model_name not in config._tested_models[arch]:
-        config._tested_models[arch].append(model_name)
+    lock = config.stash[stash_lock_key]
+
+    # Thread-safe: Add to tested_models
+    tested_models = config.stash[tested_models_key]
+    with lock:
+        if model_name not in tested_models[arch]:
+            tested_models[arch].append(model_name)
 
     if call.excinfo is None:
         return
 
-    arch = get_arch(model_name)
     is_skip = call.excinfo.errisinstance(Skipped)
     formatted_tb = str(call.excinfo.getrepr(style="long", chain=True))
     error_message = call.excinfo.exconly()
-    if is_skip:
-        lst = config._skips[arch].setdefault(model_name, [])
-    else:
-        lst = config._errors[arch].setdefault(model_name, [])
-    lst.append(
-        {
-            "test_name": item.name,
-            "test_file": item.path.name,
-            "error": error_message,
-            "error_traceback": formatted_tb,
-            "timestamp": datetime.datetime.now().isoformat(),
-        }
-    )
 
-    if is_skip:
-        return
-    if item.path.name == "test_probabilities.py":
-        if model_name not in config._fail_attn_probs_models[arch]:
-            logger.warning(
-                f"Model {model_name} failed the attention probabilities test"
-            )
-            config._fail_attn_probs_models[arch].append(model_name)
-    elif item.path.name in ["test_interventions.py", "test_prompt_utils.py"]:
-        if model_name not in config._fail_intervention_models[arch]:
-            logger.warning(f"Model {model_name} failed the intervention test")
-            config._fail_intervention_models[arch].append(model_name)
-    elif model_name not in config._fail_test_models[arch]:
-        logger.warning(f"Model {model_name} failed a test")
-        config._fail_test_models[arch].append(model_name)
+    # Thread-safe: Add to errors or skips
+    with lock:
+        if is_skip:
+            lst = config.stash[skips_key][arch].setdefault(model_name, [])
+        else:
+            lst = config.stash[errors_key][arch].setdefault(model_name, [])
+
+        lst.append(
+            {
+                "test_name": item.name,
+                "test_file": item.path.name,
+                "error": error_message,
+                "error_traceback": formatted_tb,
+                "timestamp": datetime.datetime.now().isoformat(),
+            }
+        )
+
+    # Categorize failures (skip skipped tests)
+    if not is_skip:
+        _categorize_test_failure(item.path.name, model_name, arch, config)
 
 
 def pytest_deselected(items):
     if items:
-        items[0].session.config._has_deselected = True
+        items[0].session.config.stash[has_deselected_key] = True
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_testnodedown(node, error):
+    """Hook called when a pytest-xdist worker node finishes.
+    
+    Aggregates test results from worker nodes into the master process.
+    This runs on the master node when a worker finishes.
+    """
+    config = node.config
+    
+    # Get the lock to safely merge worker data
+    lock = config.stash[stash_lock_key]
+    
+    with lock:
+        # Merge tested_models
+        worker_tested = node.workeroutput.get("tested_models", {})
+        master_tested = config.stash[tested_models_key]
+        for arch, models in worker_tested.items():
+            if arch not in master_tested:
+                master_tested[arch] = []
+            for model in models:
+                if model not in master_tested[arch]:
+                    master_tested[arch].append(model)
+        
+        # Merge failure_categories
+        worker_failures = node.workeroutput.get("failure_categories", {})
+        master_failures = config.stash[failure_categories_key]
+        for cat_name, cat_data in worker_failures.items():
+            if cat_name not in master_failures:
+                master_failures[cat_name] = defaultdict(list)
+            for arch, models in cat_data.items():
+                for model in models:
+                    if model not in master_failures[cat_name][arch]:
+                        master_failures[cat_name][arch].append(model)
+        
+        # Merge errors
+        worker_errors = node.workeroutput.get("errors", {})
+        master_errors = config.stash[errors_key]
+        for arch, errors in worker_errors.items():
+            if arch not in master_errors:
+                master_errors[arch] = []
+            master_errors[arch].extend(errors)
+        
+        # Merge skips
+        worker_skips = node.workeroutput.get("skips", {})
+        master_skips = config.stash[skips_key]
+        for arch, skips in worker_skips.items():
+            if arch not in master_skips:
+                master_skips[arch] = []
+            master_skips[arch].extend(skips)
 
 
 def pytest_sessionfinish(session, exitstatus):
     """Hook called after whole test session finishes."""
     success = exitstatus <= 1
     config = session.config
-    if not hasattr(config, "_is_full_run"):
+
+    # Check if pytest_configure was called
+    if is_full_run_key not in config.stash:
         logger.warning(
             "pytest_sessionfinish called without pytest_configure. Skipping status update."
             "You probably called that with --lf"
         )
         return
-    is_partial = not config._is_full_run or config._has_deselected or not success
+
+    is_full_run = config.stash[is_full_run_key]
+    has_deselected = config.stash[has_deselected_key]
+    is_model_specific = config.stash[is_model_specific_key]
+    is_partial = not is_full_run or has_deselected or not success
+
     existing_data = {}
     if not is_partial:
         status_file = PROJECT_ROOT / "data" / "status.json"
@@ -205,34 +330,35 @@ def pytest_sessionfinish(session, exitstatus):
     try:
         new_status = _update_status(existing_data, config)
     except Exception as e:
-        if existing_data == {} or config._is_model_specific:
+        if existing_data == {} or is_model_specific:
             raise e
         logger.warning(f"Error updating status: {e}")
         new_status = _update_status({}, config)
 
     if not is_partial:
+        tested_models = config.stash[tested_models_key]
         with open(status_file, "w") as f:
             json.dump(new_status, f, indent=2)
         print(
-            f"\nModels tested during this session: {config._tested_models}, saving to {status_file}"
+            f"\nModels tested during this session: {tested_models}, saving to {status_file}"
         )
 
-    if config._save_test_logs:
+    if config.stash[save_test_logs_key]:
         log_folder = PROJECT_ROOT / "data" / "test_logs"
         log_folder.mkdir(exist_ok=True)
 
         file_name = str(int(time.time()))
-        if session.config._has_deselected:
+        if has_deselected:
             file_name += "_partial"
         log_entry_file = log_folder / f"{file_name}.json"
         print(f"Saving log entry to {log_entry_file}")
 
         log_entry = {
-            "is_full_run": session.config._is_full_run,
-            "has_deselected": session.config._has_deselected,
+            "is_full_run": is_full_run,
+            "has_deselected": has_deselected,
             "transformers_version": TRANSFORMERS_VERSION,
             "nnsight_version": NNSIGHT_VERSION,
-            "errors": dict(config._errors),
+            "errors": dict(config.stash[errors_key]),
             "status": new_status.get(TRANSFORMERS_VERSION, {}).get(NNSIGHT_VERSION, {}),
         }
 
@@ -246,74 +372,84 @@ def _update_status(prev_status: dict, config):
     )
     transformers_section = prev_status.setdefault(TRANSFORMERS_VERSION, {})
     prev_nnsight_status = transformers_section.get(NNSIGHT_VERSION, {})
-    config._tested_models = rm_empty_list(config._tested_models)
-    config._fail_test_models = rm_empty_list(config._fail_test_models)
-    config._fail_attn_probs_models = rm_empty_list(config._fail_attn_probs_models)
-    config._fail_intervention_models = rm_empty_list(config._fail_intervention_models)
-    config._fail_prompt_utils_models = rm_empty_list(config._fail_prompt_utils_models)
+
+    # Get data from stash
+    tested_models = rm_empty_list(config.stash[tested_models_key])
+    failure_categories = config.stash[failure_categories_key]
+
+    # Clean up failure categories
+    cleaned_categories = {}
+    for category_name, category_data in failure_categories.items():
+        cleaned_categories[category_name] = rm_empty_list(category_data)
+
     nnsight_unavailable_models = rm_empty_list(nnsight_unavailable_models)
+    is_model_specific = config.stash[is_model_specific_key]
+
+    # Build new status structure with all failure categories
     new_status = {
         "fully_available_models": {},
-        "no_probs_available_models": {},
-        "no_intervention_available_models": {},
-        "no_prompt_utils_available_models": {},
-        "failed_test_models": config._fail_test_models,
-        "failed_attn_probs_models": config._fail_attn_probs_models,
-        "failed_intervention_models": config._fail_intervention_models,
-        "failed_prompt_utils_models": config._fail_prompt_utils_models,
         "nnsight_unavailable_models": nnsight_unavailable_models,
-        "ran_tests_on": config._tested_models,
+        "ran_tests_on": tested_models,
     }
-    all_failed_tests_models = sum(config._fail_test_models.values(), [])
-    all_failed_attn_probs_models = sum(config._fail_attn_probs_models.values(), [])
-    all_failed_intervention_models = sum(config._fail_intervention_models.values(), [])
-    all_failed_prompt_utils_models = sum(config._fail_prompt_utils_models.values(), [])
+    
+    # Initialize availability keys for all specific categories dynamically
+    for middle_part in TEST_FILE_CATEGORIES.keys():
+        availability_key = f"no_{middle_part}_available_models"
+        new_status[availability_key] = {}
+
+    # Add all failure categories to status
+    for category_name, category_data in cleaned_categories.items():
+        new_status[category_name] = category_data
+
+    # Compute all failures
+    all_failed_tests_models = sum(
+        cleaned_categories.get("failed_test_models", {}).values(), []
+    )
     all_nnsight_unavailable_models = sum(nnsight_unavailable_models.values(), [])
     all_general_fails = set(all_failed_tests_models + all_nnsight_unavailable_models)
-    all_fails = (
-        all_general_fails
-        | set(all_failed_attn_probs_models)
-        | set(all_failed_intervention_models)
-        | set(all_failed_prompt_utils_models)
-    )
-    for model_class in config._tested_models:
-        fully_available = set(config._tested_models[model_class]) - all_fails
+
+    # Collect all specific category failures (excluding default/general test failures)
+    all_specific_fails = set()
+    for category_name, category_data in cleaned_categories.items():
+        if category_name != "failed_test_models":
+            all_specific_fails |= set(sum(category_data.values(), []))
+
+    all_fails = all_general_fails | all_specific_fails
+
+    # Compute available models for each class
+    for model_class in tested_models:
+        fully_available = set(tested_models[model_class]) - all_fails
         if len(fully_available) > 0:
             new_status["fully_available_models"][model_class] = sorted(fully_available)
-        available_no_probs = (
-            set(new_status["failed_attn_probs_models"].get(model_class, []))
-            - all_general_fails
-        )
-        if len(available_no_probs) > 0:
-            new_status["no_probs_available_models"][model_class] = sorted(
-                available_no_probs
-            )
-        available_no_intervention = (
-            set(new_status["failed_intervention_models"].get(model_class, []))
-            - all_general_fails
-        )
-        if len(available_no_intervention) > 0:
-            new_status["no_intervention_available_models"][model_class] = sorted(
-                available_no_intervention
-            )
-        available_no_prompt_utils = (
-            set(new_status["failed_prompt_utils_models"].get(model_class, []))
-            - all_general_fails
-        )
-        if len(available_no_prompt_utils) > 0:
-            new_status["no_prompt_utils_available_models"][model_class] = sorted(
-                available_no_prompt_utils
-            )
 
-    if config._is_model_specific:
+        # Compute partially available models (failed specific tests but not general ones)
+        # Dynamically handle all specific categories from YAML
+        for middle_part in TEST_FILE_CATEGORIES.keys():
+            category_name = f"failed_{middle_part}_models"
+            availability_key = f"no_{middle_part}_available_models"
+            
+            available_models = (
+                set(cleaned_categories[category_name].get(model_class, []))
+                - all_general_fails
+            )
+            if available_models:
+                new_status[availability_key][model_class] = sorted(available_models)
+
+    if is_model_specific:
         new_status = merge_partial_status(
-            prev_nnsight_status, new_status, config._tested_models
+            prev_nnsight_status, new_status, tested_models
         )
 
     new_status["last_updated"] = datetime.datetime.now().isoformat()
     new_status = sort_json_recursively(new_status, preserve_level=0)
     transformers_section[NNSIGHT_VERSION] = new_status
     return prev_status
+
+
+@pytest.fixture(scope="session")
+def failed_model_cache():
+    """Cache of models that failed to load during the test session."""
+    return set()
 
 
 @pytest.fixture
@@ -329,12 +465,56 @@ def llama_like_model_name(request):
 
 
 @pytest.fixture
-def model(model_name):
-    """Fixture providing StandardizedTransformer instances."""
-    return StandardizedTransformer(model_name)
+def model(model_name, failed_model_cache, request):
+    """Fixture providing StandardizedTransformer instances.
+    
+    If a model fails to load, it is cached and subsequent tests
+    for that model are skipped.
+    """
+    if model_name in failed_model_cache:
+        pytest.skip(f"Model {model_name} previously failed to load")
+    
+    try:
+        return StandardizedTransformer(model_name)
+    except Exception as e:
+        failed_model_cache.add(model_name)
+        
+        # Thread-safe: Add to failed_test_models immediately
+        config = request.session.config
+        arch = get_arch(model_name)
+        lock = config.stash[stash_lock_key]
+        failure_categories = config.stash[failure_categories_key]
+        
+        with lock:
+            if model_name not in failure_categories["failed_test_models"][arch]:
+                failure_categories["failed_test_models"][arch].append(model_name)
+        
+        pytest.skip(f"Failed to load model {model_name}: {e}")
 
 
 @pytest.fixture
-def raw_model(model_name):
-    """Fixture providing raw LanguageModel instances."""
-    return LanguageModel(model_name, device_map="auto")
+def raw_model(model_name, failed_model_cache, request):
+    """Fixture providing raw LanguageModel instances.
+    
+    If a model fails to load, it is cached and subsequent tests
+    for that model are skipped.
+    """
+    if model_name in failed_model_cache:
+        pytest.skip(f"Model {model_name} previously failed to load")
+    
+    try:
+        return LanguageModel(model_name, device_map="auto")
+    except Exception as e:
+        failed_model_cache.add(model_name)
+        
+        # Thread-safe: Add to failed_test_models immediately
+        config = request.session.config
+        arch = get_arch(model_name)
+        lock = config.stash[stash_lock_key]
+        failure_categories = config.stash[failure_categories_key]
+        
+        with lock:
+            if model_name not in failure_categories["failed_test_models"][arch]:
+                failure_categories["failed_test_models"][arch].append(model_name)
+        
+        pytest.skip(f"Failed to load model {model_name}: {e}")
