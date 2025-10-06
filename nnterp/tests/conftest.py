@@ -338,3 +338,9 @@ def model(model_name):
 def raw_model(model_name):
     """Fixture providing raw LanguageModel instances."""
     return LanguageModel(model_name, device_map="auto")
+
+
+@pytest.fixture(params=[False, True])
+def remote(request):
+    """Parametrized fixture for testing both remote=False and remote=True."""
+    return request.param

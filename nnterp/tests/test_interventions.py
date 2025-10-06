@@ -14,24 +14,24 @@ from nnterp.interventions import (
 )
 
 
-def test_logit_lens(model):
+def test_logit_lens(model, remote):
     """Test logit lens returns correct dimensions and doesn't crash."""
     with th.no_grad():
         prompts = ["Hello world", "Test prompt"]
 
-        result = logit_lens(model, prompts)
+        result = logit_lens(model, prompts, remote=remote)
 
         # Should return (num_prompts, num_layers, vocab_size)
         expected_shape = (len(prompts), get_num_layers(model), model.config.vocab_size)
         assert result.shape == expected_shape
 
 
-def test_logit_lens_single_prompt(model):
+def test_logit_lens_single_prompt(model, remote):
     """Test logit lens with single prompt."""
     with th.no_grad():
         prompt = "Hello world"
 
-        result = logit_lens(model, prompt)
+        result = logit_lens(model, prompt, remote=remote)
 
         # Should return (1, num_layers, vocab_size) for single prompt
         expected_shape = (1, get_num_layers(model), model.config.vocab_size)
@@ -49,12 +49,12 @@ def test_target_prompt_batch():
         assert th.equal(batch.index_to_patch, th.tensor([-1, 0]))
 
 
-def test_patchscope_lens(model):
+def test_patchscope_lens(model, remote):
     """Test patchscope lens with default repeat prompt."""
     with th.no_grad():
         source_prompts = ["Hello world", "Test prompt"]
 
-        result = patchscope_lens(model, source_prompts)
+        result = patchscope_lens(model, source_prompts, remote=remote)
 
         # Should return (num_prompts, num_layers, vocab_size)
         expected_shape = (
@@ -65,26 +65,26 @@ def test_patchscope_lens(model):
         assert result.shape == expected_shape
 
 
-def test_patchscope_lens_custom_target(model):
+def test_patchscope_lens_custom_target(model, remote):
     """Test patchscope lens with custom target prompt."""
     with th.no_grad():
         source_prompts = ["Hello world"]
         target_prompt = TargetPrompt("The answer is ?", -1)
 
-        result = patchscope_lens(model, source_prompts, target_prompt)
+        result = patchscope_lens(model, source_prompts, target_prompt, remote=remote)
 
         expected_shape = (1, get_num_layers(model), model.config.vocab_size)
         assert result.shape == expected_shape
 
 
-def test_steer(model):
+def test_steer(model, remote):
     """Test steering intervention doesn't crash."""
     with th.no_grad():
         prompt = "Hello world"
         steering_vector = th.randn(model.config.hidden_size)
 
         # Test that we can run steering without errors
-        with model.trace(prompt):
+        with model.trace(prompt, remote=remote):
             steer(model, layers=0, steering_vector=steering_vector, factor=1.0)
             output = model.lm_head.output.save()
 
@@ -92,19 +92,19 @@ def test_steer(model):
         assert output.shape[-1] == model.config.vocab_size
 
 
-def test_interventions_with_multiple_layers(model):
+def test_interventions_with_multiple_layers(model, remote):
     """Test that interventions work across multiple layers."""
     with th.no_grad():
         prompts = ["Hello", "World"]
         num_layers = get_num_layers(model)
 
         # Test logit lens across all layers
-        result = logit_lens(model, prompts)
+        result = logit_lens(model, prompts, remote=remote)
         assert result.shape[1] == num_layers
 
         # Test patchscope with specific layers
         layers_to_test = [0, num_layers // 2, num_layers - 1]
-        result = patchscope_lens(model, prompts, layers=layers_to_test)
+        result = patchscope_lens(model, prompts, layers=layers_to_test, remote=remote)
         assert result.shape[1] == len(layers_to_test)
 
 
@@ -222,7 +222,7 @@ def test_target_prompt_batch_iteration():
         assert iterated_prompts[1].prompt == "World"
 
 
-def test_patchscope_generate(model):
+def test_patchscope_generate(model, remote):
     """Test patchscope_generate function."""
     with th.no_grad():
         source_prompts = ["The capital of France"]
@@ -243,6 +243,7 @@ def test_patchscope_generate(model):
             target_patch_prompt=target_prompt,
             max_length=5,  # Short generation
             layers=test_layers,
+            remote=remote,
         )
 
         # Should return a dictionary with layer keys
@@ -276,14 +277,14 @@ def test_patch_object_attn_lens(model):
         assert result.shape[1] == get_num_layers(model)
 
 
-def test_patchscope_lens_with_latents(model):
+def test_patchscope_lens_with_latents(model, remote):
     """Test patchscope_lens with pre-computed latents."""
     with th.no_grad():
         # First get some latents
         from nnterp.nnsight_utils import get_token_activations
 
         source_prompts = ["Hello world"]
-        latents = get_token_activations(model, source_prompts)
+        latents = get_token_activations(model, source_prompts, remote=remote)
 
         # Test with these latents
         target_prompt = TargetPrompt("Test prompt", -1)
@@ -299,6 +300,7 @@ def test_patchscope_lens_with_latents(model):
             target_patch_prompts=target_prompt,
             layers=test_layers,
             latents=latents,
+            remote=remote,
         )
 
         expected_shape = (1, len(test_layers), model.config.vocab_size)
