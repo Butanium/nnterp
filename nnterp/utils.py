@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import importlib.resources
 import json
 import sys
-from typing import Union
-
-import nnsight
-import torch as th
-import transformers
 from loguru import logger
+from typing import Union
+import torch as th
 from nnsight.intervention.tracing.globals import Object
+import transformers
+import nnsight
+import importlib.resources
 from packaging import version
 
 TraceTensor = Union[th.Tensor, Object]
@@ -66,16 +65,6 @@ try:
     from transformers import Qwen2ForCausalLM
 except ImportError:
     Qwen2ForCausalLM = ArchitectureNotFound
-
-try:
-    from transformers import OlmoeForCausalLM
-except ImportError:
-    OlmoeForCausalLM = ArchitectureNotFound
-
-try:
-    from transformers import GptOssForCausalLM
-except ImportError:
-    GptOssForCausalLM = ArchitectureNotFound
 
 
 try:
@@ -212,7 +201,7 @@ def is_notebook():
 
 
 def display_markdown(text: str):
-    from IPython.display import Markdown, display
+    from IPython.display import display, Markdown
 
     display(Markdown(text))
 
@@ -313,7 +302,7 @@ def warn_about_status(class_name: str, model, model_name: str):
         return
 
     if (
-        class_name in CLASS_STATUS["no_probs_available_models"]
+        class_name in CLASS_STATUS["no_attn_probs_available_models"]
         and model.attn_probs_available()
     ):
         logger.warning(
@@ -331,3 +320,9 @@ def warn_about_status(class_name: str, model, model_name: str):
         logger.warning(
             f"{class_name} failed some tests using `nnterp.interventions`. Use interventions at your own risk. You can also run `python -m nnterp run_tests --class-names {class_name} -k test_interventions` to have more information on the failures."
         )
+
+
+def unpack_tuple(tensor_or_tuple: TraceTensor) -> TraceTensor:
+    if isinstance(tensor_or_tuple, tuple):
+        return tensor_or_tuple[0]
+    return tensor_or_tuple

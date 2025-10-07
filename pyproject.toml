@@ -18,35 +18,22 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "dill>=0.4.0",
-    "ipykernel>=6.29.5",
     "loguru>=0.7.3",
     "nnsight>=0.5",
     "transformers",
 ]
 [project.optional-dependencies]
 display = ["plotly", "pandas"]
-docs = [
-    "sphinx-rtd-theme>=2.0.0",
-    "sphinx-autodoc-typehints>=1.25.0",
-    "myst-parser>=2.0.0",
-    "sphinx-copybutton",
-    "pydata-sphinx-theme",
-    "sphinx-design",
-    "nbsphinx",
+
+
+llms = [
+    "pillow",
+    "timm",
+    "flash-attn; sys_platform != 'win32'",
+    "hf_xet",
+    "sentencepiece",
 ]
-dev = [
-    "sphinx>=7.2.0",
-    "pytest",
-    "ipykernel",
-    "ipywidgets",
-    "pre-commit",
-    "black[jupyter]",
-    "jupytext",
-    "build",
-    "ruff",
-    # "flash-attn",  # Note: requires --no-build-isolation flag due to torch build dependency issue. Install with `uv pip install flash-attn --no-build-isolation`
-]
+    
 vllm = [
     "vllm",
 ]
@@ -55,8 +42,36 @@ vllm = [
 
 [dependency-groups]
 dev = [
-    "nnterp",
+    "filelock>=3.19.1",
     "pytest-cov>=6.2.1",
+    "pytest-xdist>=3.8.0",
+    "sphinx>=7.2.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-autodoc-typehints>=1.25.0",
+    "myst-parser>=2.0.0",
+    "sphinx-copybutton",
+    "pydata-sphinx-theme",
+    "sphinx-design",
+    "nbsphinx",
+    "pytest>=7.0",
+    "ipykernel",
+    "ipywidgets",
+    "pre-commit",
+    "black[jupyter]",
+    "jupytext",
+    "build",
+    "ruff",
+]
+
+docs = [
+    "sphinx>=7.2.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-autodoc-typehints>=1.25.0",
+    "myst-parser>=2.0.0",
+    "sphinx-copybutton",
+    "pydata-sphinx-theme",
+    "sphinx-design",
+    "nbsphinx",
 ]
 
 [tool.setuptools]
@@ -88,7 +103,8 @@ exclude = '''
 )/
 '''
 
-[tool.uv.sources]
-transformers = { git = "https://github.com/huggingface/transformers.git" }
-nnterp = { workspace = true, editable = true }
+[tool.uv.extra-build-dependencies]
+flash-attn = [{ requirement = "torch", match-runtime = true }]
 
+[tool.uv.extra-build-variables]
+flash-attn = { FLASH_ATTENTION_SKIP_CUDA_BUILD = "TRUE" }

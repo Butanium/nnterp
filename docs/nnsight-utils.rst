@@ -1,7 +1,7 @@
 NNsight Utils
 =============
 
-You can use ``nnterp`` utility functions with regular nnsight models, as long as they use llama or gemma naming conventions.
+``nnsight_utils`` provides some utility functions to collect activations along with some of the ``StandardizedTransformer`` utility functions usable with regular nnsight models, as long as they use llama or gemma naming conventions. However, for using those ``StandardizedTransformer`` functions, we recommend using ``StandardizedTransformer`` directly, as it is much more robust.
 
 Setup
 -----
@@ -12,7 +12,7 @@ Setup
    from nnterp.nnsight_utils import (
        get_layer_output, get_attention_output, get_mlp_output,
        get_token_activations, collect_token_activations_batched,
-       project_on_vocab, skip_layers
+       project_on_vocab
    )
    
    # Load model with proper renaming
@@ -43,14 +43,6 @@ Projection and Utilities
        hidden = get_layer_output(model, 5)
        logits = project_on_vocab(model, hidden)
 
-Skip Layers
------------
-
-.. code-block:: python
-
-   with model.trace("Hello world"):
-       # Skip layers 2-5
-       skip_layers(model, 2, 5)
 
 Activation Collection
 --------------------

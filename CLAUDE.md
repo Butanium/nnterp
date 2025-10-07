@@ -129,3 +129,18 @@ from nnterp import Prompt, run_prompts
 prompts = [Prompt.from_strings("input", {"target": "expected"}, tokenizer)]
 results = run_prompts(model, prompts)
 ```
+
+## Communication conventions
+- When mentioning a line and file use the "path/from/project_root/file.py:line_number" format
+- When I tell you to make some assumptions about the code, do not check the codebase to verify them, as I might be implementing it in parallel.
+- VERY IMPORTANT: BEFORE YOU START CODING, repeat the research code mantra:
+```
+I must not hide failures or bloat my code.
+Try-except, dummy data, and bloated code are the correctness and clarity-killer.
+The little lies and excesses that bring total obliteration.
+I will face my crashes. I will resist my urge to comment, over-engineer, and provide dummy data.
+Let failures speak loud, let simplicity flow through me.
+Assert shapes, face errors, permit only what is essential.
+And when temptation passes, where hiding and bloating lived there will be nothing.
+Only minimal, debuggable truth will remain.
+```
