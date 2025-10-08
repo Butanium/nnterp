@@ -104,7 +104,7 @@ class RenameConfig:
 
     Example
     -------
-    Custom configuration for a non-standard architecture::
+    Custom configuration for a non-standard architecture:
 
         config = RenameConfig(
             attn_name="custom_attention",
@@ -408,10 +408,7 @@ def olmoe_attention_prob_source(attention_module, return_module_source: bool = F
     if return_module_source:
         return attention_module.source
     else:
-        return attention_module.source.attn_dropout
-
-
-
+        return attention_module.source.nn_functional_dropout_0
 
 
 def default_attention_prob_source(attention_module, return_module_source: bool = False):
@@ -935,18 +932,19 @@ def check_io(std_model, model_name: str, ignores: list[IgnoreType]):
             f"layers_output[0] is not a tensor in {model_name} architecture. Found type {type(layer_output)}. This means it's not properly initialized."
         )
     if layer_output.shape != (batch_size, seq_len, hidden_size):
+        bad_layer_output_shape_error = ValueError(
+            f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
+        )
         if isinstance(std_model._model, SQUEEZE_LAYER_OUTPUT_MODELS):
-            # Some models like GptOssForCausalLM may squeeze layer outputs
-            if layer_output.shape == (seq_len, hidden_size):
-                logger.debug(f"Layer output shape {layer_output.shape} appears to be squeezed for {model_name}")
-            else:
-                raise ValueError(
-                    f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, hidden_size)} or {(seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
-                )
+            # in this case, it may not be a failure because the model could
+            # simply be squeezing a tensor of shape (1, seq_len, hidden_size)
+            # into a tensor of shape (seq_len, hidden_size)
+            if batch_size != 1:
+                raise bad_layer_output_shape_error
+            if layer_output.shape != (seq_len, hidden_size):
+                raise bad_layer_output_shape_error
         else:
-            raise ValueError(
-                f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
-            )
+            raise bad_layer_output_shape_error
     ln_final_out = std_model.ln_final.output
     if not isinstance(ln_final_out, th.Tensor):
         raise ValueError(

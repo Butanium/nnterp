@@ -35,7 +35,7 @@ class StandardizedTransformer(LanguageModel):
     """
     Renames the LanguageModel modules to match a standardized architecture.
 
-    The model structure is organized as follows::
+    The model structure is organized as follows:
 
         StandardizedTransformer
         ├── embed_tokens
@@ -57,6 +57,8 @@ class StandardizedTransformer(LanguageModel):
     - mlps[i]: Get MLP module at layer i
     - mlps_input[i] / mlps_output[i]: Get/set MLP input/output at layer i
     - routers[i]: Get router module at layer i (MoE models only)
+    - routers_input[i] / routers_output[i]: Get/set router input/output at layer i (MoE models only)
+    - router_probabilities[i]: Get/set router probability distribution at layer i (MoE models only)
 
     Args:
         repo_id (str): Hugging Face repository ID or path of the model to load.
@@ -155,14 +157,17 @@ class StandardizedTransformer(LanguageModel):
                 )
                 self.attention_probabilities.disable()
 
-        # Initialize router accessors for MoE models (similar to attention_probabilities)
+        self.routers = LayerAccessor(self, "mlp.router", None)
+        self.routers_input = LayerAccessor(self, "mlp.router", IOType.INPUT)
+        self.routers_output = LayerAccessor(self, "mlp.router", IOType.OUTPUT)
         self.router_probabilities = RouterProbabilitiesAccessor(self)
         if check_renaming:
             try:
                 # Check if router probabilities are available for this model
                 self.router_probabilities.check_availability()
+                check_router_structure(self)
             except Exception as e:
-                logger.debug(
+                logger.error(
                     f"Router probabilities not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
                 self.router_probabilities.disable()

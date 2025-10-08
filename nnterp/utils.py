@@ -71,6 +71,11 @@ try:
 except ImportError:
     OlmoeForCausalLM = ArchitectureNotFound
 
+try:
+    from transformers import GptOssForCausalLM
+except ImportError:
+    GptOssForCausalLM = ArchitectureNotFound
+
 
 try:
     status_path = importlib.resources.files("nnterp.data").joinpath("status.json")
