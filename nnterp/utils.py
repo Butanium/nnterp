@@ -66,6 +66,11 @@ try:
 except ImportError:
     Qwen2ForCausalLM = ArchitectureNotFound
 
+try:
+    from transformers import OlmoeForCausalLM
+except ImportError:
+    OlmoeForCausalLM = ArchitectureNotFound
+
 
 try:
     status_path = importlib.resources.files("nnterp.data").joinpath("status.json")

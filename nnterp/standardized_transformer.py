@@ -56,6 +56,7 @@ class StandardizedTransformer(LanguageModel):
     - attentions_input[i] / attentions_output[i]: Get/set attention input/output at layer i
     - mlps[i]: Get MLP module at layer i
     - mlps_input[i] / mlps_output[i]: Get/set MLP input/output at layer i
+    - routers[i]: Get router module at layer i (MoE models only)
 
     Args:
         repo_id (str): Hugging Face repository ID or path of the model to load.
@@ -153,6 +154,19 @@ class StandardizedTransformer(LanguageModel):
                     f"Attention probabilities is not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
                 self.attention_probabilities.disable()
+
+        # Initialize router accessors for MoE models (similar to attention_probabilities)
+        self.router_probabilities = RouterProbabilitiesAccessor(self)
+        if check_renaming:
+            try:
+                # Check if router probabilities are available for this model
+                self.router_probabilities.check_availability()
+            except Exception as e:
+                logger.debug(
+                    f"Router probabilities not available for {model_name} architecture. Disabling it. Error:\n{e}"
+                )
+                self.router_probabilities.disable()
+
         warn_about_status(model_name, self._model, model_name)
         self._add_prefix_false_tokenizer = None
 
@@ -182,6 +196,11 @@ class StandardizedTransformer(LanguageModel):
     @property
     def attn_probs_available(self) -> bool:
         return self.attention_probabilities.enabled
+
+    @property
+    def routers_available(self) -> bool:
+        """Check if router probabilities are available for this model."""
+        return self.router_probabilities.enabled
 
     @property
     def input_ids(self) -> TraceTensor:

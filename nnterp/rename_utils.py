@@ -125,6 +125,8 @@ class RenameConfig:
     attn_head_config_key: str | list[str] | int | None = None
     hidden_size_config_key: str | list[str] | int | None = None
     vocab_size_config_key: str | list[str] | int | None = None
+    router_name: str | list[str] | None = None
+    ignore_router: bool | None = None
 
 
 MODEL_NAMES = ["transformer", "gpt_neox", "decoder", "language_model"]
@@ -157,6 +159,8 @@ def default_vocab_size_config_keys():
 
 # Models with no mlp module
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
+# Models who may squeeze their layer outputs
+SQUEEZE_LAYER_OUTPUT_MODELS = (GptOssForCausalLM,)
 
 # Alternative names for LLM layers
 ATTENTION_NAMES = ["attn", "self_attention", "attention", "norm_attn_norm"]
@@ -179,6 +183,7 @@ LN_NAMES = expand_path_with_model(
 )
 LM_HEAD_NAMES = ["embed_out"]
 MLP_NAMES = ["block_sparse_moe", "ffn"]
+ROUTER_NAMES = ["router", "gate"]
 EMBED_TOKENS_NAMES = expand_path_with_model(
     [
         "wte",
@@ -209,6 +214,7 @@ def get_rename_dict(
         update_rename_dict("mlp", rename_config.mlp_name)
         update_rename_dict("ln_final", rename_config.ln_final_name)
         update_rename_dict("lm_head", rename_config.lm_head_name)
+        update_rename_dict("router", rename_config.router_name)
 
     rename_dict.update(
         {name: "model" for name in MODEL_NAMES}
@@ -217,6 +223,7 @@ def get_rename_dict(
         | {name: "mlp" for name in MLP_NAMES}
         | {name: "ln_final" for name in LN_NAMES}
         | {name: "lm_head" for name in LM_HEAD_NAMES}
+        | {name: "router" for name in ROUTER_NAMES}
         | {name: "embed_tokens" for name in EMBED_TOKENS_NAMES}
     )
     return rename_dict
@@ -396,6 +403,17 @@ def bloom_attention_prob_source(attention_module, return_module_source: bool = F
         return attention_module.source.self_attention_dropout_0
 
 
+def olmoe_attention_prob_source(attention_module, return_module_source: bool = False):
+    """Attention probability source for OlmoeForCausalLM models."""
+    if return_module_source:
+        return attention_module.source
+    else:
+        return attention_module.source.attn_dropout
+
+
+
+
+
 def default_attention_prob_source(attention_module, return_module_source: bool = False):
     if return_module_source:
         return attention_module.source.attention_interface_0.source
@@ -428,6 +446,8 @@ class AttentionProbabilitiesAccessor:
             self.source_attr = rename_config.attn_prob_source
         elif isinstance(model._model, BloomForCausalLM):
             self.source_attr = bloom_attention_prob_source
+        elif isinstance(model._model, OlmoeForCausalLM):
+            self.source_attr = olmoe_attention_prob_source
         elif isinstance(model._model, GPT2LMHeadModel):
             self.source_attr = gpt2_attention_prob_source
         elif isinstance(model._model, GPTJForCausalLM):
@@ -549,6 +569,73 @@ class AttentionProbabilitiesAccessor:
 
         if in_notebook:
             display_markdown(markdown_text)
+
+
+def detect_router_attr_name(
+    model, layer: int = 0, router_names: list[str] | None = None
+) -> str:
+    """
+    Detect the router attribute name for MoE models.
+    
+    Args:
+        model: The model to inspect
+        layer: Layer index to check (default: 0)
+        router_names: List of possible router names to check
+        
+    Returns:
+        str: The detected router attribute name
+        
+    Raises:
+        RenamingError: If no router attribute is found
+    """
+    if router_names is None:
+        router_names = ROUTER_NAMES
+    
+    layer_module = model.model.layers[layer]
+    
+    # Check if this is an MLP with router
+    if hasattr(layer_module, 'mlp'):
+        mlp_module = layer_module.mlp
+        for router_name in router_names:
+            if hasattr(mlp_module, router_name):
+                return router_name
+    
+    # Check if router is directly on the layer
+    for router_name in router_names:
+        if hasattr(layer_module, router_name):
+            return router_name
+    
+    raise RenamingError(f"Could not find router attribute in layer {layer}. Checked: {router_names}")
+
+
+def check_router_structure(model, layer: int = 0) -> None:
+    """
+    Check the router structure for MoE models and log information.
+    
+    Args:
+        model: The model to check
+        layer: Layer index to check (default: 0)
+    """
+    try:
+        router_attr = detect_router_attr_name(model, layer)
+        layer_module = model.model.layers[layer]
+        
+        if hasattr(layer_module, 'mlp'):
+            router_module = getattr(layer_module.mlp, router_attr)
+        else:
+            router_module = getattr(layer_module, router_attr)
+        
+        logger.info(f"Found router '{router_attr}' in layer {layer}")
+        logger.info(f"Router module type: {type(router_module)}")
+        
+        # Check for common router attributes
+        if hasattr(router_module, 'weight'):
+            logger.info(f"Router weight shape: {router_module.weight.shape}")
+        if hasattr(router_module, 'top_k'):
+            logger.info(f"Router top_k: {router_module.top_k}")
+            
+    except RenamingError as e:
+        logger.warning(f"Router structure check failed: {e}")
 
 
 # Router probability computation functions
@@ -769,6 +856,8 @@ def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:
             ignores.append("mlp")
         if rename_config.ignore_attn:
             ignores.append("attention")
+        if rename_config.ignore_router:
+            ignores.append("router")
     return ignores
 
 
@@ -846,9 +935,18 @@ def check_io(std_model, model_name: str, ignores: list[IgnoreType]):
             f"layers_output[0] is not a tensor in {model_name} architecture. Found type {type(layer_output)}. This means it's not properly initialized."
         )
     if layer_output.shape != (batch_size, seq_len, hidden_size):
-        raise ValueError(
-            f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
-        )
+        if isinstance(std_model._model, SQUEEZE_LAYER_OUTPUT_MODELS):
+            # Some models like GptOssForCausalLM may squeeze layer outputs
+            if layer_output.shape == (seq_len, hidden_size):
+                logger.debug(f"Layer output shape {layer_output.shape} appears to be squeezed for {model_name}")
+            else:
+                raise ValueError(
+                    f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, hidden_size)} or {(seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
+                )
+        else:
+            raise ValueError(
+                f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
+            )
     ln_final_out = std_model.ln_final.output
     if not isinstance(ln_final_out, th.Tensor):
         raise ValueError(

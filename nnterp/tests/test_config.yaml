@@ -29,6 +29,12 @@ core_test_models:
   - yujiepan/qwen1.5-moe-tiny-random
   - yujiepan/qwen3-moe-tiny-random
 
+# MoE models with router functionality
+moe_models:
+  - yujiepan/mixtral-8xtiny-random
+  - yujiepan/qwen1.5-moe-tiny-random
+  - yujiepan/qwen3-moe-tiny-random
+
 # Substring patterns to skip models known to fail tests
 # Any model containing these substrings will be skipped
 skip_patterns: 
