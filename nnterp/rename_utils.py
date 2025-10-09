@@ -720,8 +720,11 @@ def get_router_probability_function(model):
         if isinstance(model._model, model_class):
             return prob_function
 
-    # Default fallback for unmatched models
-    return compute_default_router_probabilities
+    # Raise error for unsupported models to prevent incorrect router probability computation
+    raise ValueError(
+        f"No router probability function defined for model type {type(model._model).__name__}. "
+        f"Supported models: {', '.join(cls.__name__ for cls in ROUTER_PROBABILITY_FUNCTIONS.keys())}"
+    )
 
 
 class RouterProbabilitiesAccessor:
