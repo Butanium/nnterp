@@ -25,6 +25,7 @@ core_test_models:
   - gpt2
   - bigscience/bigscience-small-testing
   - yujiepan/opt-tiny-2layers-random
+  - yujiepan/mixtral-8xtiny-random
 
 # MoE models with router functionality
 moe_models:
