@@ -3,20 +3,33 @@ Quick Start
 
 This guide gets you up and running with ``nnterp`` in 5 minutes.
 
+Installation
+------------
+
+Basic Installation:
+
+.. code-block:: bash
+
+   pip install nnterp
+
+For visualization:
+
+.. code-block:: bash
+
+   pip install nnterp[display]
+
+
 Your First Model
----------------
+----------------
 
 Load any transformer model with a unified interface:
 
 .. code-block:: python
 
    from nnterp import StandardizedTransformer
-   
-   # Load any model - they all work the same way
-   model = StandardizedTransformer("gpt2")  # or "meta-llama/Llama-2-7b-hf", etc.
-   
-   # Models use device_map="auto" by default
-   print(f"Model loaded on: {model.device}")
+
+   model = StandardizedTransformer("Maykeye/TinyLLama-v0")
+   print("✓ nnterp working!")
 
 Basic Activation Access
 ----------------------
@@ -58,5 +71,3 @@ Next Steps
 
 - :doc:`../basic-usage` - Learn the unified interface and module access
 - :doc:`../interventions` - Logit lens, patchscope, and steering methods
-- :doc:`../advanced-features` - Attention analysis, prompts, and visualization
-- :doc:`../nnsight-utils` - Use utility functions with raw NNsight models

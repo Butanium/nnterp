@@ -14,6 +14,7 @@
 # The way it's implemented is based on the `NNsight` built-in renaming feature, to make all models look like the llama naming convention, without having to write `model.model`, namely:
 # ```ocaml
 # StandardizedTransformer
+# ├── embed_tokens
 # ├── layers
 # │   ├── self_attn
 # │   └── mlp
@@ -26,7 +27,6 @@ from transformers import AutoModelForCausalLM
 
 print(AutoModelForCausalLM.from_pretrained("Maykeye/TinyLLama-v0"))
 print(AutoModelForCausalLM.from_pretrained("gpt2"))
-print(AutoModelForCausalLM.from_pretrained("yujiepan/qwen3-moe-tiny-random"))
 
 # %% [markdown]
 # As you can see, the naming scheme of gpt2 is different from the llama naming convention.
@@ -67,12 +67,21 @@ print(nnterp_gpt2.model.device)
 # With `NNsight`, the most robust way to set the residual stream after layer 1 to be the residual stream after layer 0 for a LLama-like model would be:
 
 # %%
+from transformers import __version__ as TRANSFORMERS_VERSION
+from packaging.version import parse
 llama = LanguageModel("Maykeye/TinyLLama-v0")
-with llama.trace("hello"):
-    llama.model.layers[1].output = (
-        llama.model.layers[0].output[0],
-        *llama.model.layers[1].output[1:],
-    )
+# code for transformer "<4.54"
+is_old_transformers = parse(TRANSFORMERS_VERSION) < parse("4.54")
+if is_old_transformers:
+    with llama.trace("hello"):
+        llama.model.layers[1].output = (
+            llama.model.layers[0].output[0],
+            *llama.model.layers[1].output[1:],
+        )
+else:
+    with llama.trace("hello"):
+        llama.model.layers[1].output = llama.model.layers[0].output
+
 
 # %% [markdown]
 # Note that the following can cause issues:
@@ -80,19 +89,24 @@ with llama.trace("hello"):
 # %%
 with llama.trace("hello"):
     # can't do this because .output is a tuple
-    # llama.model.layers[1].output[0] = llama.model.layers[0].output[0]
 
     # Can cause errors with gradient computation
-    llama.model.layers[1].output[0][:] = llama.model.layers[0].output[0]
+    if is_old_transformers:
+        # llama.model.layers[1].output[0] = llama.model.layers[0].output[0]
+        llama.model.layers[1].output[0][:] = llama.model.layers[0].output[0]
+    else:
+        llama.model.layers[1].output[:] = llama.model.layers[0].output
 
-with llama.trace("hello"):
-    # Can cause errors with opt if you do this at its last layer (thanks pytest)
-    llama.model.layers[1].output = (llama.model.layers[0].output[0],)
+if is_old_transformers:
+    with llama.trace("hello"):
+        # Can cause errors with opt if you do this at its last layer (thanks pytest)
+        llama.model.layers[1].output = (llama.model.layers[0].output[0],)
 
 # %% [markdown]
 # `nnterp` makes this much cleaner:
 
 # %%
+# the version of transformers does not matter, the tuple vs not tuple stuff is handled internally
 # First, you can access layer inputs and outputs directly:
 with nnterp_gpt2.trace("hello"):
     # Access layer 5's output
@@ -104,25 +118,6 @@ with nnterp_gpt2.trace("hello"):
 with nnterp_gpt2.trace("hello"):
     attn_output = nnterp_gpt2.attentions_output[3]
     mlp_output = nnterp_gpt2.mlps_output[3]
-
-# First, you can access layer inputs and outputs directly:
-with nnterp_gpt2.trace("hello"):
-    # Access layer 5's output
-    layer_5_output = nnterp_gpt2.layers_output[5]
-    # Set layer 10's output to be layer 5's output
-    nnterp_gpt2.layers_output[10] = layer_5_output
-
-# You can also access attention and MLP outputs:
-with nnterp_gpt2.trace("hello"):
-    attn_output = nnterp_gpt2.attentions_output[3]
-    mlp_output = nnterp_gpt2.mlps_output[3]
-
-# And expert router outputs for MoE models:
-nnterp_qwen3_moe = StandardizedTransformer("yujiepan/qwen3-moe-tiny-random")
-
-with nnterp_qwen3_moe.trace("hello"):
-    router_output = nnterp_qwen3_moe.routers_output[1]
-    router_probabilities = nnterp_qwen3_moe.router_probabilities[1]
 
 # %% [markdown]
 # ## 3. `nnterp` Guarantees
@@ -229,8 +224,8 @@ with nnterp_gpt2.trace("The weather today is"):
 
 # %%
 from nnterp.nnsight_utils import (
-    collect_token_activations_batched,
     get_token_activations,
+    collect_token_activations_batched,
 )
 
 # Collect activations for specific tokens
@@ -295,9 +290,9 @@ for target, probs in results.items():
 
 # %%
 from nnterp.interventions import (
-    TargetPrompt,
     logit_lens,
     patchscope_lens,
+    TargetPrompt,
     repeat_prompt,
     steer,
 )
@@ -331,9 +326,9 @@ with nnterp_gpt2.trace("The weather is"):
 # %% [markdown]
 # You can use a combination of run_prompts and interventions to get the probabilities of certain tokens according to your custom intervention.
 # %%
-demo_model = StandardizedTransformer("google/gemma-2-2b")
-# uncomment if you don't have a GPU
-# demo_model = nnterp_gpt2
+demo_model = nnterp_gpt2
+# uncomment if you have a GPU for cooler results
+# demo_model = StandardizedTransformer("google/gemma-2-2b")
 
 prompts_str = [
     "The translation of 'car' in French is",
@@ -444,13 +439,12 @@ print(model)
 # now if we try to use nnterp, the renaming check automatically performed will fail:
 
 # %%
-from traceback import print_exc
-
 from nnterp import StandardizedTransformer
+from traceback import print_exc
 
 try:
     StandardizedTransformer(model)
-except Exception:
+except Exception as e:
     print_exc()
 
 # %% [markdown]
@@ -466,13 +460,13 @@ except Exception:
 from nnterp.rename_utils import RenameConfig
 
 rename_cfg = RenameConfig(
-    layers_name=".super_transformer.super_h",
+    layers_name="super_transformer.super_h",
     attn_name="super_attn",
     mlp_name="super_mlp",
 )
 try:
     StandardizedTransformer(model, rename_config=rename_cfg)
-except Exception:
+except Exception as e:
     print_exc()
 
 # %% [markdown]
@@ -486,7 +480,7 @@ rename_cfg = RenameConfig(
     layers_name="super_h",
     attn_name="super_attn",
     mlp_name="super_mlp",
-    ln_final_name=".super_transformer.ln_f",
+    ln_final_name="super_transformer.ln_f",
 )
 from transformers import AutoConfig
 
@@ -494,7 +488,7 @@ try:
     StandardizedTransformer(
         model, rename_config=rename_cfg, config=AutoConfig.from_pretrained("gpt2")
     )
-except Exception:
+except Exception as e:
     print_exc()
 
 # %% [markdown]
@@ -568,6 +562,7 @@ from nnterp.rename_utils import AttnProbFunction, RenameConfig
 
 
 class GPTJAttnProbFunction(AttnProbFunction):
+
     def get_attention_prob_source(
         self, attention_module, return_module_source: bool = False
     ):
@@ -623,16 +618,15 @@ assert th.allclose(summed_attn_probs, th.ones_like(summed_attn_probs))
 # In the new `NNsight` versions, it is enforced that you must access to model internals *in the same order* as the model execute them.
 
 # %%
-from traceback import print_exc
-
 from nnterp import StandardizedTransformer
+from traceback import print_exc
 
 nnterp_gpt2 = StandardizedTransformer("gpt2")
 try:
     with nnterp_gpt2.trace("My tailor is rich"):
         l2 = nnterp_gpt2.layers_output[2]
         l1 = nnterp_gpt2.layers_output[1]  # will fail! You need to collect l1 before l2
-except Exception:
+except Exception as e:
     print_exc()
 
 # %% [markdown]
@@ -661,7 +655,6 @@ assert not th.allclose(l1_grad, l1_grad_2)
 
 # %%
 import time
-
 import pandas as pd
 
 print(
@@ -725,11 +718,15 @@ print(
 #
 # `NNsight 0.5` introduces a builtin way to cache activations during the forward pass. Be careful not to call `tracer.stop()` before all the module of the cache have been accessed.
 #
-# NOTE: Currently the cache doesn't use the renamed names.
+# The cache supports both renamed and original module names. You can access cached activations using attribute notation or dictionary keys.
 
 # %%
 with nnterp_gpt2.trace("Hello") as tracer:
     cache = tracer.cache(modules=[layer for layer in nnterp_gpt2.layers[::2]]).save()
 
-print(cache.keys())
+# Access with renamed names using attribute notation
+print(cache.model.layers[10].output)
+# Or using dictionary syntax with renamed path
+print(cache["model.layers.10"].output)
+# Original names still work
 print(cache["model.transformer.h.10"].output)

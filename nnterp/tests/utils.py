@@ -4,11 +4,14 @@ from collections import defaultdict
 import copy
 import json
 import importlib.resources
+from pathlib import Path
 
+import yaml
+from filelock import FileLock
 from tqdm.autonotebook import tqdm
 import torch as th
 import transformers
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM
 from transformers.configuration_utils import PretrainedConfig
 from huggingface_hub import get_collection
 import nnsight
@@ -22,62 +25,93 @@ NNSIGHT_VERSION = nnsight.__version__
 test_loading_status_path = importlib.resources.files("nnterp.data").joinpath(
     "test_loading_status.json"
 )
+test_loading_status_lock = str(test_loading_status_path) + ".lock"
+
+# Load test configuration from YAML
+_test_config_path = Path(__file__).parent / "test_config.yaml"
+with open(_test_config_path, "r") as f:
+    _TEST_CONFIG = yaml.safe_load(f)
 
 # Models with llama-like naming conventions
-LLAMA_LIKE_MODELS = [
-    "sbintuitions/tiny-lm-chat",
-    "Maykeye/TinyLLama-v0",
-    "axolotl-ai-co/gemma-3-34M",
-    "yujiepan/gemma-tiny-random",
-    "yujiepan/llama-4-tiny-random",
-    "yujiepan/llama-3.3-tiny-random",
-    "yujiepan/llama-2-tiny-random",
-    "yujiepan/mistral-tiny-random",
-    "yujiepan/deepseek-llm-tiny-random",
-    "yujiepan/phi-3-tiny-random",
-    "yujiepan/phi-3.5-moe-tiny-random",
-    "yujiepan/qwen1.5-tiny-random",
-    "yujiepan/qwen2-tiny-random",
-    "yujiepan/qwen2.5-tiny-random",
-    "yujiepan/qwen3-tiny-random",
-    "yujiepan/mistral-nemo-2407-tiny-random",
-]
+LLAMA_LIKE_MODELS = _TEST_CONFIG["llama_like_models"]
 
 # Core test models
-TEST_MODELS = [
-    "gpt2",
-    "bigscience/bigscience-small-testing",
-    "yujiepan/opt-tiny-2layers-random",
-    "yujiepan/mixtral-8xtiny-random",
-    "yujiepan/qwen1.5-moe-tiny-random",
-    "yujiepan/qwen3-moe-tiny-random",
-]
+TEST_MODELS = _TEST_CONFIG["core_test_models"]
 
-# MoE models that are known to have router components
-TEST_MOE_MODELS = [
-    "yujiepan/mixtral-8xtiny-random",
-    "yujiepan/qwen1.5-moe-tiny-random",
-    "yujiepan/qwen3-moe-tiny-random",
-]
+# MoE models with router functionality
+TEST_MOE_MODELS = _TEST_CONFIG["moe_models"]
 
-# Ensure all MoE models are in TEST_MODELS
-missing_models = [model for model in TEST_MOE_MODELS if model not in TEST_MODELS]
-if missing_models:
-    raise ValueError(f"MoE models not found in TEST_MODELS: {missing_models}")
+# Skip patterns for models known to fail
+SKIP_PATTERNS = _TEST_CONFIG["skip_patterns"]
+
+# Test file categorization for failure tracking
+TEST_FILE_CATEGORIES = _TEST_CONFIG["test_file_categories"]
 
 
-def is_moe_model(model_name):
-    """Check if a model is a MoE model."""
-    return model_name in TEST_MOE_MODELS
+def should_skip_model(model_name):
+    """Check if a model should be skipped based on skip patterns."""
+    return any(pattern in model_name for pattern in SKIP_PATTERNS)
+
+
+def filter_skipped_models(model_list):
+    """Filter out models matching skip patterns."""
+    if not SKIP_PATTERNS:
+        return model_list
+    filtered = [m for m in model_list if not should_skip_model(m)]
+    skipped = [m for m in model_list if should_skip_model(m)]
+    if skipped:
+        logger.info(f"Skipping {len(skipped)} models matching skip patterns: {skipped}")
+    return filtered
 
 
 def get_all_toy_models():
-    return [
-        item.item_id
-        for item in get_collection(
-            "yujiepan/tiny-dummy-models-65acf7ddb68db4f26eb1dec9"
-        ).items
-    ]
+    """Get all toy models from HuggingFace collection.
+    
+    Uses a cached file to avoid rate limiting when running tests in parallel.
+    Cache expires after 24 hours.
+    
+    Returns sorted list to ensure deterministic test collection for pytest-xdist.
+    """
+    from datetime import datetime, timedelta
+    import json
+    
+    cache_file = Path(__file__).parent.parent / "data" / "toy_models_cache.json"
+    cache_lock = str(cache_file) + ".lock"
+    cache_ttl = timedelta(hours=24)
+    
+    lock = FileLock(cache_lock)
+    with lock:
+        # Check if valid cache exists
+        if cache_file.exists():
+            try:
+                with open(cache_file, "r") as f:
+                    cache_data = json.load(f)
+                cached_time = datetime.fromisoformat(cache_data["timestamp"])
+                if datetime.now() - cached_time < cache_ttl:
+                    logger.debug(f"Using cached toy models from {cache_file}")
+                    return cache_data["models"]
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.warning(f"Invalid cache file, will re-fetch: {e}")
+        
+        # Fetch from HuggingFace
+        logger.info("Fetching toy models from HuggingFace (cache miss or expired)")
+        models = [
+            item.item_id
+            for item in get_collection(
+                "yujiepan/tiny-dummy-models-65acf7ddb68db4f26eb1dec9"
+            ).items
+        ]
+        models = sorted(models)
+        
+        # Save to cache
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(cache_file, "w") as f:
+            json.dump({
+                "timestamp": datetime.now().isoformat(),
+                "models": models
+            }, f, indent=2)
+        
+        return models
 
 
 def sort_json_recursively(obj, preserve_level=None, current_level=0):
@@ -116,53 +150,73 @@ def sort_json_recursively(obj, preserve_level=None, current_level=0):
 
 
 def get_all_test_models(class_names=None) -> list[str]:
-    """Get all models used in tests: both collection models and hardcoded ones."""
+    """Get all models used in tests: both collection models and hardcoded ones.
+    
+    Returns sorted list to ensure deterministic test collection for pytest-xdist.
+    """
     collection_models = get_all_toy_models()
     hardcoded_models = TEST_MODELS + LLAMA_LIKE_MODELS
     all_models = list(dict.fromkeys(collection_models + hardcoded_models))
     if class_names is not None:
         all_models = [m for m in all_models if get_arch(m) in class_names]
-    return all_models
+    # Filter out models matching skip patterns
+    all_models = filter_skipped_models(all_models)
+    return sorted(all_models)  # Sort for deterministic ordering
 
 
 def load_test_loading_status():
-    """Load the test loading status for current transformers/nnsight versions."""
-    try:
-        with test_loading_status_path.open("r") as f:
-            full_status = json.load(f)
-    except FileNotFoundError:
-        full_status = {}
+    """Load the test loading status for current transformers/nnsight versions.
+    
+    Thread-safe: Uses file lock to prevent race conditions with pytest-xdist.
+    """
+    lock = FileLock(test_loading_status_lock)
+    with lock:
+        try:
+            with test_loading_status_path.open("r") as f:
+                full_status = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            full_status = {}
 
-    if (
-        TRANSFORMERS_VERSION not in full_status
-        or NNSIGHT_VERSION not in full_status[TRANSFORMERS_VERSION]
-    ):
-        if TRANSFORMERS_VERSION not in full_status:
-            logger.info(
-                f"Transformers version {TRANSFORMERS_VERSION} not in status, updating..."
-            )
-        else:
-            logger.info(
-                f"NNsight version {NNSIGHT_VERSION} not in status for transformers {TRANSFORMERS_VERSION}, updating..."
-            )
-        full_status = update_test_loading_status()
+        if (
+            TRANSFORMERS_VERSION not in full_status
+            or NNSIGHT_VERSION not in full_status[TRANSFORMERS_VERSION]
+        ):
+            if TRANSFORMERS_VERSION not in full_status:
+                logger.info(
+                    f"Transformers version {TRANSFORMERS_VERSION} not in status, updating..."
+                )
+            else:
+                logger.info(
+                    f"NNsight version {NNSIGHT_VERSION} not in status for transformers {TRANSFORMERS_VERSION}, updating..."
+                )
+            # Release lock temporarily for update (which will re-acquire it)
+            lock.release()
+            try:
+                full_status = update_test_loading_status()
+            finally:
+                lock.acquire()
 
-    return full_status[TRANSFORMERS_VERSION]
+        return full_status[TRANSFORMERS_VERSION]
 
 
 def save_test_loading_status(transformers_status):
-    """Save the test loading status dict for current transformers version."""
-    try:
-        with test_loading_status_path.open("r") as f:
-            full_status = json.load(f)
-    except FileNotFoundError:
-        full_status = {}
+    """Save the test loading status dict for current transformers version.
+    
+    Thread-safe: Uses file lock to prevent race conditions with pytest-xdist.
+    """
+    lock = FileLock(test_loading_status_lock)
+    with lock:
+        try:
+            with test_loading_status_path.open("r") as f:
+                full_status = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            full_status = {}
 
-    full_status.setdefault(TRANSFORMERS_VERSION, {}).update(transformers_status)
+        full_status.setdefault(TRANSFORMERS_VERSION, {}).update(transformers_status)
 
-    with open(str(test_loading_status_path), "w") as f:
-        json.dump(full_status, f, indent=4)
-    return full_status
+        with open(str(test_loading_status_path), "w") as f:
+            json.dump(full_status, f, indent=4)
+        return full_status
 
 
 def test_model_availability(model_name):
@@ -183,23 +237,23 @@ def test_model_availability(model_name):
 
     try:
         hf_model(th.tensor([[1]]))
-    except Exception as e:
+    except Exception:
         return ("cant_forward", None)
 
     # Test nnsight availability (only if HF works)
     try:
         nn_model = LanguageModel(model_name)
-    except Exception as e:
+    except Exception:
         try:
             nn_model = LanguageModel(hf_model)
-        except Exception as e:
+        except Exception:
             return ("available_hf", "cant_load_with_hf_in_LanguageModel")
         return ("available_hf", "cant_load_with_LanguageModel")
 
     try:
         with nn_model.trace(dummy_inputs()):
             pass
-    except Exception as e:
+    except Exception:
         return ("available_hf", "cant_trace_with_LanguageModel")
 
     return ("available_hf", "available_nn")
@@ -339,6 +393,7 @@ def is_available(model_name, test_status):
 
 
 def get_available_models(model_names):
+    """Check model availability and return sorted list for deterministic test collection."""
     if not model_names:
         return []
     test_status = load_test_loading_status()
@@ -350,18 +405,24 @@ def get_available_models(model_names):
             available_models.append(model)
 
     save_test_loading_status(test_status)
-    return available_models
+    return sorted(available_models)  # Sort for deterministic ordering
 
 
 def get_all_available_models():
-    """Get all available models using fast status-based filtering."""
-    all_models = list(set(TEST_MODELS + get_all_toy_models() + LLAMA_LIKE_MODELS))
+    """Get all available models using fast status-based filtering.
+    
+    Returns sorted list to ensure deterministic test collection for pytest-xdist.
+    """
+    # Use sorted instead of list(set(...)) for deterministic ordering
+    all_models = sorted(set(TEST_MODELS + get_all_toy_models() + LLAMA_LIKE_MODELS))
+    all_models = filter_skipped_models(all_models)
     return get_available_models(all_models)
 
 
 def get_available_llama_models():
     """Get available models with llama-like naming conventions."""
-    return get_available_models(LLAMA_LIKE_MODELS)
+    filtered_models = filter_skipped_models(LLAMA_LIKE_MODELS)
+    return get_available_models(filtered_models)
 
 
 def get_failed_models_from_status(test_status):
@@ -400,7 +461,7 @@ def get_arch(model_name):
             return _arch
     try:
         AutoModelForCausalLM.from_pretrained(model_name).__class__.__name__
-    except Exception as e:
+    except Exception:
         return "Unknown"
 
 

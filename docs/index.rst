@@ -9,7 +9,7 @@ You can install ``nnterp`` using pip:
 
 .. code-block:: bash
 
-   pip install "nnterp>0.4.9" --pre
+   pip install nnterp
    # or for latest improvements
    pip install git+https://github.com/Butanium/nnterp/
 
@@ -40,7 +40,6 @@ Quick example:
    :maxdepth: 1
    :caption: Getting Started:
 
-   getting-started/installation
    getting-started/quickstart
 
 .. toctree::
@@ -52,8 +51,8 @@ Quick example:
    model-validation
    adding-model-support
    advanced-features
-   nnsight-utils
    nnsight-best-practices
+   nnsight-utils
 
 .. toctree::
    :maxdepth: 2

@@ -12,6 +12,7 @@ from .utils import (
     TraceTensor,
     DummyCache,
     warn_about_status,
+    try_with_scan,
 )
 from .rename_utils import (
     IOType,
@@ -20,13 +21,11 @@ from .rename_utils import (
     RenameConfig,
     get_rename_dict,
     get_ignores,
-    mlp_returns_tuple,
-    layer_returns_tuple,
     check_model_renaming,
-    RouterProbabilitiesAccessor,
-    check_router_structure,
     get_num_attention_heads,
     get_hidden_size,
+    RenamingError,
+    get_vocab_size,
 )
 
 GetLayerObject = Callable[[int], TraceTensor]
@@ -48,17 +47,17 @@ class StandardizedTransformer(LanguageModel):
 
     In addition to renaming modules, this class provides built-in accessors to extract and set intermediate activations:
 
-    - token_embeddings: Get/set token embeddings
+    - embed_tokens: Get embedding module
+    - token_embeddings: Get/set token embeddings (equivalent to embed_tokens.output)
     - layers[i]: Get layer module at layer i
     - layers_input[i]: Get/set layer input at layer i
     - layers_output[i]: Get/set layer output at layer i
-    - attentions_output[i]: Get/set attention output at layer i
     - attentions[i]: Get attention module at layer i
-    - mlps_output[i]: Get/set MLP output at layer i
+    - attentions_input[i] / attentions_output[i]: Get/set attention input/output at layer i
     - mlps[i]: Get MLP module at layer i
+    - mlps_input[i] / mlps_output[i]: Get/set MLP input/output at layer i
     - routers[i]: Get router module at layer i (MoE models only)
-    - routers_input[i]: Get/set router input at layer i (MoE models only)
-    - routers_output[i]: Get/set router output at layer i (MoE models only)
+    - routers_input[i] / routers_output[i]: Get/set router input/output at layer i (MoE models only)
     - router_probabilities[i]: Get/set router probability distribution at layer i (MoE models only)
 
     Args:
@@ -121,34 +120,23 @@ class StandardizedTransformer(LanguageModel):
         ignores = get_ignores(self._model, rename_config)
 
         # Create accessor instances
-        self.layers_input = LayerAccessor(self, None, IOType.INPUT, returns_tuple=False)
-        self.layers_output = LayerAccessor(
-            self,
-            None,
-            IOType.OUTPUT,
-            returns_tuple=layer_returns_tuple(self._model, rename_config),
-        )
+        self.layers_input = LayerAccessor(self, None, IOType.INPUT)
+        self.layers_output = LayerAccessor(self, None, IOType.OUTPUT)
         self.attentions = LayerAccessor(self, "self_attn", None)
-        self.attentions_input = LayerAccessor(
-            self, "self_attn", IOType.INPUT, returns_tuple=False
-        )
-        self.attentions_output = LayerAccessor(
-            self, "self_attn", IOType.OUTPUT, returns_tuple=True
-        )
+        self.attentions_input = LayerAccessor(self, "self_attn", IOType.INPUT)
+        self.attentions_output = LayerAccessor(self, "self_attn", IOType.OUTPUT)
         self.mlps = LayerAccessor(self, "mlp", None)
-        self.mlps_input = LayerAccessor(self, "mlp", IOType.INPUT, returns_tuple=False)
-        self.mlps_output = LayerAccessor(
-            self,
-            "mlp",
-            IOType.OUTPUT,
-            returns_tuple=mlp_returns_tuple(self._model, rename_config),
-        )
+        self.mlps_input = LayerAccessor(self, "mlp", IOType.INPUT)
+        self.mlps_output = LayerAccessor(self, "mlp", IOType.OUTPUT)
 
         self.num_layers = len(self.layers)
         self.num_heads = get_num_attention_heads(
             self._model, raise_error=False, rename_config=rename_config
         )
         self.hidden_size = get_hidden_size(
+            self._model, raise_error=False, rename_config=rename_config
+        )
+        self.vocab_size = get_vocab_size(
             self._model, raise_error=False, rename_config=rename_config
         )
 
@@ -169,24 +157,38 @@ class StandardizedTransformer(LanguageModel):
                 )
                 self.attention_probabilities.disable()
 
-        # Initialize router accessors for MoE models (similar to attention_probabilities)
-        # First assign the accessors (router, input, and output accessors should be simple layer accessors)
         self.routers = LayerAccessor(self, "mlp.router", None)
         self.routers_input = LayerAccessor(self, "mlp.router", IOType.INPUT)
         self.routers_output = LayerAccessor(self, "mlp.router", IOType.OUTPUT)
         self.router_probabilities = RouterProbabilitiesAccessor(self)
-
         if check_renaming:
             try:
+                # Check if router probabilities are available for this model
+                self.router_probabilities.check_availability()
                 check_router_structure(self)
             except Exception as e:
                 logger.error(
-                    f"Router access is not available for {model_name} architecture. Disabling it. Error:\n{e}"
+                    f"Router probabilities not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
                 self.router_probabilities.disable()
 
         warn_about_status(model_name, self._model, model_name)
         self._add_prefix_false_tokenizer = None
+
+    def detect_layer_output_type(self):
+        if self.layers_output.returns_tuple is None:
+
+            def test_layer_0():
+                _ = self.layers_output[0]
+
+            try_with_scan(
+                self,
+                test_layer_0,
+                RenamingError(
+                    "Unable to access layer outputs. This may indicate an unsupported model architecture."
+                ),
+                warn_if_scan_fails=False,
+            )
 
     @property
     def add_prefix_false_tokenizer(self) -> PreTrainedTokenizerBase:
@@ -202,27 +204,26 @@ class StandardizedTransformer(LanguageModel):
 
     @property
     def routers_available(self) -> bool:
-        return (
-            self.router_probabilities is not None and self.router_probabilities.enabled
-        )
+        """Check if router probabilities are available for this model."""
+        return self.router_probabilities.enabled
 
     @property
     def layers_with_routers(self) -> list[int]:
-        """Get ordered list of layer indices that contain routers."""
+        """Return list of layer indices that have routers (MoE models only)."""
         if not self.routers_available:
             return []
-
-        router_layers = []
-        for layer_idx in range(self.num_layers):
+        
+        layers_with_routers = []
+        for i in range(len(self.layers)):
             try:
                 # Check if this layer has a router by trying to access it
-                router = self.routers[layer_idx]
-                if router is not None:
-                    router_layers.append(layer_idx)
-            except:
+                router = getattr(self.layers[i], "mlp", None)
+                if router is not None and hasattr(router, "router"):
+                    layers_with_routers.append(i)
+            except (AttributeError, KeyError):
                 continue
-
-        return router_layers
+        
+        return layers_with_routers
 
     @property
     def input_ids(self) -> TraceTensor:
@@ -272,7 +273,11 @@ class StandardizedTransformer(LanguageModel):
         return self.skip_layers(layer, layer, skip_with)
 
     def skip_layers(
-        self, start_layer: int, end_layer: int, skip_with: TraceTensor | None = None
+        self,
+        start_layer: int,
+        end_layer: int,
+        skip_with: TraceTensor | None = None,
+        layer_returns_tuple: bool | None = None,
     ):
         """
         Skip all layers between start_layer and end_layer (inclusive).
@@ -280,12 +285,25 @@ class StandardizedTransformer(LanguageModel):
         Args:
             start_layer: The layer to start skipping from
             end_layer: The layer to stop skipping at (inclusive)
-            skip_with: The input to skip the layers with. If None, the input of start_layer is used.
+            skip_with: The tensor to skip the layers with, will be passed as the output of the layers. If None, the input of start_layer is used.
+            layer_returns_tuple: Whether the layer output is a tuple. Doesn't need to be provided if the model's renaming has been validated or if you ran model.detect_layer_output_type() already.
         """
+        if layer_returns_tuple is None:
+            layer_returns_tuple = self.layers_output.returns_tuple
+        if layer_returns_tuple is None:
+            raise ValueError(
+                "Please run `model.detect_layer_output_type()` before skipping layers or provide the layer_returns_tuple argument."
+            )
         if skip_with is None:
             skip_with = self.layers_input[start_layer]
+        if layer_returns_tuple and not isinstance(skip_with, tuple):
+            skip_with = (skip_with, DummyCache())
+        elif not layer_returns_tuple and isinstance(skip_with, tuple):
+            raise ValueError(
+                "Skipping layer with a tuple while the layer output is not a tuple. This may cause unexpected behavior."
+            )
         for layer in range(start_layer, end_layer + 1):
-            self.layers[layer].skip((skip_with, DummyCache()))
+            self.layers[layer].skip(skip_with)
 
     def steer(
         self,
@@ -311,9 +329,9 @@ class StandardizedTransformer(LanguageModel):
             layers = [layers]
         for layer in layers:
             layer_device = get_layer_object_to_steer(layer).device
-            get_layer_object_to_steer(layer)[:, positions] += (
-                factor * steering_vector.to(layer_device)
-            )
+            get_layer_object_to_steer(layer)[
+                :, positions
+            ] += factor * steering_vector.to(layer_device)
 
     def project_on_vocab(self, hidden_state: TraceTensor) -> TraceTensor:
         hidden_state = self.ln_final(hidden_state)
@@ -333,11 +351,13 @@ class StandardizedTransformer(LanguageModel):
     ) -> dict[str, float] | list[dict[str, float]]:
         """
         Get the top-k closest tokens to the hidden state h.
+
         Args:
             h: The hidden state to project on the vocabulary. Shape (batch_size, hidden_size) or (hidden_size,).
             k: The number of top tokens to return.
             returns_df: If True, returns a DataFrame instead of a dictionary. Note that you need to have pandas installed for this to work.
                 Pandas is included in ``pip install nnterp[display]``.
+
         Returns:
             A dictionary mapping tokens to their probabilities if h is 1D, or a list of dictionaries if h is 2D.
         """
