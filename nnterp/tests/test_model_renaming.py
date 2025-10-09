@@ -171,17 +171,14 @@ def test_standardized_transformer_methods(model_name):
         ignores = get_ignores(model._model)
         with model.trace(prompt):
             # Test both accessor and direct module access ways
-
-            # === Test accessor way ===
-            _layer_accessor = model.layers[0]
-            _layer_direct = model.model.layers[0]
+            assert model.layers[0] is not None
             layer_input_accessor = model.layers_input[0].save()
             layer_input_direct = model.model.layers[0].input.save()
-            _attention_accessor = model.attentions[0]
-            _attention_direct = model.model.layers[0].self_attn
+            assert model.attentions[0] is not None
+            assert model.layers[0].self_attn is not None
             if "mlp" not in ignores:
-                _mlp_accessor = model.mlps[0]
-                _mlp_direct = model.model.layers[0].mlp
+                assert model.mlps[0] is not None
+                assert model.layers[0].mlp is not None
             attn_output_accessor = model.attentions_output[0].save()
             attn_output_direct = model.model.layers[0].self_attn.output[0].save()
             if "mlp" not in ignores:
