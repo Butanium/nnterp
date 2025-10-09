@@ -208,6 +208,24 @@ class StandardizedTransformer(LanguageModel):
         return self.router_probabilities.enabled
 
     @property
+    def layers_with_routers(self) -> list[int]:
+        """Return list of layer indices that have routers (MoE models only)."""
+        if not self.routers_available:
+            return []
+        
+        layers_with_routers = []
+        for i in range(len(self.layers)):
+            try:
+                # Check if this layer has a router by trying to access it
+                router = getattr(self.layers[i], "mlp", None)
+                if router is not None and hasattr(router, "router"):
+                    layers_with_routers.append(i)
+            except (AttributeError, KeyError):
+                continue
+        
+        return layers_with_routers
+
+    @property
     def input_ids(self) -> TraceTensor:
         return self.inputs[1]["input_ids"]
 
