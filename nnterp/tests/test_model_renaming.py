@@ -170,15 +170,18 @@ def test_standardized_transformer_methods(model_name):
         assert num_layers > 0
         ignores = get_ignores(model._model)
         with model.trace(prompt):
-            assert model.layers[0] is not None
-            # Test accessor and direct module access
+            # Test both accessor and direct module access ways
+
+            # === Test accessor way ===
+            _layer_accessor = model.layers[0]
+            _layer_direct = model.model.layers[0]
             layer_input_accessor = model.layers_input[0].save()
             layer_input_direct = model.model.layers[0].input.save()
-            assert model.attentions[0] is not None
-            assert model.layers[0].self_attn is not None
+            _attention_accessor = model.attentions[0]
+            _attention_direct = model.model.layers[0].self_attn
             if "mlp" not in ignores:
-                assert model.mlps[0] is not None
-                assert model.layers[0].mlp is not None
+                _mlp_accessor = model.mlps[0]
+                _mlp_direct = model.model.layers[0].mlp
             attn_output_accessor = model.attentions_output[0].save()
             attn_output_direct = model.model.layers[0].self_attn.output[0].save()
             if "mlp" not in ignores:
@@ -190,8 +193,13 @@ def test_standardized_transformer_methods(model_name):
             
             # Test router access for MoE models
             if "router" not in ignores:
-                router_output_accessor = model.router_probabilities[0].save()
-                router_output_direct = model.model.layers[0].mlp.router.output.save()
+                # If router is not ignored, then MoE models should have routers available
+                if model_name in TEST_MOE_MODELS:
+                    assert model.routers_available, f"Router should be available for MoE model {model_name} when not ignored"
+                
+                if model.routers_available:
+                    router_output_accessor = model.router_probabilities[0].save()
+                    router_output_direct = model.model.layers[0].mlp.router.output.save()
             layer_output_accessor = model.layers_output[0].save()
             layer_output_direct = model.model.layers[0].output[0].save()
 
@@ -241,8 +249,11 @@ def test_standardized_transformer_methods(model_name):
         
         # Test router shape consistency for MoE models
         if "router" not in ignores and model.routers_available:
+            batch_size, seq_len = model.input_size
             # Router output should have shape (batch_size, seq_len, num_experts)
             assert len(router_output_accessor.shape) == 3, f"Router output should be 3D tensor, got {router_output_accessor.shape}"
+            assert router_output_accessor.shape[0] == batch_size, f"Router batch size mismatch: expected {batch_size}, got {router_output_accessor.shape[0]}"
+            assert router_output_accessor.shape[1] == seq_len, f"Router sequence length mismatch: expected {seq_len}, got {router_output_accessor.shape[1]}"
 
 
 def test_renamed_model_methods(model_name):
