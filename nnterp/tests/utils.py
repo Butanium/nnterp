@@ -38,6 +38,9 @@ LLAMA_LIKE_MODELS = _TEST_CONFIG["llama_like_models"]
 # Core test models
 TEST_MODELS = _TEST_CONFIG["core_test_models"]
 
+# MoE models with router functionality
+TEST_MOE_MODELS = _TEST_CONFIG["moe_models"]
+
 # Skip patterns for models known to fail
 SKIP_PATTERNS = _TEST_CONFIG["skip_patterns"]
 

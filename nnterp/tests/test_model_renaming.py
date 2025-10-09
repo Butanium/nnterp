@@ -170,8 +170,8 @@ def test_standardized_transformer_methods(model_name):
         assert num_layers > 0
         ignores = get_ignores(model._model)
         with model.trace(prompt):
+            # Test both accessor and direct module access ways
             assert model.layers[0] is not None
-            # Test accessor and direct module access
             layer_input_accessor = model.layers_input[0].save()
             layer_input_direct = model.model.layers[0].input.save()
             assert model.attentions[0] is not None
@@ -187,6 +187,16 @@ def test_standardized_transformer_methods(model_name):
                 if isinstance(mlps_output_direct, tuple):
                     mlps_output_direct = mlps_output_direct[0]
                 mlps_output_direct = mlps_output_direct.save()
+            
+            # Test router access for MoE models
+            if "router" not in ignores:
+                # If router is not ignored, then MoE models should have routers available
+                if model_name in TEST_MOE_MODELS:
+                    assert model.routers_available, f"Router should be available for MoE model {model_name} when not ignored"
+                
+                if model.routers_available:
+                    router_output_accessor = model.router_probabilities[0].save()
+                    router_output_direct = model.model.layers[0].mlp.router.output.save()
             layer_output_accessor = model.layers_output[0].save()
             layer_output_direct = model.model.layers[0].output[0].save()
 
@@ -217,6 +227,12 @@ def test_standardized_transformer_methods(model_name):
         assert th.allclose(
             logits, logits_direct
         ), "Logits mismatch between logits and direct access"
+        
+        # Test router accessor vs direct access for MoE models
+        if "router" not in ignores and model.routers_available:
+            assert th.allclose(
+                router_output_accessor, router_output_direct
+            ), "Router output mismatch between accessor and direct access"
 
         # Test shape consistency
         assert next_probs.shape[-1] == model.vocab_size
@@ -227,6 +243,14 @@ def test_standardized_transformer_methods(model_name):
         if "mlp" not in ignores:
             assert mlps_output_accessor.shape == layer_output_accessor.shape
         assert attn_output_accessor.shape == layer_input_accessor.shape
+        
+        # Test router shape consistency for MoE models
+        if "router" not in ignores and model.routers_available:
+            batch_size, seq_len = model.input_size
+            # Router output should have shape (batch_size, seq_len, num_experts)
+            assert len(router_output_accessor.shape) == 3, f"Router output should be 3D tensor, got {router_output_accessor.shape}"
+            assert router_output_accessor.shape[0] == batch_size, f"Router batch size mismatch: expected {batch_size}, got {router_output_accessor.shape[0]}"
+            assert router_output_accessor.shape[1] == seq_len, f"Router sequence length mismatch: expected {seq_len}, got {router_output_accessor.shape[1]}"
 
 
 def test_renamed_model_methods(model_name):

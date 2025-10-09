@@ -13,6 +13,14 @@ from .utils import (
     BloomForCausalLM,
     GPT2LMHeadModel,
     GPTJForCausalLM,
+    DbrxForCausalLM,
+    GptOssForCausalLM,
+    LlamaForCausalLM,
+    MixtralForCausalLM,
+    OlmoeForCausalLM,
+    Qwen2ForCausalLM,
+    Qwen2MoeForCausalLM,
+    Qwen3ForCausalLM,
 )
 
 IgnoreType = Literal["mlp", "attention"]
@@ -95,7 +103,7 @@ class RenameConfig:
 
     Example
     -------
-    Custom configuration for a non-standard architecture::
+    Custom configuration for a non-standard architecture:
 
         config = RenameConfig(
             attn_name="custom_attention",
@@ -116,6 +124,8 @@ class RenameConfig:
     attn_head_config_key: str | list[str] | int | None = None
     hidden_size_config_key: str | list[str] | int | None = None
     vocab_size_config_key: str | list[str] | int | None = None
+    router_name: str | list[str] | None = None
+    ignore_router: bool | None = None
 
 
 MODEL_NAMES = ["transformer", "gpt_neox", "decoder", "language_model"]
@@ -148,6 +158,8 @@ def default_vocab_size_config_keys():
 
 # Models with no mlp module
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
+# Models who may squeeze their layer outputs
+SQUEEZE_LAYER_OUTPUT_MODELS = (GptOssForCausalLM,)
 
 # Alternative names for LLM layers
 ATTENTION_NAMES = ["attn", "self_attention", "attention", "norm_attn_norm"]
@@ -170,6 +182,7 @@ LN_NAMES = expand_path_with_model(
 )
 LM_HEAD_NAMES = ["embed_out"]
 MLP_NAMES = ["block_sparse_moe", "ffn"]
+ROUTER_NAMES = ["router", "gate"]
 EMBED_TOKENS_NAMES = expand_path_with_model(
     [
         "wte",
@@ -200,6 +213,7 @@ def get_rename_dict(
         update_rename_dict("mlp", rename_config.mlp_name)
         update_rename_dict("ln_final", rename_config.ln_final_name)
         update_rename_dict("lm_head", rename_config.lm_head_name)
+        update_rename_dict("router", rename_config.router_name)
 
     rename_dict.update(
         {name: "model" for name in MODEL_NAMES}
@@ -208,6 +222,7 @@ def get_rename_dict(
         | {name: "mlp" for name in MLP_NAMES}
         | {name: "ln_final" for name in LN_NAMES}
         | {name: "lm_head" for name in LM_HEAD_NAMES}
+        | {name: "router" for name in ROUTER_NAMES}
         | {name: "embed_tokens" for name in EMBED_TOKENS_NAMES}
     )
     return rename_dict
@@ -387,6 +402,14 @@ def bloom_attention_prob_source(attention_module, return_module_source: bool = F
         return attention_module.source.self_attention_dropout_0
 
 
+def olmoe_attention_prob_source(attention_module, return_module_source: bool = False):
+    """Attention probability source for OlmoeForCausalLM models."""
+    if return_module_source:
+        return attention_module.source
+    else:
+        return attention_module.source.nn_functional_dropout_0
+
+
 def default_attention_prob_source(attention_module, return_module_source: bool = False):
     if return_module_source:
         return attention_module.source.attention_interface_0.source
@@ -419,6 +442,8 @@ class AttentionProbabilitiesAccessor:
             self.source_attr = rename_config.attn_prob_source
         elif isinstance(model._model, BloomForCausalLM):
             self.source_attr = bloom_attention_prob_source
+        elif isinstance(model._model, OlmoeForCausalLM):
+            self.source_attr = olmoe_attention_prob_source
         elif isinstance(model._model, GPT2LMHeadModel):
             self.source_attr = gpt2_attention_prob_source
         elif isinstance(model._model, GPTJForCausalLM):
@@ -542,6 +567,281 @@ class AttentionProbabilitiesAccessor:
             display_markdown(markdown_text)
 
 
+def detect_router_attr_name(
+    model, layer: int = 0, router_names: list[str] | None = None
+) -> str:
+    """
+    Detect the router attribute name for MoE models.
+    
+    Args:
+        model: The model to inspect
+        layer: Layer index to check (default: 0)
+        router_names: List of possible router names to check
+        
+    Returns:
+        str: The detected router attribute name
+        
+    Raises:
+        RenamingError: If no router attribute is found
+    """
+    if router_names is None:
+        router_names = ROUTER_NAMES
+    
+    layer_module = model.model.layers[layer]
+    
+    # Check if this is an MLP with router
+    if hasattr(layer_module, 'mlp'):
+        mlp_module = layer_module.mlp
+        for router_name in router_names:
+            if hasattr(mlp_module, router_name):
+                return router_name
+    
+    # Check if router is directly on the layer
+    for router_name in router_names:
+        if hasattr(layer_module, router_name):
+            return router_name
+    
+    raise RenamingError(f"Could not find router attribute in layer {layer}. Checked: {router_names}")
+
+
+def check_router_structure(model, layer: int = 0) -> None:
+    """
+    Check the router structure for MoE models and log information.
+    
+    Args:
+        model: The model to check
+        layer: Layer index to check (default: 0)
+    """
+    try:
+        router_attr = detect_router_attr_name(model, layer)
+        layer_module = model.model.layers[layer]
+        
+        if hasattr(layer_module, 'mlp'):
+            router_module = getattr(layer_module.mlp, router_attr)
+        else:
+            router_module = getattr(layer_module, router_attr)
+        
+        logger.info(f"Found router '{router_attr}' in layer {layer}")
+        logger.info(f"Router module type: {type(router_module)}")
+        
+        # Check for common router attributes
+        if hasattr(router_module, 'weight'):
+            logger.info(f"Router weight shape: {router_module.weight.shape}")
+        if hasattr(router_module, 'top_k'):
+            logger.info(f"Router top_k: {router_module.top_k}")
+            
+    except RenamingError as e:
+        logger.warning(f"Router structure check failed: {e}")
+
+
+# Router probability computation functions
+def compute_router_probabilities(
+    router_logits: th.Tensor, top_k: int, norm_topk_prob: bool = True
+) -> th.Tensor:
+    """
+    Convert router logits to probability distribution with top-k selection.
+
+    Implements MoE router probability computation with configurable normalization:
+    1. Apply softmax to logits to get initial probabilities
+    2. Select top-k experts per token
+    3. Set non-selected expert probabilities to 0
+    4. Optionally renormalize to ensure probabilities sum to 1
+
+    Args:
+        router_logits: Raw router logits of shape [..., num_experts]
+        top_k: Number of experts to select per token
+        norm_topk_prob: Whether to renormalize probabilities after top-k selection
+
+    Returns:
+        Probability distribution of same shape as input
+    """
+    # Apply softmax to get initial probabilities
+    probs = th.softmax(router_logits, dim=-1)
+
+    # Get top-k experts per token
+    top_k_probs, top_k_indices = th.topk(probs, k=top_k, dim=-1)
+
+    # Create mask for top-k experts
+    mask = th.zeros_like(probs)
+    mask.scatter_(-1, top_k_indices, 1.0)
+
+    # Zero out non-selected experts
+    masked_probs = probs * mask
+
+    # Optionally renormalize to ensure sum to 1
+    if norm_topk_prob:
+        prob_sum = masked_probs.sum(dim=-1, keepdim=True)
+        masked_probs = masked_probs / prob_sum
+
+    return masked_probs
+
+
+def compute_default_router_probabilities(
+    router_logits: th.Tensor, top_k: int
+) -> th.Tensor:
+    """
+    Compute normalized router probabilities using the default MoE approach.
+
+    This is the standard implementation that normalizes probabilities after top-k selection.
+    """
+    return compute_router_probabilities(router_logits, top_k, norm_topk_prob=True)
+
+
+def compute_unnormalized_router_probabilities(
+    router_logits: th.Tensor, top_k: int
+) -> th.Tensor:
+    """
+    Compute router probabilities without renormalization after top-k selection.
+
+    Some models don't renormalize after top-k selection.
+    """
+    return compute_router_probabilities(router_logits, top_k, norm_topk_prob=False)
+
+
+# Model-specific router probability computation functions
+ROUTER_PROBABILITY_FUNCTIONS = {
+    OlmoeForCausalLM: compute_unnormalized_router_probabilities,
+    # LlamaForCausalLM: compute_sigmoid_router_probabilities,  # future work
+}
+
+
+def get_router_probability_function(model):
+    """
+    Determine the appropriate router probability function for a given model.
+
+    Args:
+        model: The model instance
+
+    Returns:
+        Function to compute router probabilities from logits
+    """
+    # Check for model-specific function
+    for model_class, prob_function in ROUTER_PROBABILITY_FUNCTIONS.items():
+        if isinstance(model._model, model_class):
+            return prob_function
+
+    # Raise error for unsupported models to prevent incorrect router probability computation
+    raise ValueError(
+        f"No router probability function defined for model type {type(model._model).__name__}. "
+        f"Supported models: {', '.join(cls.__name__ for cls in ROUTER_PROBABILITY_FUNCTIONS.keys())}"
+    )
+
+
+class RouterProbabilitiesAccessor:
+    """
+    Specialized accessor for MoE router probability distributions.
+    Similar to AttentionProbabilitiesAccessor but for router outputs.
+
+    This accessor computes proper probability distributions from router logits
+    using model-specific probability computation functions.
+    """
+
+    def __init__(self, model):
+        self.model = model
+        self.probability_function = get_router_probability_function(model)
+        self.enabled = True
+
+    def disable(self):
+        """Disable router probabilities access."""
+        self.enabled = False
+
+    def _get_router_module(self, layer: int):
+        """Get the router module for a specific layer, handling mixed architectures."""
+        if not self.enabled:
+            raise RenamingError("Router probabilities are disabled for this model.")
+
+        layer_module = self.model.layers[layer]
+        if not hasattr(layer_module, "mlp"):
+            raise RenamingError(f"Layer {layer} does not have an MLP component.")
+
+        mlp = layer_module.mlp
+        if not hasattr(mlp, "router"):
+            raise RenamingError(
+                f"Layer {layer} does not have a router component ('router')."
+            )
+
+        return mlp.router
+
+    def __getitem__(self, layer: int) -> TraceTensor:
+        """Get router probability distribution for the specified layer."""
+        router = self._get_router_module(layer)
+        router_logits = router.output
+
+        # Get top_k for this router
+        top_k = self.get_top_k(layer)
+
+        # Compute probabilities using model-specific function
+        return self.probability_function(router_logits, top_k)
+
+    def __setitem__(self, layer: int, value: TraceTensor):
+        """
+        Set router probability distribution for the specified layer.
+
+        This method converts the provided probability distribution back to logits
+        and sets the router output, allowing the MoE forward pass to use the
+        custom probabilities.
+
+        Args:
+            layer: Layer index
+            value: Probability distribution tensor with shape (batch_size, seq_len, num_experts)
+                  Should be normalized (sum to 1.0 across experts dimension)
+        """
+        router = self._get_router_module(layer)
+
+        # Validate that value is a proper probability distribution
+        assert th.all(value >= 0), "All probabilities must be non-negative"
+        prob_sums = value.sum(dim=-1)
+        assert th.allclose(prob_sums, th.ones_like(prob_sums), atol=1e-5), (
+            "Probabilities must sum to 1 for each token"
+        )
+
+        # Convert probabilities back to logits
+        # Use -inf for zero probabilities, log for non-zero values
+        # Replace zeros with epsilon to avoid log(0) computation
+        value_with_epsilon = th.where(value == 0, th.finfo(value.dtype).eps, value)
+        logits = th.where(
+            value == 0,
+            th.tensor(-float("inf"), device=value.device, dtype=value.dtype),
+            th.log(value_with_epsilon),
+        )
+
+        router.output = logits
+
+    def get_top_k(self, layer: int = 0) -> int:
+        """Get the top_k parameter for the router at the specified layer."""
+        if not self.enabled:
+            raise RenamingError("Router probabilities are disabled for this model.")
+
+        # First try to find a layer with a router
+        router = None
+        for check_layer in range(layer, len(self.model.layers)):
+            try:
+                router = self._get_router_module(check_layer)
+                break
+            except RenamingError:
+                continue
+
+        if router is None:
+            raise RenamingError(
+                f"Could not find any router component starting from layer {layer}"
+            )
+
+        # Try different attribute names for top_k
+        top_k_attrs = ["top_k", "topk", "num_experts_per_tok", "k"]
+        for attr in top_k_attrs:
+            if hasattr(router, attr):
+                return getattr(router, attr)
+
+        # Check if it's in the model config
+        config = self.model.config
+        if hasattr(config, "num_experts_per_tok"):
+            return config.num_experts_per_tok
+        if hasattr(config, "top_k"):
+            return config.top_k
+
+        raise RenamingError("Could not find top_k parameter for router")
+
+
 def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:
     ignores = []
     if isinstance(model, IGNORE_MLP_MODELS):
@@ -555,6 +855,8 @@ def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:
             ignores.append("mlp")
         if rename_config.ignore_attn:
             ignores.append("attention")
+        if rename_config.ignore_router:
+            ignores.append("router")
     return ignores
 
 
@@ -632,9 +934,19 @@ def check_io(std_model, model_name: str, ignores: list[IgnoreType]):
             f"layers_output[0] is not a tensor in {model_name} architecture. Found type {type(layer_output)}. This means it's not properly initialized."
         )
     if layer_output.shape != (batch_size, seq_len, hidden_size):
-        raise ValueError(
-            f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
+        bad_layer_output_shape_error = ValueError(
+            f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
         )
+        if isinstance(std_model._model, SQUEEZE_LAYER_OUTPUT_MODELS):
+            # in this case, it may not be a failure because the model could
+            # simply be squeezing a tensor of shape (1, seq_len, hidden_size)
+            # into a tensor of shape (seq_len, hidden_size)
+            if batch_size != 1:
+                raise bad_layer_output_shape_error
+            if layer_output.shape != (seq_len, hidden_size):
+                raise bad_layer_output_shape_error
+        else:
+            raise bad_layer_output_shape_error
     ln_final_out = std_model.ln_final.output
     if not isinstance(ln_final_out, th.Tensor):
         raise ValueError(

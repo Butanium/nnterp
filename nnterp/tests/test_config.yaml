@@ -26,6 +26,10 @@ core_test_models:
   - bigscience/bigscience-small-testing
   - yujiepan/opt-tiny-2layers-random
   - yujiepan/mixtral-8xtiny-random
+
+# MoE models with router functionality
+moe_models:
+  - yujiepan/mixtral-8xtiny-random
   - yujiepan/qwen1.5-moe-tiny-random
   - yujiepan/qwen3-moe-tiny-random
 
