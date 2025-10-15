@@ -340,8 +340,12 @@ def pytest_sessionfinish(session, exitstatus):
 
     existing_data = {}
     if not is_partial:
-        status_file = PROJECT_ROOT / "data" / "status.json"
-        status_file.parent.mkdir(exist_ok=True)
+        log_folder = PROJECT_ROOT / "data" / "test_logs"
+        log_folder.mkdir(exist_ok=True, parents=True)
+
+        status_file = log_folder / "latest_status.json"
+        versioned_status_file = log_folder / f"{TRANSFORMERS_VERSION}_{NNSIGHT_VERSION}_status.json"
+
         if status_file.exists():
             try:
                 with open(status_file, "r") as f:
@@ -361,8 +365,12 @@ def pytest_sessionfinish(session, exitstatus):
         tested_models = config.stash[tested_models_key]
         with open(status_file, "w") as f:
             json.dump(new_status, f, indent=2)
+        with open(versioned_status_file, "w") as f:
+            json.dump(new_status, f, indent=2)
         print(
-            f"\nModels tested during this session: {tested_models}, saving to {status_file}"
+            f"\nModels tested during this session: {tested_models}\n"
+            f"Test status saved to: {status_file}\n"
+            f"Versioned copy: {versioned_status_file}"
         )
 
     if config.stash[save_test_logs_key]:

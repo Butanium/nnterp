@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import sys
 from loguru import logger
 from typing import Union
@@ -8,8 +7,6 @@ import torch as th
 from nnsight.intervention.tracing.globals import Object
 import transformers
 import nnsight
-import importlib.resources
-from packaging import version
 
 TraceTensor = Union[th.Tensor, Object]
 
@@ -67,125 +64,6 @@ except ImportError:
     Qwen2ForCausalLM = ArchitectureNotFound
 
 
-try:
-    status_path = importlib.resources.files("nnterp.data").joinpath("status.json")
-    with status_path.open("r") as f:
-        STATUS = json.load(f)
-except (FileNotFoundError, ModuleNotFoundError, json.JSONDecodeError) as e:
-    logger.warning(f"Error loading status file: {e}")
-    STATUS = None
-
-
-def _get_closest_version(
-    current_version: str, available_versions: list[str]
-) -> tuple[str | None, str | None]:
-    """Get the closest version above and below current version from the available versions"""
-    sorted_versions = sorted(available_versions, key=version.parse)
-    current_parsed = version.parse(current_version)
-
-    closest_below = None
-    closest_above = None
-
-    for v in sorted_versions:
-        v_parsed = version.parse(v)
-        if v_parsed <= current_parsed:
-            closest_below = v
-        elif v_parsed >= current_parsed:
-            closest_above = v
-
-    return closest_below, closest_above
-
-
-WARNING_MESSAGE = (
-    "  - run the nnterp tests with your version of transformers to ensure everything works as expected using `python -m nnterp run_tests` to update the status file locally.\n"
-    "  - check if the attention probabilities hook makes sense before using them by calling `model.attention_probabilities.print_source()` (prettier in a notebook)."
-)
-IS_EXACT_VERSION = True
-if STATUS is None or len(STATUS) == 0:
-    nnterp_status = None
-else:
-    if TRANSFORMERS_VERSION in STATUS:
-        transformers_status = STATUS[TRANSFORMERS_VERSION]
-        used_tf_version = TRANSFORMERS_VERSION
-    else:
-        IS_EXACT_VERSION = False
-        available_versions = list(STATUS.keys())
-        current_version = TRANSFORMERS_VERSION
-        tf_closest_below, tf_closest_above = _get_closest_version(
-            current_version, available_versions
-        )
-        used_tf_version = tf_closest_above or tf_closest_below
-
-        logger.warning(
-            f"nnterp was not tested with Transformers version {current_version}. "
-            f"Closest below: {tf_closest_below}, closest above: {tf_closest_above}\n"
-            f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to {used_tf_version} if possible or:\n"
-            + WARNING_MESSAGE
-            + f"\nUsing test status from {used_tf_version}."
-        )
-        transformers_status = STATUS[used_tf_version]
-
-    if NNSIGHT_VERSION in transformers_status:
-        nnterp_status = transformers_status[NNSIGHT_VERSION]
-    else:
-        IS_EXACT_VERSION = False
-        compatible_tf_versions = []
-        for tf_version, status in STATUS.items():
-            if NNSIGHT_VERSION not in status:
-                continue
-            compatible_tf_versions.append(tf_version)
-        tf_closest_below, tf_closest_above = _get_closest_version(
-            TRANSFORMERS_VERSION, compatible_tf_versions
-        )
-        if tf_closest_above:
-            action = "upgrade"
-        elif tf_closest_below:
-            action = "downgrade"
-        else:
-            action = None
-        tf_message = ""
-        tf_version = tf_closest_above or tf_closest_below
-        if action:
-            tf_message = f"You could also {action} to transformers {tf_version}, for which NNsight {NNSIGHT_VERSION} was tested."
-        available_versions = list(transformers_status.keys())
-        current_version = NNSIGHT_VERSION
-        nns_closest_below, nns_closest_above = _get_closest_version(
-            current_version, available_versions
-        )
-        nnsight_message = ""
-        if nns_closest_below or nns_closest_above:
-            nnsight_message = f"Closest below: {nns_closest_below}, closest above: {nns_closest_above}\n"
-        if nns_closest_above:
-            advice = f"Using test results from NNsight {nns_closest_above}."
-            nnterp_status = transformers_status[nns_closest_above]
-        elif tf_closest_above:
-            advice = f"Using test results from transformers {tf_closest_above}."
-            nnterp_status = STATUS[tf_closest_above][NNSIGHT_VERSION]
-        elif tf_closest_below:
-            advice = f"Using test results from transformers {tf_closest_below}."
-            nnterp_status = STATUS[tf_closest_below][NNSIGHT_VERSION]
-        else:
-            advice = f"Using test results from NNsight {nns_closest_below}."
-            nnterp_status = transformers_status[nns_closest_below]
-        logger.warning(
-            f"nnterp was not tested with NNsight version {current_version} for transformers version {used_tf_version}. "
-            + nnsight_message
-            + f"This is most likely okay, but you may want to at least check that the attention probabilities hook makes sense by calling `model.attention_probabilities.print_source()`. It is recommended to switch to NNsight {nns_closest_above or nns_closest_below} if possible.\n"
-            + tf_message
-            + "Otherwise, consider:\n"
-            + WARNING_MESSAGE
-            + f"\n{advice}"
-        )
-
-
-if nnterp_status is None:
-    CLASS_STATUS = None
-else:
-    CLASS_STATUS = {
-        res_group: list(nnterp_status[res_group].keys())
-        for res_group in nnterp_status
-        if res_group not in ["last_updated", "ran_tests_on"]
-    }
 
 
 def is_notebook():
@@ -275,51 +153,6 @@ def try_with_scan(
             f"Using trace() succeed! Error when trying to scan the model:\n{e}"
         )
         return False
-
-
-def warn_about_status(class_name: str, model, model_name: str):
-    """
-    Check the availability of a model for the installed version of NNsight and Transformers.
-    Logs a warning if the model is partially or not available.
-    """
-    if CLASS_STATUS is None:
-        return
-
-    if class_name in CLASS_STATUS["fully_available_models"]:
-        logger.info(f"{class_name} was tested in nnterp and is fully available.")
-        return
-    run_tests_str = f"It is advised to run `python -m nnterp run_tests --class-names {class_name}` to run the tests on some toy models with the same architecture. Alternatively, you can run the tests on this model with `python -m nnterp run_tests --model-names {model_name}`."
-    if class_name in CLASS_STATUS["failed_test_models"]:
-        logger.warning(
-            f"The {class_name} class did not pass some basic tests. Use at your own risk. {run_tests_str}"
-        )
-        return
-
-    if class_name in CLASS_STATUS["nnsight_unavailable_models"]:
-        logger.warning(
-            f"{class_name} was unavailable in the testing environment and was therefore not tested. {run_tests_str}"
-        )
-        return
-
-    if (
-        class_name in CLASS_STATUS["no_attn_probs_available_models"]
-        and model.attn_probs_available()
-    ):
-        logger.warning(
-            f"The {class_name} class did not pass the attention probabilities test,"
-            "but still initialized correctly. Please consider using check_attn_probs_with_trace=True to ensure"
-            "the attention probabilities pass basic sanity checks. Otherwise, use at your own risk."
-        )
-
-    if class_name in CLASS_STATUS["no_prompt_utils_available_models"]:
-        logger.warning(
-            f"{class_name} failed some tests using `nnterp.prompt_utils`. Use prompt_utils at your own risk. You can also run `python -m nnterp run_tests --class-names {class_name} -k test_prompt_utils` to have more information on the failures."
-        )
-
-    if class_name in CLASS_STATUS["no_intervention_available_models"]:
-        logger.warning(
-            f"{class_name} failed some tests using `nnterp.interventions`. Use interventions at your own risk. You can also run `python -m nnterp run_tests --class-names {class_name} -k test_interventions` to have more information on the failures."
-        )
 
 
 def unpack_tuple(tensor_or_tuple: TraceTensor) -> TraceTensor:

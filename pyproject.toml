@@ -80,7 +80,7 @@ include-package-data = true
 
 [tool.setuptools.package-data]
 nnterp = ["py.typed"]
-"*" = ["data/", "tests/*"]
+"*" = ["tests/*"]
 
 [tool.coverage.run]
 omit = ["nnterp/tests/*"]

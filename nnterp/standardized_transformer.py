@@ -11,7 +11,6 @@ from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from .utils import (
     TraceTensor,
     DummyCache,
-    warn_about_status,
     try_with_scan,
 )
 from .rename_utils import (
@@ -153,7 +152,6 @@ class StandardizedTransformer(LanguageModel):
                     f"Attention probabilities is not available for {model_name} architecture. Disabling it. Error:\n{e}"
                 )
                 self.attention_probabilities.disable()
-        warn_about_status(model_name, self._model, model_name)
         self._add_prefix_false_tokenizer = None
 
     def detect_layer_output_type(self):
