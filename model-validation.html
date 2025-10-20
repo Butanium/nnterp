@@ -497,12 +497,23 @@
 </section>
 <section id="attention-implementation">
 <h3>Attention Implementation<a class="headerlink" href="#attention-implementation" title="Link to this heading">#</a></h3>
-<p>To access attention probabilities, <code class="docutils literal notranslate"><span class="pre">nnterp</span></code> loads models with <code class="docutils literal notranslate"><span class="pre">attn_implementation=&quot;eager&quot;</span></code> by default, which can be slower than the default HuggingFace implementation.</p>
-<p>If you don’t need attention probabilities, you can use a different implementation:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use default HuggingFace attention implementation</span>
+<p><code class="docutils literal notranslate"><span class="pre">nnterp</span></code> uses the default HuggingFace attention implementation by default. To access attention probabilities, you must explicitly set <code class="docutils literal notranslate"><span class="pre">enable_attention_probs=True</span></code>, which automatically configures the model to use <code class="docutils literal notranslate"><span class="pre">attn_implementation=&quot;eager&quot;</span></code> since other implementations (like sdpa or flash attention) don’t support attention pattern tracing.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># To access attention probabilities (slower but traceable)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">StandardizedTransformer</span><span class="p">(</span>
     <span class="s2">&quot;gpt2&quot;</span><span class="p">,</span>
-    <span class="n">attn_implementation</span><span class="o">=</span><span class="kc">None</span>  <span class="c1"># or &quot;flash_attention_2&quot;, &quot;sdpa&quot;, etc.</span>
+    <span class="n">enable_attention_probs</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="c1"># Use default HuggingFace implementation (faster, no attention tracing)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">StandardizedTransformer</span><span class="p">(</span><span class="s2">&quot;gpt2&quot;</span><span class="p">)</span>  <span class="c1"># Uses default HF implementation</span>
+</pre></div>
+</div>
+<p>If you try to use both <code class="docutils literal notranslate"><span class="pre">enable_attention_probs=True</span></code> and a non-eager <code class="docutils literal notranslate"><span class="pre">attn_implementation</span></code>, <code class="docutils literal notranslate"><span class="pre">nnterp</span></code> will raise an error:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># This will raise an error</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">StandardizedTransformer</span><span class="p">(</span>
+    <span class="s2">&quot;gpt2&quot;</span><span class="p">,</span>
+    <span class="n">enable_attention_probs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">attn_implementation</span><span class="o">=</span><span class="s2">&quot;sdpa&quot;</span>  <span class="c1"># Conflicts with enable_attention_probs</span>
 <span class="p">)</span>
 </pre></div>
 </div>
