@@ -512,6 +512,8 @@
 <span class="sd">        allow_dispatch (bool, default True): If True, allows using trace() to dispatch the model</span>
 <span class="sd">            when scan() fails during renaming checks. Defaults to True. You should set this to false</span>
 <span class="sd">            if you plan to use the model remotely.</span>
+<span class="sd">        enable_attention_probs (bool, default False): If True, enables attention probabilities</span>
+<span class="sd">            tracing by setting attn_implementation=&quot;eager&quot;. Defaults to False.</span>
 <span class="sd">        check_attn_probs_with_trace (bool, default True): If True, the model will be dispatched and a test will ensure that the attention probabilities returned sum to 1.</span>
 <span class="sd">        rename_config (RenameConfig, default None): A RenameConfig object to use for renaming the model. If None, a default RenameConfig will be used.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -522,23 +524,24 @@
         <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">check_renaming</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">allow_dispatch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">enable_attention_probs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">check_attn_probs_with_trace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;device_map&quot;</span><span class="p">,</span> <span class="s2">&quot;auto&quot;</span><span class="p">)</span>
-        <span class="c1"># Check if attention implementation is supported for attention pattern tracing</span>
-        <span class="k">if</span> <span class="s2">&quot;attn_implementation&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-            <span class="n">impl</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;attn_implementation&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">impl</span> <span class="o">!=</span> <span class="s2">&quot;eager&quot;</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Attention implementation </span><span class="si">{</span><span class="n">impl</span><span class="si">}</span><span class="s2"> is not supported for attention pattern tracing. Please use eager attention implementation if you plan to access attention patterns.&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;attn_implementation&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="n">enable_attention_probs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;attn_implementation&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;eager&quot;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Cannot use attn_implementation=&#39;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;attn_implementation&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; with enable_attention_probs=True. &quot;</span>
+                    <span class="s2">&quot;Either set enable_attention_probs=False or don&#39;t pass attn_implementation.&quot;</span>
                 <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;Enforcing eager attention implementation for attention pattern tracing. The HF default would be to use sdpa if available. To use sdpa, set attn_implementation=&#39;sdpa&#39; or None to use the HF default.&quot;</span>
-            <span class="p">)</span>
-            <span class="n">impl</span> <span class="o">=</span> <span class="s2">&quot;eager&quot;</span>
+        <span class="n">attn_implementation</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;eager&quot;</span>
+            <span class="k">if</span> <span class="n">enable_attention_probs</span>
+            <span class="k">else</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;attn_implementation&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="p">)</span>
+
         <span class="n">tokenizer_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;tokenizer_kwargs&quot;</span><span class="p">,</span> <span class="p">{})</span>
         <span class="n">rename</span> <span class="o">=</span> <span class="n">get_rename_dict</span><span class="p">(</span><span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span><span class="p">)</span>
         <span class="n">user_rename</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;rename&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -549,7 +552,7 @@
             <span class="n">rename</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_rename</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model</span><span class="p">,</span>
-            <span class="n">attn_implementation</span><span class="o">=</span><span class="n">impl</span><span class="p">,</span>
+            <span class="n">attn_implementation</span><span class="o">=</span><span class="n">attn_implementation</span><span class="p">,</span>
             <span class="n">tokenizer_kwargs</span><span class="o">=</span><span class="n">tokenizer_kwargs</span><span class="p">,</span>
             <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
             <span class="n">rename</span><span class="o">=</span><span class="n">rename</span><span class="p">,</span>
@@ -586,19 +589,24 @@
         <span class="k">if</span> <span class="n">check_renaming</span><span class="p">:</span>
             <span class="n">check_model_renaming</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">ignores</span><span class="p">,</span> <span class="n">allow_dispatch</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span> <span class="o">=</span> <span class="n">AttentionProbabilitiesAccessor</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span><span class="p">,</span>
+            <span class="n">initialized_with_enable</span><span class="o">=</span><span class="n">enable_attention_probs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">check_renaming</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">enable_attention_probs</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">check_source</span><span class="p">(</span>
                     <span class="n">allow_dispatch</span><span class="o">=</span><span class="n">allow_dispatch</span><span class="p">,</span>
                     <span class="n">use_trace</span><span class="o">=</span><span class="n">check_attn_probs_with_trace</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Attention probabilities is not available for </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> architecture. Disabling it. Error:</span><span class="se">\n</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">check_source</span><span class="p">(</span>
+                        <span class="n">allow_dispatch</span><span class="o">=</span><span class="n">allow_dispatch</span><span class="p">,</span>
+                        <span class="n">use_trace</span><span class="o">=</span><span class="n">check_attn_probs_with_trace</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_prefix_false_tokenizer</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="StandardizedTransformer.detect_layer_output_type">
