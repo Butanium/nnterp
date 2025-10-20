@@ -12,9 +12,9 @@ authors = [
 description = "Utils and mechanistic interpretability intervensions using nnsight"
 readme = "README.md"
 requires-python = ">=3.9"
+license = {text = "MIT"}
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
