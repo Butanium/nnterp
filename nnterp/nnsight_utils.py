@@ -217,11 +217,9 @@ def get_token_activations(
     if idx is None:
         idx = -1
     if idx < 0 and nn_model.tokenizer.padding_side != "left":
-        raise ValueError("negative index is currently only supported with left padding")
+        raise ValueError(f"negative index is currently only supported with left padding, not {nn_model.tokenizer.padding_side}")
     if idx > 0 and nn_model.tokenizer.padding_side != "right":
-        raise ValueError(
-            "positive index is currently only supported with right padding"
-        )
+        raise ValueError(f"positive index is currently only supported with right padding, not {nn_model.tokenizer.padding_side}")
     if layers is None:
         layers = list(range(get_num_layers(nn_model)))
     last_layer = max(layers)

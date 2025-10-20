@@ -719,6 +719,8 @@ print(
 # `NNsight 0.5` introduces a builtin way to cache activations during the forward pass. Be careful not to call `tracer.stop()` before all the module of the cache have been accessed.
 #
 # The cache supports both renamed and original module names. You can access cached activations using attribute notation or dictionary keys.
+#
+# **Note:** There is a bug in the current version of `NNsight` ()
 
 # %%
 with nnterp_gpt2.trace("Hello") as tracer:
