@@ -78,7 +78,7 @@ model.attention_probabilities.print_source()
 Collect activations for a certain token position. (For all token use `NNsight` cache functionality):
 
 ```python
-from nnterp import get_token_activations, collect_token_activations_batched
+from nnterp.nnsight_utils import get_token_activations, collect_token_activations_batched
 
 # Single batch - automatically uses tracer.stop() for efficiency
 prompts = ["The capital of France is", "The weather today is"]
@@ -96,7 +96,7 @@ batch_activations = collect_token_activations_batched(
 Track probabilities for specific target tokens in the answer of a prompt. This will automatically track both the first token of "target string" and " target string" (with a space).
 
 ```python
-from nnterp import Prompt, run_prompts
+from nnterp.prompt_utils import Prompt, run_prompts
 
 # Create prompts with target tokens to track
 # Automatically handles both "word" and " word" tokenization
@@ -123,7 +123,7 @@ All the classic interventions with best practices built-in:
 
 #### Logit Lens
 ```python
-from nnterp import logit_lens
+from nnterp.interventions import logit_lens
 
 prompts = ["The capital of France is", "The sun rises in the"]
 layer_probs = logit_lens(model, prompts)  # (batch, layers, vocab_size)
@@ -135,7 +135,7 @@ results = run_prompts(model, prompts, get_probs_func=logit_lens)
 
 #### Patchscope
 ```python
-from nnterp import patchscope_lens, TargetPrompt, repeat_prompt
+from nnterp.interventions import patchscope_lens, TargetPrompt, repeat_prompt
 
 # Custom target prompt
 target_prompt = TargetPrompt("The capital of France is", index_to_patch=-1)
@@ -151,7 +151,7 @@ patchscope_probs = patchscope_lens(
 
 #### Activation Steering
 ```python
-from nnterp import steer
+from nnterp.interventions import steer
 import torch
 
 # Create steering vector (e.g., from activation differences between concepts)
@@ -194,7 +194,9 @@ print(df.head())
 ## Complete Research Example
 
 ```python
-from nnterp import StandardizedTransformer, Prompt, run_prompts, logit_lens
+from nnterp import StandardizedTransformer
+from nnterp.prompt_utils import Prompt, run_prompts
+from nnterp.interventions import logit_lens
 from nnterp.display import plot_topk_tokens
 import torch
 import plotly.graph_objects as go

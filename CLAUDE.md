@@ -268,7 +268,7 @@ with model.trace(prompts) as tracer:
 
 **Target Token Tracking**:
 ```python
-from nnterp import Prompt, run_prompts
+from nnterp.prompt_utils import Prompt, run_prompts
 prompts = [Prompt.from_strings("input", {"target": "expected"}, tokenizer)]
 results = run_prompts(model, prompts)
 ```
