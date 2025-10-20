@@ -57,17 +57,20 @@ with model.trace("Hello world"):
 
 
 ### 2. Advanced Attention Access
-Access and modify attention probabilities directly:
+Access and modify attention probabilities directly (requires `enable_attention_probs=True`):
 
 ```python
+# Load model with attention probabilities enabled
+model = StandardizedTransformer("gpt2", enable_attention_probs=True)
+
 # Access attention probabilities during forward pass
 with model.trace("The cat sat on the mat"):
     attn_probs = model.attention_probabilities[5].save()  # Layer 5 attention
-    
+
     # Modify attention patterns
     attn_probs[:, :, :, 0] = 0  # Zero out attention to first token
     attn_probs /= attn_probs.sum(dim=-1, keepdim=True)  # Renormalize
-    
+
     modified_logits = model.logits.save()
 
 # Check what transformations are applied

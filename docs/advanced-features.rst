@@ -4,19 +4,24 @@ Advanced Features
 Attention Probabilities
 -----------------------
 
-For supported models, access attention probabilities:
+For supported models, access attention probabilities. You must enable them when loading the model by setting `enable_attention_probs=True`:
 
 .. code-block:: python
+
+   from nnterp import StandardizedTransformer
+
+   # Load model with attention probabilities enabled
+   model = StandardizedTransformer("gpt2", enable_attention_probs=True)
 
    with model.trace("The cat sat on the mat"):
        # Access attention probabilities for layer 5
        attn_probs = model.attention_probabilities[5].save()
        # Shape: (batch, heads, seq_len, seq_len)
-       
+
        # Modify attention patterns
        attn_probs[:, :, :, 0] = 0  # Remove attention to first token
        attn_probs /= attn_probs.sum(dim=-1, keepdim=True)  # Renormalize
-       
+
        modified_logits = model.logits.save()
 
 Check what's happening:

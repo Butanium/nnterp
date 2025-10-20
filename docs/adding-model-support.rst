@@ -121,6 +121,7 @@ Create the attention probabilities function:
 
    model = StandardizedTransformer(
        "yujiepan/gptj-tiny-random",
+       enable_attention_probs=True,
        rename_config=RenameConfig(attn_prob_source=GPTJAttnProbFunction())
    )
 

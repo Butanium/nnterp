@@ -7,7 +7,9 @@ def test_print_attn_probabilities_source(model_name):
     """Test printing attention probabilities source"""
     with th.no_grad():
         model = StandardizedTransformer(
-            model_name, tokenizer_kwargs=dict(padding_side="right")
+            model_name,
+            enable_attention_probs=True,
+            tokenizer_kwargs=dict(padding_side="right"),
         )
         model.attention_probabilities.print_source()
 
@@ -16,7 +18,9 @@ def test_access_attn_probabilities(model_name):
     """Test accessing attention probabilities"""
     with th.no_grad():
         model = StandardizedTransformer(
-            model_name, tokenizer_kwargs=dict(padding_side="right")
+            model_name,
+            enable_attention_probs=True,
+            tokenizer_kwargs=dict(padding_side="right"),
         )
         if not model.attn_probs_available:
             pytest.fail("Attention probabilities are not available for this model")
@@ -42,7 +46,9 @@ def test_edit_attn_probabilities(model_name):
     """Test editing attention probabilities"""
     with th.no_grad():
         model = StandardizedTransformer(
-            model_name, tokenizer_kwargs=dict(padding_side="right")
+            model_name,
+            enable_attention_probs=True,
+            tokenizer_kwargs=dict(padding_side="right"),
         )
         if not model.attn_probs_available:
             pytest.fail("Attention probabilities are not available for this model")

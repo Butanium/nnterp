@@ -413,8 +413,14 @@ def gptj_attention_prob_source(attention_module, return_module_source: bool = Fa
 
 
 class AttentionProbabilitiesAccessor:
-    def __init__(self, model, rename_config: RenameConfig | None = None):
+    def __init__(
+        self,
+        model,
+        rename_config: RenameConfig | None = None,
+        initialized_with_enable: bool = False,
+    ):
         self.model = model
+        self.initialized_with_enable = initialized_with_enable
         if rename_config is not None and rename_config.attn_prob_source is not None:
             self.source_attr = rename_config.attn_prob_source
         elif isinstance(model._model, BloomForCausalLM):
@@ -430,14 +436,24 @@ class AttentionProbabilitiesAccessor:
     def disable(self):
         self.enabled = False
 
-    def __getitem__(self, layer: int) -> TraceTensor:
+    def _check_enabled(self):
         if not self.enabled:
-            raise RenamingError("Attention probabilities are disabled for this model.")
+            if self.initialized_with_enable:
+                raise RenamingError(
+                    "Attention probabilities are disabled for this model."
+                )
+            else:
+                raise RenamingError(
+                    "Attention probabilities are disabled for this model. "
+                    "Set enable_attention_probs=True when loading the model to enable them."
+                )
+
+    def __getitem__(self, layer: int) -> TraceTensor:
+        self._check_enabled()
         return self.source_attr(self.model.layers[layer].self_attn).output
 
     def __setitem__(self, layer: int, value: TraceTensor):
-        if not self.enabled:
-            raise RenamingError("Attention probabilities are disabled for this model.")
+        self._check_enabled()
         self.source_attr(self.model.layers[layer].self_attn).output = value
 
     def check_source(

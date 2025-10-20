@@ -67,6 +67,7 @@ nnterp is a mechanistic interpretability library built on top of nnsight, provid
 - Unified interface for different transformer architectures (extends `nnsight.LanguageModel`)
 - Standardizes module naming across models (layers, attention, MLP components)
 - **Primary model loading method**: Use `StandardizedTransformer("model_name")` instead of deprecated `load_model()`
+- **Attention probabilities**: Opt-in with `enable_attention_probs=True` (automatically sets `attn_implementation="eager"`)
 
 **Key Accessors**:
 - `layers_input[i]` / `layers_output[i]` - Layer I/O

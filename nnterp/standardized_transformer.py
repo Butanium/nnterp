@@ -65,6 +65,8 @@ class StandardizedTransformer(LanguageModel):
         allow_dispatch (bool, default True): If True, allows using trace() to dispatch the model
             when scan() fails during renaming checks. Defaults to True. You should set this to false
             if you plan to use the model remotely.
+        enable_attention_probs (bool, default False): If True, enables attention probabilities
+            tracing by setting attn_implementation="eager". Defaults to False.
         check_attn_probs_with_trace (bool, default True): If True, the model will be dispatched and a test will ensure that the attention probabilities returned sum to 1.
         rename_config (RenameConfig, default None): A RenameConfig object to use for renaming the model. If None, a default RenameConfig will be used.
     """
@@ -75,23 +77,24 @@ class StandardizedTransformer(LanguageModel):
         trust_remote_code: bool = False,
         check_renaming: bool = True,
         allow_dispatch: bool = True,
+        enable_attention_probs: bool = False,
         check_attn_probs_with_trace: bool = True,
         rename_config: RenameConfig | None = None,
         **kwargs,
     ):
         kwargs.setdefault("device_map", "auto")
-        # Check if attention implementation is supported for attention pattern tracing
-        if "attn_implementation" in kwargs:
-            impl = kwargs.pop("attn_implementation", None)
-            if impl != "eager":
-                logger.warning(
-                    f"Attention implementation {impl} is not supported for attention pattern tracing. Please use eager attention implementation if you plan to access attention patterns."
+        if "attn_implementation" in kwargs and enable_attention_probs:
+            if kwargs["attn_implementation"] != "eager":
+                raise ValueError(
+                    f"Cannot use attn_implementation='{kwargs['attn_implementation']}' with enable_attention_probs=True. "
+                    "Either set enable_attention_probs=False or don't pass attn_implementation."
                 )
-        else:
-            logger.info(
-                "Enforcing eager attention implementation for attention pattern tracing. The HF default would be to use sdpa if available. To use sdpa, set attn_implementation='sdpa' or None to use the HF default."
-            )
-            impl = "eager"
+        attn_implementation = (
+            "eager"
+            if enable_attention_probs
+            else kwargs.pop("attn_implementation", None)
+        )
+
         tokenizer_kwargs = kwargs.pop("tokenizer_kwargs", {})
         rename = get_rename_dict(rename_config=rename_config)
         user_rename = kwargs.pop("rename", None)
@@ -102,7 +105,7 @@ class StandardizedTransformer(LanguageModel):
             rename.update(user_rename)
         super().__init__(
             model,
-            attn_implementation=impl,
+            attn_implementation=attn_implementation,
             tokenizer_kwargs=tokenizer_kwargs,
             trust_remote_code=trust_remote_code,
             rename=rename,
@@ -139,19 +142,24 @@ class StandardizedTransformer(LanguageModel):
         if check_renaming:
             check_model_renaming(self, model_name, ignores, allow_dispatch)
         self.attention_probabilities = AttentionProbabilitiesAccessor(
-            self, rename_config=rename_config
+            self,
+            rename_config=rename_config,
+            initialized_with_enable=enable_attention_probs,
         )
         if check_renaming:
-            try:
+            if enable_attention_probs:
                 self.attention_probabilities.check_source(
                     allow_dispatch=allow_dispatch,
                     use_trace=check_attn_probs_with_trace,
                 )
-            except Exception as e:
-                logger.error(
-                    f"Attention probabilities is not available for {model_name} architecture. Disabling it. Error:\n{e}"
-                )
-                self.attention_probabilities.disable()
+            else:
+                try:
+                    self.attention_probabilities.check_source(
+                        allow_dispatch=allow_dispatch,
+                        use_trace=check_attn_probs_with_trace,
+                    )
+                except Exception:
+                    self.attention_probabilities.disable()
         self._add_prefix_false_tokenizer = None
 
     def detect_layer_output_type(self):

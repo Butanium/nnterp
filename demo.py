@@ -50,7 +50,8 @@ print(model.model.layers[0].self_attn)
 from nnterp import StandardizedTransformer
 
 # You will see the `layers` module printed two times, it'll be explained later.
-nnterp_gpt2 = StandardizedTransformer("gpt2")
+# Note: We use enable_attention_probs=True to enable attention pattern access
+nnterp_gpt2 = StandardizedTransformer("gpt2", enable_attention_probs=True)
 print(nnterp_gpt2)
 # StandardizedTransformer also use `device_map="auto"` by default:
 nnterp_gpt2.dispatch()
@@ -129,7 +130,7 @@ with nnterp_gpt2.trace("hello"):
 # - The model module output are of the expected shape
 # - Attention probabilities have the right shape, sum to 1, and changing them changes the output
 #
-# This comes with the trade-off that `nnterp` will dispatch your model when you load it, which can be annoying if you don't want to load the model's weights. Also to be able to access the attention probabibilties, `nnterp` loads your model with the `eager` attention implementation, which can be slower than the default hf implementation. If you don't need the attention probabilities, you can force to use the default hf implementation / another one by passing `attn_implementation=None` or `attn_implementation="your_implementation"`.
+# This comes with the trade-off that `nnterp` will dispatch your model when you load it, which can be annoying if you don't want to load the model's weights. To access attention probabilities, you need to explicitly load your model with `enable_attention_probs=True`, which automatically sets `attn_implementation="eager"` since other implementations (like sdpa or flash attention) don't support attention pattern tracing.
 #
 # What `nnterp` can NOT guarantee:
 # - The attention probabilities won't be modified by the model before being multiplied by the values. To ensure this, you can check `model.attention_probabilities.print_source()` (preferably in a notebook for markdown display) to understand where the attention probabilities are computed.
@@ -503,7 +504,7 @@ except Exception as e:
 from nnterp import StandardizedTransformer
 
 gptj = StandardizedTransformer(
-    "yujiepan/gptj-tiny-random"
+    "yujiepan/gptj-tiny-random", enable_attention_probs=True
 )  # In the current version of nnterp, this will work out of the box
 
 # %% [markdown]
@@ -576,6 +577,7 @@ class GPTJAttnProbFunction(AttnProbFunction):
 
 gptj = StandardizedTransformer(
     "yujiepan/gptj-tiny-random",
+    enable_attention_probs=True,
     rename_config=RenameConfig(attn_prob_source=GPTJAttnProbFunction()),
 )
 
