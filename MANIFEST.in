@@ -8,7 +8,7 @@ recursive-include nnterp *.py
 
 # Include the status file
 exclude data/*.json
-include data/status.json
+exclude data/*.json.lock
 
 # Exclude unwanted files and directories
 exclude test.ipynb
