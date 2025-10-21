@@ -68,6 +68,11 @@ try:
 except ImportError:
     GptOssForCausalLM = ArchitectureNotFound
 
+try:
+    from transformers import StableLmForCausalLM
+except ImportError:
+    StableLmForCausalLM = ArchitectureNotFound
+
 
 
 
