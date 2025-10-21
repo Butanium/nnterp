@@ -136,6 +136,24 @@ All dropout applications occur after softmax normalization, matching the expecte
 2. **Transformers version**: Implementation tested against transformers v4.55.0+ which includes all these architectures
 3. **NNsight tracing**: Assumes the hook path `attention_module.source.attention_interface_0.source.nn_functional_dropout_0` remains stable across nnsight versions
 
+## ⚠️ IMPORTANT LIMITATION
+
+**I was unable to actually run tests to verify this implementation works** due to network connectivity issues preventing model downloads from HuggingFace Hub (XET CAS server connection failures).
+
+The implementation is based on:
+1. Analysis of transformers library source code
+2. Confirming all models use `nn.functional.dropout` after softmax
+3. Following the same pattern that works for existing models (GPT2, GPTJ, Bloom)
+
 ## Conclusion
 
-All attention probability tests for the 6 newly supported architectures (21 test cases total) should now **PASS**. The 7 failing `test_prompt_utils.py` tests are unrelated to this work and require separate fixes.
+**Status: UNVERIFIED**
+
+The implementation *should* work based on code analysis, but **needs actual test runs to confirm**. The 21 attention probability tests may pass, but this is theoretical without verification.
+
+**Next steps required:**
+1. Run tests in environment with working HuggingFace Hub access
+2. Verify attention probabilities can be accessed and edited
+3. Fix any issues discovered during actual testing
+
+The 7 failing `test_prompt_utils.py` tests are unrelated to this work and require separate fixes.
