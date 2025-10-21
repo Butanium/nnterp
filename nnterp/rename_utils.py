@@ -12,6 +12,9 @@ from .utils import (
     BloomForCausalLM,
     GPT2LMHeadModel,
     GPTJForCausalLM,
+    Qwen2ForCausalLM,
+    Qwen3ForCausalLM,
+    GptOssForCausalLM,
 )
 
 IgnoreType = Literal["mlp", "attention"]
@@ -428,6 +431,9 @@ class AttentionProbabilitiesAccessor:
             self.source_attr = gpt2_attention_prob_source
         elif isinstance(model._model, GPTJForCausalLM):
             self.source_attr = gptj_attention_prob_source
+        elif isinstance(model._model, (Qwen2ForCausalLM, Qwen3ForCausalLM, GptOssForCausalLM)):
+            # Qwen2, Qwen3, and GptOss use the standard attention interface with nn.functional.dropout
+            self.source_attr = default_attention_prob_source
         else:
             self.source_attr = default_attention_prob_source
         self.enabled = True
