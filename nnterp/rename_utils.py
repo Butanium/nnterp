@@ -15,7 +15,7 @@ from .utils import (
     Qwen2MoeForCausalLM,
     DbrxForCausalLM,
     StableLmForCausalLM,
-    GPTNeoForCausalLM,
+    GptOssForCausalLM,
 )
 
 IgnoreType = Literal["mlp", "attention"]
@@ -417,16 +417,16 @@ def gptj_attention_prob_source(attention_module, return_module_source: bool = Fa
 
 def qwen2moe_attention_prob_source(attention_module, return_module_source: bool = False):
     if return_module_source:
-        return attention_module.source.super_0.source
+        return attention_module.source
     else:
-        return attention_module.source.super_0.source.nn_functional_dropout_0
+        return attention_module.source.nn_functional_dropout_0
 
 
 def dbrx_attention_prob_source(attention_module, return_module_source: bool = False):
     if return_module_source:
-        return attention_module.source
+        return attention_module.attn.source
     else:
-        return attention_module.source.nn_functional_dropout_0
+        return attention_module.attn.source.nn_functional_dropout_0
 
 
 def stablelm_attention_prob_source(attention_module, return_module_source: bool = False):
@@ -436,11 +436,13 @@ def stablelm_attention_prob_source(attention_module, return_module_source: bool 
         return attention_module.source.self_attention_dropout_0
 
 
-def gptneo_attention_prob_source(attention_module, return_module_source: bool = False):
+def gptoss_attention_prob_source(attention_module, return_module_source: bool = False):
     if return_module_source:
-        return attention_module.source
+        return attention_module.source.attention_interface_0.source
     else:
-        return attention_module.source.self_attn_dropout_0
+        # Use F_softmax_0 instead of nn_functional_dropout_0 because gpt-oss uses sink tokens
+        # and drops them after softmax, so the dropout output doesn't sum to 1
+        return attention_module.source.attention_interface_0.source.F_softmax_0
 
 
 class AttentionProbabilitiesAccessor:
@@ -466,11 +468,14 @@ class AttentionProbabilitiesAccessor:
             self.source_attr = dbrx_attention_prob_source
         elif isinstance(model._model, StableLmForCausalLM):
             self.source_attr = stablelm_attention_prob_source
-        elif isinstance(model._model, GPTNeoForCausalLM):
-            self.source_attr = gptneo_attention_prob_source
+        elif isinstance(model._model, GptOssForCausalLM):
+            self.source_attr = gptoss_attention_prob_source
+            self.has_non_standard_shape = True  # gpt-oss uses sink tokens
         else:
             self.source_attr = default_attention_prob_source
         self.enabled = True
+        if not hasattr(self, 'has_non_standard_shape'):
+            self.has_non_standard_shape = False
 
     def disable(self):
         self.enabled = False
@@ -508,10 +513,20 @@ class AttentionProbabilitiesAccessor:
             batch_size, seq_len = self.model.input_size
             num_heads = self.model.num_heads
             probs = self[layer]
-            if probs.shape != (batch_size, num_heads, seq_len, seq_len):
-                raise RenamingError(
-                    f"Attention probabilities have shape {probs.shape} != {(batch_size, num_heads, seq_len, seq_len)} (batch_size, n_head, seq_len, seq_len) in {self.model.repo_id} architecture. This means it's not properly initialized."
-                )
+
+            # Check shape - allow non-standard shapes for models like gpt-oss with sink tokens
+            if self.has_non_standard_shape:
+                # Only check first 3 dimensions for models with non-standard attention shapes
+                if probs.shape[:3] != (batch_size, num_heads, seq_len):
+                    raise RenamingError(
+                        f"Attention probabilities have shape {probs.shape}, expected first 3 dims to be {(batch_size, num_heads, seq_len)} in {self.model.repo_id} architecture."
+                    )
+            else:
+                if probs.shape != (batch_size, num_heads, seq_len, seq_len):
+                    raise RenamingError(
+                        f"Attention probabilities have shape {probs.shape} != {(batch_size, num_heads, seq_len, seq_len)} (batch_size, n_head, seq_len, seq_len) in {self.model.repo_id} architecture. This means it's not properly initialized."
+                    )
+
             rnd = th.randn_like(probs).abs()
             rnd = rnd / rnd.sum(dim=-1, keepdim=True)
             self[layer] = rnd

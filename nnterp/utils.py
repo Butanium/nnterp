@@ -69,9 +69,9 @@ except ImportError:
     StableLmForCausalLM = ArchitectureNotFound
 
 try:
-    from transformers import GPTNeoForCausalLM
+    from transformers import GptOssForCausalLM
 except ImportError:
-    GPTNeoForCausalLM = ArchitectureNotFound
+    GptOssForCausalLM = ArchitectureNotFound
 
 
 
