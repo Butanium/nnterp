@@ -63,6 +63,16 @@ try:
 except ImportError:
     Qwen2ForCausalLM = ArchitectureNotFound
 
+try:
+    from transformers import StableLmForCausalLM
+except ImportError:
+    StableLmForCausalLM = ArchitectureNotFound
+
+try:
+    from transformers import GPTNeoForCausalLM
+except ImportError:
+    GPTNeoForCausalLM = ArchitectureNotFound
+
 
 
 
