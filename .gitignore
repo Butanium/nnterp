@@ -11,7 +11,8 @@ nnterp/data/test_logs/*_status.json
 # general
 .junk/**
 junk**
-.claude
+.claude/*
+!.claude/skills/
 *.log
 build/
 dist/
