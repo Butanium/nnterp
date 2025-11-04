@@ -11,9 +11,11 @@ from nnterp.nnsight_utils import (
     project_on_vocab,
     get_mlp_output,
     get_num_layers,
+    ModelAccessor,
 )
-from nnterp.rename_utils import get_ignores
+from nnterp.rename_utils import get_ignores, RenameConfig
 from transformers import OPTForCausalLM
+import torch.nn as nn
 
 
 def get_layer_test(model_name, model, renamed, i):
@@ -473,3 +475,119 @@ def test_standardized_transformer_cache(model_name):
         # Access using dictionary notation with renamed path
         layer_0_output_dict = cache["model.layers.0"].output
         assert th.allclose(layer_0_output_attr[0], layer_0_output_dict[0])
+
+
+def test_model_accessor(model_name, raw_model):
+    """Test ModelAccessor class - all methods and functionality"""
+    with th.no_grad():
+        # Get the underlying PreTrainedModel
+        pretrained_model = raw_model._model
+        
+        # Test ModelAccessor with default config
+        accessor = ModelAccessor(pretrained_model)
+        
+        # Test that nn_model is created
+        assert accessor.nn_model is not None
+        
+        # Test get_embed_tokens returns a module
+        embed_tokens = accessor.get_embed_tokens()
+        assert isinstance(embed_tokens, nn.Module)
+        
+        # Test get_layers returns a ModuleList
+        layers = accessor.get_layers()
+        assert isinstance(layers, nn.ModuleList)
+        assert len(layers) > 0
+        
+        # Test get_attention returns a module
+        attention = accessor.get_attention(0)
+        assert isinstance(attention, nn.Module)
+        
+        # Test get_unembed_norm returns a module
+        # Note: This may fail for models where get_unembed_norm doesn't handle renamed paths
+        # (e.g., models with ln_final instead of model.norm). These failures reveal
+        # that get_unembed_norm needs to be updated to handle renamed models.
+        unembed_norm = accessor.get_unembed_norm()
+        assert isinstance(unembed_norm, nn.Module)
+        
+        # Test get_unembed returns a module
+        unembed = accessor.get_unembed()
+        assert isinstance(unembed, nn.Module)
+        
+        # Test get_mlp if not ignored
+        ignores = get_ignores(pretrained_model)
+        if "mlp" not in ignores:
+            mlp = accessor.get_mlp(0)
+            assert isinstance(mlp, nn.Module)
+        
+        # Test __getattr__ for module attributes
+        model_module = accessor.model
+        assert isinstance(model_module, nn.Module)
+        
+        lm_head_module = accessor.lm_head
+        assert isinstance(lm_head_module, nn.Module)
+        
+        # Test __getattr__ raises AttributeError for non-existent attributes
+        # This will fail at getattr(self.nn_model, name) before our custom error
+        with pytest.raises(AttributeError):
+            _ = accessor.nonexistent_attr
+        
+        # Test __getattr__ raises AttributeError for attributes without _module
+        # Find an attribute that exists on nn_model but doesn't have _module
+        # Common examples: methods, properties, or non-module attributes
+        attrs_to_test = ["tokenizer", "config", "device", "dtype"]
+        for attr_name in attrs_to_test:
+            if hasattr(accessor.nn_model, attr_name):
+                attr = getattr(accessor.nn_model, attr_name)
+                if not hasattr(attr, "_module"):
+                    # This attribute exists but doesn't have _module, should raise our custom error
+                    with pytest.raises(AttributeError, match=f"Attribute {attr_name} is not a module"):
+                        _ = getattr(accessor, attr_name)
+                    break
+        
+        # Test ModelAccessor with custom RenameConfig
+        custom_config = RenameConfig()
+        accessor_custom = ModelAccessor(pretrained_model, rename_config=custom_config)
+        
+        # Verify it still works with custom config
+        assert accessor_custom.nn_model is not None
+        embed_tokens_custom = accessor_custom.get_embed_tokens()
+        assert isinstance(embed_tokens_custom, nn.Module)
+        
+        # Test ModelAccessor with None rename_config
+        accessor_none = ModelAccessor(pretrained_model, rename_config=None)
+        assert accessor_none.nn_model is not None
+        
+        # Verify all getter methods work across different configs
+        layers_custom = accessor_custom.get_layers()
+        assert isinstance(layers_custom, nn.ModuleList)
+        assert len(layers_custom) == len(layers)
+        
+        attention_custom = accessor_custom.get_attention(0)
+        assert isinstance(attention_custom, nn.Module)
+        
+        unembed_norm_custom = accessor_custom.get_unembed_norm()
+        assert isinstance(unembed_norm_custom, nn.Module)
+        
+        unembed_custom = accessor_custom.get_unembed()
+        assert isinstance(unembed_custom, nn.Module)
+        
+        if "mlp" not in ignores:
+            mlp_custom = accessor_custom.get_mlp(0)
+            assert isinstance(mlp_custom, nn.Module)
+        
+        # Test accessing multiple layers
+        num_layers = len(layers)
+        if num_layers > 1:
+            attention_1 = accessor.get_attention(1)
+            assert isinstance(attention_1, nn.Module)
+            if "mlp" not in ignores:
+                mlp_1 = accessor.get_mlp(1)
+                assert isinstance(mlp_1, nn.Module)
+        
+        # Test __getattr__ with module names that should exist after renaming
+        # After renaming via get_rename_dict, model should have certain attributes
+        # Test that we can access layers if they exist as an attribute on nn_model
+        if hasattr(accessor.nn_model, "layers"):
+            layers_attr = accessor.layers
+            assert isinstance(layers_attr, nn.ModuleList)
+            assert len(layers_attr) == len(layers)
