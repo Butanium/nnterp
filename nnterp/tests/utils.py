@@ -63,19 +63,19 @@ def filter_skipped_models(model_list):
 
 def get_all_toy_models():
     """Get all toy models from HuggingFace collection.
-    
+
     Uses a cached file to avoid rate limiting when running tests in parallel.
     Cache expires after 24 hours.
-    
+
     Returns sorted list to ensure deterministic test collection for pytest-xdist.
     """
     from datetime import datetime, timedelta
     import json
-    
+
     cache_file = Path(__file__).parent.parent / "data" / "toy_models_cache.json"
     cache_lock = str(cache_file) + ".lock"
     cache_ttl = timedelta(hours=24)
-    
+
     lock = FileLock(cache_lock)
     with lock:
         # Check if valid cache exists
@@ -89,7 +89,7 @@ def get_all_toy_models():
                     return cache_data["models"]
             except (json.JSONDecodeError, KeyError, ValueError) as e:
                 logger.warning(f"Invalid cache file, will re-fetch: {e}")
-        
+
         # Fetch from HuggingFace
         logger.info("Fetching toy models from HuggingFace (cache miss or expired)")
         models = [
@@ -99,15 +99,14 @@ def get_all_toy_models():
             ).items
         ]
         models = sorted(models)
-        
+
         # Save to cache
         cache_file.parent.mkdir(parents=True, exist_ok=True)
         with open(cache_file, "w") as f:
-            json.dump({
-                "timestamp": datetime.now().isoformat(),
-                "models": models
-            }, f, indent=2)
-        
+            json.dump(
+                {"timestamp": datetime.now().isoformat(), "models": models}, f, indent=2
+            )
+
         return models
 
 
@@ -148,7 +147,7 @@ def sort_json_recursively(obj, preserve_level=None, current_level=0):
 
 def get_all_test_models(class_names=None) -> list[str]:
     """Get all models used in tests: both collection models and hardcoded ones.
-    
+
     Returns sorted list to ensure deterministic test collection for pytest-xdist.
     """
     collection_models = get_all_toy_models()
@@ -163,7 +162,7 @@ def get_all_test_models(class_names=None) -> list[str]:
 
 def load_test_loading_status():
     """Load the test loading status for current transformers/nnsight versions.
-    
+
     Thread-safe: Uses file lock to prevent race conditions with pytest-xdist.
     """
     lock = FileLock(test_loading_status_lock)
@@ -198,7 +197,7 @@ def load_test_loading_status():
 
 def save_test_loading_status(transformers_status):
     """Save the test loading status dict for current transformers version.
-    
+
     Thread-safe: Uses file lock to prevent race conditions with pytest-xdist.
     """
     lock = FileLock(test_loading_status_lock)
@@ -407,7 +406,7 @@ def get_available_models(model_names):
 
 def get_all_available_models():
     """Get all available models using fast status-based filtering.
-    
+
     Returns sorted list to ensure deterministic test collection for pytest-xdist.
     """
     # Use sorted instead of list(set(...)) for deterministic ordering

@@ -32,7 +32,7 @@ html_js_files = ["source-link-navbar.js"]
 html_show_sphinx = False
 html_show_sourcelink = True
 html_copy_source = True
-html_sourcelink_suffix = '.txt'
+html_sourcelink_suffix = ".txt"
 
 # Important for GitHub Pages
 html_baseurl = "https://butanium.github.io/nnterp/"
@@ -70,25 +70,30 @@ def parse_toctree(index_rst_path):
     """Extract toctree structure from index.rst"""
     with open(index_rst_path) as f:
         content = f.read()
-    
-    toctree_pattern = r'\.\. toctree::\s*\n((?:   .*\n|\s*\n)*?)(?=\n\S|\Z)'
-    
+
+    toctree_pattern = r"\.\. toctree::\s*\n((?:   .*\n|\s*\n)*?)(?=\n\S|\Z)"
+
     sections = []
     for match in re.finditer(toctree_pattern, content, re.MULTILINE):
         block = match.group(0)
-        
-        caption_match = re.search(r':caption:\s*(.+?):', block)
+
+        caption_match = re.search(r":caption:\s*(.+?):", block)
         caption = caption_match.group(1).strip() if caption_match else None
-        
+
         paths = []
-        for line in block.split('\n'):
+        for line in block.split("\n"):
             stripped = line.strip()
-            if stripped and not stripped.startswith(':') and not stripped.startswith('..') and line.startswith('   '):
+            if (
+                stripped
+                and not stripped.startswith(":")
+                and not stripped.startswith("..")
+                and line.startswith("   ")
+            ):
                 paths.append(stripped)
-        
+
         if paths:
-            sections.append({'caption': caption, 'files': paths})
-    
+            sections.append({"caption": caption, "files": paths})
+
     return sections
 
 
@@ -96,16 +101,18 @@ def parse_rst_metadata(rst_file):
     """Extract title and llm-description from RST file"""
     if not rst_file.exists():
         return None, None
-        
+
     with open(rst_file) as f:
         content = f.read()
-    
-    title_match = re.search(r'^(.+)\n[=\-~]+', content, re.MULTILINE)
+
+    title_match = re.search(r"^(.+)\n[=\-~]+", content, re.MULTILINE)
     title = title_match.group(1).strip() if title_match else None
-    
-    desc_match = re.search(r':llm-description:\s+(.+?)(?:\n\n|\n\.\.|\Z)', content, re.DOTALL)
+
+    desc_match = re.search(
+        r":llm-description:\s+(.+?)(?:\n\n|\n\.\.|\Z)", content, re.DOTALL
+    )
     description = desc_match.group(1).strip() if desc_match else None
-    
+
     return title, description
 
 
@@ -114,41 +121,47 @@ def generate_llms_txt(source_dir, output_file):
     source_path = Path(source_dir)
     index_rst = source_path / "index.rst"
     header_file = source_path / "llms_header.txt"
-    
+
     with open(header_file) as f:
         lines = [f.read().rstrip(), ""]
-    
+
     sections = parse_toctree(index_rst)
-    
+
     for section in sections:
-        if section['caption']:
+        if section["caption"]:
             lines.append(f"## {section['caption']}")
             lines.append("")
-        
-        for rst_path in section['files']:
-            full_path = source_path / f"{rst_path}.rst" if not rst_path.endswith('.rst') else source_path / rst_path
-            
+
+        for rst_path in section["files"]:
+            full_path = (
+                source_path / f"{rst_path}.rst"
+                if not rst_path.endswith(".rst")
+                else source_path / rst_path
+            )
+
             title, description = parse_rst_metadata(full_path)
             if title and description:
-                normalized_path = rst_path if rst_path.endswith('.rst') else f"{rst_path}.rst"
+                normalized_path = (
+                    rst_path if rst_path.endswith(".rst") else f"{rst_path}.rst"
+                )
                 source_link = f"/_sources/{normalized_path}.txt"
                 lines.append(f"- [{title}]({source_link}): {description}")
-        
+
         lines.append("")
-    
-    with open(output_file, 'w') as f:
-        f.write('\n'.join(lines))
+
+    with open(output_file, "w") as f:
+        f.write("\n".join(lines))
 
 
 def setup(app):
     """Sphinx setup hook"""
     source_dir = app.srcdir
-    output_file = Path(source_dir) / 'llms.txt'
-    
+    output_file = Path(source_dir) / "llms.txt"
+
     generate_llms_txt(source_dir, output_file)
-    
+
     return {
-        'version': '0.1',
-        'parallel_read_safe': True,
-        'parallel_write_safe': True,
+        "version": "0.1",
+        "parallel_read_safe": True,
+        "parallel_write_safe": True,
     }

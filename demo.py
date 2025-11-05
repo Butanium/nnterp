@@ -70,6 +70,7 @@ print(nnterp_gpt2.model.device)
 # %%
 from transformers import __version__ as TRANSFORMERS_VERSION
 from packaging.version import parse
+
 llama = LanguageModel("Maykeye/TinyLLama-v0")
 # code for transformer "<4.54"
 is_old_transformers = parse(TRANSFORMERS_VERSION) < parse("4.54")

@@ -6,7 +6,13 @@ from loguru import logger
 
 import torch as th
 from nnsight import Envoy
-from .utils import TraceTensor, is_notebook, display_markdown, try_with_scan, dummy_inputs
+from .utils import (
+    TraceTensor,
+    is_notebook,
+    display_markdown,
+    try_with_scan,
+    dummy_inputs,
+)
 from .utils import (
     OPTForCausalLM,
     BloomForCausalLM,
