@@ -32,6 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=519ae551" />
   
   <!-- So that users can add custom icons -->
   <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -47,6 +48,7 @@
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/nnterp/rename_utils';</script>
+    <script src="../../_static/source-link-navbar.js?v=9c7d967d"></script>
     <link rel="canonical" href="https://butanium.github.io/nnterp/_modules/nnterp/rename_utils.html" />
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -451,8 +453,7 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">th</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nnsight</span><span class="w"> </span><span class="kn">import</span> <span class="n">Envoy</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.nnsight_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TraceTensor</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_notebook</span><span class="p">,</span> <span class="n">display_markdown</span><span class="p">,</span> <span class="n">try_with_scan</span><span class="p">,</span> <span class="n">dummy_inputs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TraceTensor</span><span class="p">,</span> <span class="n">is_notebook</span><span class="p">,</span> <span class="n">display_markdown</span><span class="p">,</span> <span class="n">try_with_scan</span><span class="p">,</span> <span class="n">dummy_inputs</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">OPTForCausalLM</span><span class="p">,</span>
     <span class="n">BloomForCausalLM</span><span class="p">,</span>
@@ -920,8 +921,14 @@
 <div class="viewcode-block" id="AttentionProbabilitiesAccessor">
 <a class="viewcode-back" href="../../api.html#nnterp.rename_utils.AttentionProbabilitiesAccessor">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AttentionProbabilitiesAccessor</span><span class="p">:</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">initialized_with_enable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialized_with_enable</span> <span class="o">=</span> <span class="n">initialized_with_enable</span>
         <span class="k">if</span> <span class="n">rename_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">attn_prob_source</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span> <span class="o">=</span> <span class="n">rename_config</span><span class="o">.</span><span class="n">attn_prob_source</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">BloomForCausalLM</span><span class="p">):</span>
@@ -940,14 +947,24 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TraceTensor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span><span class="s2">&quot;Attention probabilities are disabled for this model.&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialized_with_enable</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span>
+                    <span class="s2">&quot;Attention probabilities are disabled for this model.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span>
+                    <span class="s2">&quot;Attention probabilities are disabled for this model. &quot;</span>
+                    <span class="s2">&quot;Set enable_attention_probs=True when loading the model to enable them.&quot;</span>
+                <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TraceTensor</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_enabled</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">self_attn</span><span class="p">)</span><span class="o">.</span><span class="n">output</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">TraceTensor</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">RenamingError</span><span class="p">(</span><span class="s2">&quot;Attention probabilities are disabled for this model.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_enabled</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">source_attr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">self_attn</span><span class="p">)</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">value</span>
 
 <div class="viewcode-block" id="AttentionProbabilitiesAccessor.check_source">

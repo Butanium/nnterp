@@ -32,6 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=519ae551" />
   
   <!-- So that users can add custom icons -->
   <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -47,6 +48,7 @@
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/nnterp/nnsight_utils';</script>
+    <script src="../../_static/source-link-navbar.js?v=9c7d967d"></script>
     <link rel="canonical" href="https://butanium.github.io/nnterp/_modules/nnterp/nnsight_utils.html" />
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -447,15 +449,29 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Callable</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">th</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">nnsight</span><span class="w"> </span><span class="kn">import</span> <span class="n">LanguageModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nnsight</span><span class="w"> </span><span class="kn">import</span> <span class="n">LanguageModel</span><span class="p">,</span> <span class="n">NNsight</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nnsight.intervention.envoy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Envoy</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nnsight.intervention.tracing.globals</span><span class="w"> </span><span class="kn">import</span> <span class="n">Object</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TraceTensor</span><span class="p">,</span> <span class="n">DummyCache</span><span class="p">,</span> <span class="n">unpack_tuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedModel</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TraceTensor</span><span class="p">,</span> <span class="n">unpack_tuple</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.standardized_transformer</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardizedTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.rename_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_rename_dict</span><span class="p">,</span> <span class="n">RenameConfig</span>
 
 <span class="n">GetModuleOutput</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">LanguageModel</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">TraceTensor</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="get_embed_tokens">
+<a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.get_embed_tokens">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_embed_tokens</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">LanguageModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the token embedding layer of the model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">embed_tokens</span></div>
+
 
 
 <div class="viewcode-block" id="get_layers">
@@ -564,7 +580,7 @@
 <a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.get_mlp">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_mlp</span><span class="p">(</span><span class="n">nn_model</span><span class="p">:</span> <span class="n">LanguageModel</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Envoy</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Get the MLP of a layer</span>
+<span class="sd">    Get the MLP module of a layer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">get_layer</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">mlp</span></div>
 
@@ -674,6 +690,83 @@
 
 
 
+<div class="viewcode-block" id="ModuleAccessor">
+<a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.ModuleAccessor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModuleAccessor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Module that allows to use the NNsight and nnterp renaming utilities on huggingface models, to get the pytorch nn.Module objects with the same standardized names as the StandardizedTransformer class::</span>
+
+<span class="sd">        ModuleAccessor</span>
+<span class="sd">        ├── embed_tokens</span>
+<span class="sd">        ├── layers</span>
+<span class="sd">        │   ├── self_attn</span>
+<span class="sd">        │   └── mlp</span>
+<span class="sd">        ├── ln_final</span>
+<span class="sd">        └── lm_head</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model: The huggingface model to access</span>
+<span class="sd">        rename_config: An optional nnterp RenameConfig if your model has custom module names</span>
+<span class="sd">        rename: An optional dictionary to allow you to have your own custom renaming operations</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">PreTrainedModel</span><span class="p">,</span>
+        <span class="n">rename_config</span><span class="p">:</span> <span class="n">RenameConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">rename</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">full_rename</span> <span class="o">=</span> <span class="n">get_rename_dict</span><span class="p">(</span><span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">full_rename</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">rename</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nn_model</span> <span class="o">=</span> <span class="n">NNsight</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">rename</span><span class="o">=</span><span class="n">full_rename</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="s2">&quot;_module&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">attr</span><span class="o">.</span><span class="n">_module</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Attribute </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> is not a module&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ModuleAccessor.get_embed_tokens">
+<a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.ModuleAccessor.get_embed_tokens">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_embed_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nn_model</span><span class="o">.</span><span class="n">embed_tokens</span><span class="o">.</span><span class="n">_module</span></div>
+
+
+<div class="viewcode-block" id="ModuleAccessor.get_layers">
+<a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.ModuleAccessor.get_layers">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_layers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nn_model</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">_module</span></div>
+
+
+<div class="viewcode-block" id="ModuleAccessor.get_mlp">
+<a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.ModuleAccessor.get_mlp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_mlp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nn_model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">mlp</span><span class="o">.</span><span class="n">_module</span></div>
+
+
+<div class="viewcode-block" id="ModuleAccessor.get_attention">
+<a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.ModuleAccessor.get_attention">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_attention</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nn_model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">self_attn</span><span class="o">.</span><span class="n">_module</span></div>
+
+
+<div class="viewcode-block" id="ModuleAccessor.get_unembed_norm">
+<a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.ModuleAccessor.get_unembed_norm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_unembed_norm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nn_model</span><span class="o">.</span><span class="n">ln_final</span><span class="o">.</span><span class="n">_module</span></div>
+
+
+<div class="viewcode-block" id="ModuleAccessor.get_unembed">
+<a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.ModuleAccessor.get_unembed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_unembed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nn_model</span><span class="o">.</span><span class="n">lm_head</span><span class="o">.</span><span class="n">_module</span></div>
+</div>
+
+
+
 <div class="viewcode-block" id="get_token_activations">
 <a class="viewcode-back" href="../../api.html#nnterp.nnsight_utils.get_token_activations">[docs]</a>
 <span class="nd">@th</span><span class="o">.</span><span class="n">no_grad</span>
@@ -709,10 +802,12 @@
     <span class="k">if</span> <span class="n">idx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
     <span class="k">if</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">nn_model</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">padding_side</span> <span class="o">!=</span> <span class="s2">&quot;left&quot;</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;negative index is currently only supported with left padding&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;negative index is currently only supported with left padding, not </span><span class="si">{</span><span class="n">nn_model</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">padding_side</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
     <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">nn_model</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">padding_side</span> <span class="o">!=</span> <span class="s2">&quot;right&quot;</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;positive index is currently only supported with right padding&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;positive index is currently only supported with right padding, not </span><span class="si">{</span><span class="n">nn_model</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">padding_side</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">layers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">layers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">get_num_layers</span><span class="p">(</span><span class="n">nn_model</span><span class="p">)))</span>

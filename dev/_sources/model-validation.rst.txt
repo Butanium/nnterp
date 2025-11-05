@@ -1,6 +1,9 @@
 Model Validation & Testing
 ===========================
 
+.. meta::
+   :llm-description: Automatic testing system that runs on model load. Learn what nnterp guarantees, trade-offs with model dispatch and attention implementation, and manual testing commands.
+
 ``nnterp`` includes automatic validation to prevent silent failures and ensure model correctness. When you load a model, a series of fast tests run automatically to verify the model works as expected.
 
 Automatic Testing System
@@ -59,16 +62,28 @@ Model Dispatch
 Attention Implementation
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To access attention probabilities, ``nnterp`` loads models with ``attn_implementation="eager"`` by default, which can be slower than the default HuggingFace implementation.
-
-If you don't need attention probabilities, you can use a different implementation:
+``nnterp`` uses the default HuggingFace attention implementation by default. To access attention probabilities, you must explicitly set ``enable_attention_probs=True``, which automatically configures the model to use ``attn_implementation="eager"`` since other implementations (like sdpa or flash attention) don't support attention pattern tracing.
 
 .. code-block:: python
 
-   # Use default HuggingFace attention implementation
+   # To access attention probabilities (slower but traceable)
    model = StandardizedTransformer(
        "gpt2",
-       attn_implementation=None  # or "flash_attention_2", "sdpa", etc.
+       enable_attention_probs=True
+   )
+
+   # Use default HuggingFace implementation (faster, no attention tracing)
+   model = StandardizedTransformer("gpt2")  # Uses default HF implementation
+
+If you try to use both ``enable_attention_probs=True`` and a non-eager ``attn_implementation``, ``nnterp`` will raise an error:
+
+.. code-block:: python
+
+   # This will raise an error
+   model = StandardizedTransformer(
+       "gpt2",
+       enable_attention_probs=True,
+       attn_implementation="sdpa"  # Conflicts with enable_attention_probs
    )
 
 Manual Testing
