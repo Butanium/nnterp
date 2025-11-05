@@ -453,7 +453,13 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">th</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nnsight</span><span class="w"> </span><span class="kn">import</span> <span class="n">Envoy</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TraceTensor</span><span class="p">,</span> <span class="n">is_notebook</span><span class="p">,</span> <span class="n">display_markdown</span><span class="p">,</span> <span class="n">try_with_scan</span><span class="p">,</span> <span class="n">dummy_inputs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TraceTensor</span><span class="p">,</span>
+    <span class="n">is_notebook</span><span class="p">,</span>
+    <span class="n">display_markdown</span><span class="p">,</span>
+    <span class="n">try_with_scan</span><span class="p">,</span>
+    <span class="n">dummy_inputs</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">OPTForCausalLM</span><span class="p">,</span>
     <span class="n">BloomForCausalLM</span><span class="p">,</span>

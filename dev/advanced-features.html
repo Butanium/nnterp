@@ -480,21 +480,30 @@
 <section id="renaming-a-languagemodel-or-nnsight-class">
 <h3>Renaming a <code class="docutils literal notranslate"><span class="pre">LanguageModel</span></code> or <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> class<a class="headerlink" href="#renaming-a-languagemodel-or-nnsight-class" title="Link to this heading">#</a></h3>
 <p><cite>get_rename_dict</cite> combined with the <cite>rename</cite> feature of <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> will allow you to access the modules of the model with the same names as the <code class="docutils literal notranslate"><span class="pre">StandardizedTransformer</span></code> class:</p>
-<p>For that, you just need to pass the rename dictionary to the <code class="docutils literal notranslate"><span class="pre">LanguageModel</span></code> or <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> class:
-.. code-block:: python</p>
-<blockquote>
-<div><p>from nnterp import get_rename_dict
-from nnsight import LanguageModel, NNsight
-from transformers import AutoModelForCausalLM</p>
-<p>rename_dict = get_rename_dict()
-renamed_model = LanguageModel(“gpt2”, rename=rename_dict)
-# or
-hf_model = AutoModelForCausalLM.from_pretrained(“gpt2”)
-renamed_model = LanguageModel(hf_model, rename=rename_dict)
-# or
-renamed_model = NNsight(hf_model, rename=rename_dict) # NNsight works with any PyTorch model
-print(renamed_model.layers, renamed_model.ln_final, renamed_model.lm_head)</p>
-</div></blockquote>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>your_model
+├── embed_tokens
+├── layers
+│   ├── self_attn
+│   └── mlp
+├── ln_final
+└── lm_head
+</pre></div>
+</div>
+<p>For that, you just need to pass the rename dictionary to the <code class="docutils literal notranslate"><span class="pre">LanguageModel</span></code> or <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> class:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_rename_dict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nnsight</span><span class="w"> </span><span class="kn">import</span> <span class="n">LanguageModel</span><span class="p">,</span> <span class="n">NNsight</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
+
+<span class="n">rename_dict</span> <span class="o">=</span> <span class="n">get_rename_dict</span><span class="p">()</span>
+<span class="n">renamed_model</span> <span class="o">=</span> <span class="n">LanguageModel</span><span class="p">(</span><span class="s2">&quot;gpt2&quot;</span><span class="p">,</span> <span class="n">rename</span><span class="o">=</span><span class="n">rename_dict</span><span class="p">)</span>
+<span class="c1"># or</span>
+<span class="n">hf_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;gpt2&quot;</span><span class="p">)</span>
+<span class="n">renamed_model</span> <span class="o">=</span> <span class="n">LanguageModel</span><span class="p">(</span><span class="n">hf_model</span><span class="p">,</span> <span class="n">rename</span><span class="o">=</span><span class="n">rename_dict</span><span class="p">)</span>
+<span class="c1"># or</span>
+<span class="n">renamed_model</span> <span class="o">=</span> <span class="n">NNsight</span><span class="p">(</span><span class="n">hf_model</span><span class="p">,</span> <span class="n">rename</span><span class="o">=</span><span class="n">rename_dict</span><span class="p">)</span> <span class="c1"># NNsight works with any PyTorch model</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">renamed_model</span><span class="o">.</span><span class="n">layers</span><span class="p">,</span> <span class="n">renamed_model</span><span class="o">.</span><span class="n">ln_final</span><span class="p">,</span> <span class="n">renamed_model</span><span class="o">.</span><span class="n">lm_head</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
 <section id="accessing-the-pytorch-modules-using-renaming">
 <h3>Accessing the PyTorch modules using renaming<a class="headerlink" href="#accessing-the-pytorch-modules-using-renaming" title="Link to this heading">#</a></h3>
@@ -511,16 +520,15 @@ If you embed your model using the <code class="docutils literal notranslate"><sp
 <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layers_modules</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>However, the <cite>._module</cite> syntax is not very convenient, so you can use the <cite>ModuleAccessor</cite> class to access the modules directly:
-.. code-block:: python</p>
-<blockquote>
-<div><p>from nnterp import ModuleAccessor
-module_accessor = ModuleAccessor(hf_model)
-layers_modules = module_accessor.get_layers()
-# or
-layers_modules = module_accessor.layers
-assert isinstance(layers_modules, nn.ModuleList)</p>
-</div></blockquote>
+<p>However, the <code class="docutils literal notranslate"><span class="pre">._module</span></code> syntax is not very convenient, so you can use the <code class="docutils literal notranslate"><span class="pre">ModuleAccessor</span></code> class to access the modules directly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModuleAccessor</span>
+<span class="n">module_accessor</span> <span class="o">=</span> <span class="n">ModuleAccessor</span><span class="p">(</span><span class="n">hf_model</span><span class="p">)</span>
+<span class="n">layers_modules</span> <span class="o">=</span> <span class="n">module_accessor</span><span class="o">.</span><span class="n">get_layers</span><span class="p">()</span>
+<span class="c1"># or</span>
+<span class="n">layers_modules</span> <span class="o">=</span> <span class="n">module_accessor</span><span class="o">.</span><span class="n">layers</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layers_modules</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
 </section>
 <section id="prompt-utilities">
