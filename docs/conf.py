@@ -25,8 +25,12 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_theme = "pydata_sphinx_theme"
 html_title = "nnterp"
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]
+html_js_files = ["source-link-navbar.js"]
 html_show_sphinx = False
-html_show_sourcelink = False
+html_show_sourcelink = True
+html_copy_source = True
+html_sourcelink_suffix = '.txt'
 
 # Important for GitHub Pages
 html_baseurl = "https://butanium.github.io/nnterp/"
