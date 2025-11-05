@@ -35,7 +35,10 @@ html_copy_source = True
 html_sourcelink_suffix = ".txt"
 
 # Important for GitHub Pages
-html_baseurl = "https://butanium.github.io/nnterp/"
+# Allow override via environment variable for dev/staging deployments
+html_baseurl = os.environ.get(
+    "SPHINX_HTML_BASEURL", "https://butanium.github.io/nnterp/"
+)
 html_extra_path = [".nojekyll", "llms.txt"]
 
 autodoc_typehints = "description"
@@ -116,7 +119,7 @@ def parse_rst_metadata(rst_file):
     return title, description
 
 
-def generate_llms_txt(source_dir, output_file):
+def generate_llms_txt(source_dir, output_file, base_url=None):
     """Generate llms.txt from RST metadata"""
     source_path = Path(source_dir)
     index_rst = source_path / "index.rst"
@@ -144,7 +147,13 @@ def generate_llms_txt(source_dir, output_file):
                 normalized_path = (
                     rst_path if rst_path.endswith(".rst") else f"{rst_path}.rst"
                 )
-                source_link = f"/_sources/{normalized_path}.txt"
+                # Use base_url if provided, otherwise use relative path
+                if base_url:
+                    source_link = (
+                        f"{base_url.rstrip('/')}/_sources/{normalized_path}.txt"
+                    )
+                else:
+                    source_link = f"/_sources/{normalized_path}.txt"
                 lines.append(f"- [{title}]({source_link}): {description}")
 
         lines.append("")
@@ -158,7 +167,8 @@ def setup(app):
     source_dir = app.srcdir
     output_file = Path(source_dir) / "llms.txt"
 
-    generate_llms_txt(source_dir, output_file)
+    # Pass the html_baseurl to generate_llms_txt
+    generate_llms_txt(source_dir, output_file, html_baseurl)
 
     return {
         "version": "0.1",
