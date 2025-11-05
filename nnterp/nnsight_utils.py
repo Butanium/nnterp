@@ -195,13 +195,35 @@ def set_layer_output(nn_model: LanguageModel, layer: int, tensor: TraceTensor):
         get_layer(nn_model, layer).output = tensor
 
 
-class ModelAccessor:
+class ModuleAccessor:
+    """
+    Module that allows to use the NNsight and nnterp renaming utilities on huggingface models, to get the pytorch nn.Module objects with the same standardized names as the StandardizedTransformer class::
+
+        ModuleAccessor
+        ├── embed_tokens
+        ├── layers
+        │   ├── self_attn
+        │   └── mlp
+        ├── ln_final
+        └── lm_head
+
+    Args:
+        model: The huggingface model to access
+        rename_config: An optional nnterp RenameConfig if your model has custom module names
+        rename: An optional dictionary to allow you to have your own custom renaming operations
+
+    """
+
     def __init__(
-        self, model: PreTrainedModel, rename_config: RenameConfig | None = None
+        self,
+        model: PreTrainedModel,
+        rename_config: RenameConfig | None = None,
+        rename: dict[str, str] | None = None,
     ):
-        self.nn_model = NNsight(
-            model, rename=get_rename_dict(rename_config=rename_config)
-        )
+        full_rename = get_rename_dict(rename_config=rename_config)
+        if rename is not None:
+            full_rename.update(rename)
+        self.nn_model = NNsight(model, rename=full_rename)
 
     def __getattr__(self, name: str) -> nn.Module:
         attr = getattr(self.nn_model, name)

@@ -38,7 +38,7 @@ Layer Access
        mlp_out = get_mlp_output(model, 3)
 
 Projection and Utilities
------------------------
+------------------------
 
 .. code-block:: python
 
@@ -48,7 +48,7 @@ Projection and Utilities
 
 
 Activation Collection
---------------------
+---------------------
 
 .. code-block:: python
 
@@ -69,7 +69,7 @@ Activation Collection
    )
 
 Requirements
------------
+------------
 
 These functions work with NNsight models that have been renamed to use llama/gemma conventions:
 

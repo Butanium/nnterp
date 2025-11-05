@@ -11,7 +11,7 @@ from nnterp.nnsight_utils import (
     project_on_vocab,
     get_mlp_output,
     get_num_layers,
-    ModelAccessor,
+    ModuleAccessor,
 )
 from nnterp.rename_utils import get_ignores, RenameConfig
 from transformers import OPTForCausalLM
@@ -477,14 +477,14 @@ def test_standardized_transformer_cache(model_name):
         assert th.allclose(layer_0_output_attr[0], layer_0_output_dict[0])
 
 
-def test_model_accessor(model_name, raw_model):
-    """Test ModelAccessor class - all methods and functionality"""
+def test_module_accessor(model_name, raw_model):
+    """Test ModuleAccessor class - all methods and functionality"""
     with th.no_grad():
         # Get the underlying PreTrainedModel
         pretrained_model = raw_model._model
         
-        # Test ModelAccessor with default config
-        accessor = ModelAccessor(pretrained_model)
+        # Test ModuleAccessor with default config
+        accessor = ModuleAccessor(pretrained_model)
         
         # Test that nn_model is created
         assert accessor.nn_model is not None
@@ -544,17 +544,17 @@ def test_model_accessor(model_name, raw_model):
                         _ = getattr(accessor, attr_name)
                     break
         
-        # Test ModelAccessor with custom RenameConfig
+        # Test ModuleAccessor with custom RenameConfig
         custom_config = RenameConfig()
-        accessor_custom = ModelAccessor(pretrained_model, rename_config=custom_config)
+        accessor_custom = ModuleAccessor(pretrained_model, rename_config=custom_config)
         
         # Verify it still works with custom config
         assert accessor_custom.nn_model is not None
         embed_tokens_custom = accessor_custom.get_embed_tokens()
         assert isinstance(embed_tokens_custom, nn.Module)
         
-        # Test ModelAccessor with None rename_config
-        accessor_none = ModelAccessor(pretrained_model, rename_config=None)
+        # Test ModuleAccessor with None rename_config
+        accessor_none = ModuleAccessor(pretrained_model, rename_config=None)
         assert accessor_none.nn_model is not None
         
         # Verify all getter methods work across different configs
