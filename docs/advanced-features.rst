@@ -44,6 +44,7 @@ Renaming a ``LanguageModel`` or ``NNsight`` class
 `get_rename_dict` combined with the `rename` feature of ``NNsight`` will allow you to access the modules of the model with the same names as the ``StandardizedTransformer`` class:
 
 .. code-block::
+
     your_model
     ├── embed_tokens
     ├── layers
@@ -53,6 +54,7 @@ Renaming a ``LanguageModel`` or ``NNsight`` class
     └── lm_head
 
 For that, you just need to pass the rename dictionary to the ``LanguageModel`` or ``NNsight`` class:
+
 .. code-block:: python
 
    from nnterp import get_rename_dict
@@ -86,7 +88,8 @@ If you embed your model using the ``NNsight`` class with ``nnterp``'s renaming, 
    layers_modules = renamed_model.layers._module
    assert isinstance(layers_modules, nn.ModuleList)
 
-However, the `._module` syntax is not very convenient, so you can use the `ModuleAccessor` class to access the modules directly:
+However, the ``._module`` syntax is not very convenient, so you can use the ``ModuleAccessor`` class to access the modules directly:
+
 .. code-block:: python
 
    from nnterp import ModuleAccessor
@@ -170,7 +173,7 @@ Prompt Analysis
    display(df)
 
 Plot Target Evolution
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
