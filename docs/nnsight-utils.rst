@@ -1,6 +1,9 @@
 NNsight Utils
 =============
 
+.. meta::
+   :llm-description: Standalone utility functions for regular nnsight models with llama/gemma naming conventions. Includes layer access helpers, projection utilities, and activation collection functions. StandardizedTransformer recommended for robustness.
+
 ``nnsight_utils`` provides some utility functions to collect activations along with some of the ``StandardizedTransformer`` utility functions usable with regular nnsight models, as long as they use llama or gemma naming conventions. However, for using those ``StandardizedTransformer`` functions, we recommend using ``StandardizedTransformer`` directly, as it is much more robust.
 
 Setup

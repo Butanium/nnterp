@@ -136,6 +136,17 @@ Uses Sphinx autodoc to extract:
 - Standard Sphinx build system
 - Key commands: `make html`, `make clean`
 
+**llms_header.txt**
+- Header content for auto-generated llms.txt
+- Contains title and overview section
+- Editable without touching Python code
+
+**llms.txt** (auto-generated)
+- LLM-readable documentation index for AI agents
+- Auto-generated during Sphinx build from RST metadata
+- Links to `/_sources/*.rst.txt` files for direct RST access
+- Follows llms.txt standard for AI agent navigation
+
 **_static/** and **_build/**
 - Static assets and build output directories
 
@@ -158,24 +169,65 @@ Uses Sphinx autodoc to extract:
 - Real examples (GPT-J) in addition to generic patterns
 - Clear separation of "what works" vs "what's guaranteed"
 
+## LLM-Readable Documentation (llms.txt)
+
+The documentation includes an auto-generated `llms.txt` file for LLM agents to navigate the docs efficiently.
+
+### How It Works
+
+1. **Metadata in RST files**: Each RST file includes a `.. meta::` directive with `:llm-description:`
+   ```rst
+   Title
+   =====
+   
+   .. meta::
+      :llm-description: Brief description for LLM agents
+   
+   Content...
+   ```
+
+2. **Auto-generation**: `conf.py` contains a `setup()` hook that:
+   - Parses `index.rst` toctree structure to discover all pages
+   - Extracts titles and `:llm-description:` from each RST file
+   - Reads header from `llms_header.txt`
+   - Generates `llms.txt` with links to `/_sources/*.rst.txt`
+
+3. **Build integration**: 
+   - Runs automatically on every Sphinx build
+   - `llms.txt` added to `html_extra_path` so it's copied to build output
+
+### Adding New Pages
+
+When adding a new documentation page:
+
+1. Add it to the appropriate toctree in `index.rst`
+2. Include `.. meta::` directive with `:llm-description:` after the title
+3. The page will automatically appear in `llms.txt` on next build
+
+### Editing the Overview
+
+To change the header/overview section, edit `docs/llms_header.txt` directly.
+
 ## Writing New Documentation
 
 When adding/editing docs:
 
-1. **Follow execution order**: All code examples MUST access components in forward pass order
+1. **Add metadata**: Include `.. meta::` directive with `:llm-description:` after title for llms.txt generation
+
+2. **Follow execution order**: All code examples MUST access components in forward pass order
    - ✅ `layers_output[1]` before `layers_output[2]`
    - ✅ `attentions_output[i]` before `layers_output[i]`
    - ❌ Never access later layers before earlier ones
 
-2. **Use demo.py tone**: Keep explanations factual and concise
+3. **Use demo.py tone**: Keep explanations factual and concise
 
-3. **Position correctly**: nnterp is a nnsight wrapper for transformers, not a general MI tool
+4. **Position correctly**: nnterp is a nnsight wrapper for transformers, not a general MI tool
 
-4. **Show shapes**: Include tensor shape comments where helpful for understanding
+5. **Show shapes**: Include tensor shape comments where helpful for understanding
 
-5. **Link liberally**: Cross-reference related sections with `:doc:` directives
+6. **Link liberally**: Cross-reference related sections with `:doc:` directives
 
-6. **Test examples**: All code should be runnable (or clearly marked as pseudocode)
+7. **Test examples**: All code should be runnable (or clearly marked as pseudocode)
 
-7. **Emphasize requirements**: Make clear when features require specific flags (enable_attention_probs, etc.)
+8. **Emphasize requirements**: Make clear when features require specific flags (enable_attention_probs, etc.)
 

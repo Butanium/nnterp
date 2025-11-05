@@ -1,6 +1,9 @@
 Advanced Features
 =================
 
+.. meta::
+   :llm-description: Advanced features including attention probabilities access, prompt utilities with target token tracking, and visualization functions for plotting logits and token evolution.
+
 Attention Probabilities
 -----------------------
 
