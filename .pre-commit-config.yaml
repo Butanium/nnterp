@@ -3,4 +3,15 @@ repos:
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 25.1.0
     hooks:
-      - id: black 
+      - id: black
+  
+  # Local hooks
+  - repo: local
+    hooks:
+      - id: update-llms-txt
+        name: Update llms.txt
+        entry: bash -c 'uv run scripts/update_llms_txt.py && git add docs/llms.txt'
+        language: system
+        files: ^docs/.*\.rst$|^docs/llms_header\.txt$
+        pass_filenames: false
+        always_run: false 
