@@ -36,3 +36,4 @@ site/
 docs/api/
 docs/generated/
 docs/_autosummary/
+docs/llms.txt
