@@ -300,7 +300,8 @@ Here are some nice features that could be cool to have, and for which I'd be hap
 
 ## Development
 - Install the development environment with `make dev` or `uv sync --all-extras`. Add `uv pip install flash-attn --no-build-isolation` to support models like `Phi` that require `flash-attn`.
-You might encounter the error `with block not found at line xyz` when running the tests. In this case run `make clean` to remove the python cache and try again.
+- Install pre-commit hooks with `pre-commit install` to automatically update `docs/llms.txt` when modifying RST files and format the code with `black`.
+You might encounter the error `with block not found at line xyz` when running the tests. In this case run `make clean` to remove the python cache and try again (NOTE: this should be fixed in latest `NNsight` versions).
 - Create a git tag with the version number `git tag vx.y.z; git push origin vx.y.z`
 - Build with `python -m build`
 - Publish with e.g. `twine upload dist/*x.y.z*`
