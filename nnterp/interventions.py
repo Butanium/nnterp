@@ -27,7 +27,12 @@ __all__ = [
 
 
 @th.no_grad
-def logit_lens(nn_model: LanguageModel, prompts: list[str] | str, remote=False):
+def logit_lens(
+    nn_model: LanguageModel,
+    prompts: list[str] | str,
+    remote=False,
+    return_inv_logits=False,
+) -> th.Tensor | tuple[th.Tensor, th.Tensor]:
     """
     Same as logit_lens but for Llama models directly instead of Transformer_lens models.
     Get the probabilities of the next token for the last token of each prompt at each layer using the logit lens.
@@ -35,7 +40,8 @@ def logit_lens(nn_model: LanguageModel, prompts: list[str] | str, remote=False):
     Args:
         nn_model: NNSight Language Model
         prompts: List of prompts or a single prompt
-
+        remote: If True, the function will run on the nndif server. See `nnsight.net/status` to check which models are available.
+        return_inv_logits: If True, the function will return the logits applied to the negative of the hidden states.
     Returns:
         A tensor of shape (num_prompts, num_layers, vocab_size) containing the probabilities
         of the next token for each prompt at each layer. Tensor is on the CPU.
@@ -43,12 +49,23 @@ def logit_lens(nn_model: LanguageModel, prompts: list[str] | str, remote=False):
     with nn_model.trace(prompts, remote=remote) as tracer:
         hiddens_l = get_token_activations(nn_model, prompts, tracer=tracer)
         probs_l = []
+        probs_inv_l = []
         for hiddens in hiddens_l:
             logits = project_on_vocab(nn_model, hiddens)
             probs = logits.softmax(-1).cpu()
             probs_l.append(probs)
+            if return_inv_logits:
+                inv_normalized = -nn_model.ln_final(hiddens)
+                inv_logits = nn_model.lm_head(inv_normalized)
+                inv_logits = inv_logits.softmax(-1).cpu()
+                probs_inv_l.append(inv_logits)
         probs = th.stack(probs_l).transpose(0, 1).save()
-    return probs
+        if return_inv_logits:
+            inv_logits = th.stack(probs_inv_l).transpose(0, 1).save()
+    if return_inv_logits:
+        return probs, inv_logits
+    else:
+        return probs
 
 
 @dataclass
@@ -57,7 +74,9 @@ class TargetPrompt:
     index_to_patch: int
 
 
-def repeat_prompt(words=None, rel=" ", sep="\n", placeholder="?") -> TargetPrompt:
+def repeat_prompt(
+    words=None, rel=" ", sep="\n", placeholder="?", index_to_patch=-1
+) -> TargetPrompt:
     """
     Prompt used in the patchscopes paper to predict the next token.
     https://github.com/PAIR-code/interpretability/blob/master/patchscopes/code/next_token_prediction.ipynb
@@ -78,7 +97,6 @@ def repeat_prompt(words=None, rel=" ", sep="\n", placeholder="?") -> TargetPromp
             "hello",
         ]
     prompt = sep.join([w + rel + w for w in words]) + sep + placeholder
-    index_to_patch = -1
     return TargetPrompt(prompt, index_to_patch)
 
 
@@ -220,8 +238,8 @@ def patchscope_lens(
     target_patch_prompts: (
         TargetPromptBatch | list[TargetPrompt] | TargetPrompt | None
     ) = None,
-    layers=None,
-    latents=None,
+    layers: int | list[int] | None = None,
+    latents: th.Tensor | None = None,
     remote=False,
 ):
     """
@@ -231,8 +249,8 @@ def patchscope_lens(
         nn_model: The NNSight TL model
         source_prompts: List of prompts or a single prompt to get the hidden states of the last token
         target_patch_prompts: TargetPrompt(s) / TargetPromptBatch containing the prompt to patch and the index of the token to patch
-        layers: List of layers to intervene on. If None, all layers are intervened on.
-        latents: List of latents to use. If None, the hidden states of the last token of each source prompt at each layer are collected.
+        layers: Layer / list of layers to intervene on. If None, all layers are intervened on.
+        latents: Tensor of shape (num_layers, num_sources, hidden_size) If None, the hidden states of the last token of each source prompt at each layer are collected. You cannot provide both source_prompts and latents.
         remote: If True, the function will run on the nndif server. See `nnsight.net/status` to check which models are available.
 
     Returns:
@@ -257,14 +275,18 @@ def patchscope_lens(
             f"Number of sources ({num_sources}) does not match number of patch prompts ({len(target_patch_prompts)})"
         )
     if latents is None:
-        latents = get_token_activations(nn_model, source_prompts, remote=remote)
+        latents = get_token_activations(
+            nn_model, source_prompts, layers=layers, remote=remote
+        )
     elif source_prompts is not None:
-        raise ValueError("You cannot provide both source_prompts and hiddens")
+        raise ValueError("You cannot provide both source_prompts and latents")
 
     probs_l = []
     if layers is None:
         layers = list(range(get_num_layers(nn_model)))
-    for layer in layers:
+    elif isinstance(layers, int):
+        layers = [layers]
+    for idx, layer in enumerate(layers):
         with nn_model.trace(
             target_patch_prompts.prompts,
             remote=remote,
@@ -272,7 +294,7 @@ def patchscope_lens(
             device = get_layer_output(nn_model, layer).device
             get_layer_output(nn_model, layer)[
                 th.arange(num_sources), target_patch_prompts.index_to_patch
-            ] = latents[layer].to(device)
+            ] = latents[idx].to(device)
             probs_l.append(get_next_token_probs(nn_model).cpu().save())
     probs = th.cat(probs_l, dim=0)
     return probs.reshape(len(layers), num_sources, -1).transpose(0, 1)
