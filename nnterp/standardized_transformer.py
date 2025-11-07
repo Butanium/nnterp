@@ -71,6 +71,11 @@ class StandardizedTransformer(LanguageModel):
         rename_config (RenameConfig, default None): A RenameConfig object to use for renaming the model. If None, a default RenameConfig will be used.
     """
 
+    num_layers: int
+    num_heads: int
+    hidden_size: int
+    vocab_size: int
+
     def __init__(
         self,
         model: str | Module,
