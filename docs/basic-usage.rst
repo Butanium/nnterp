@@ -32,9 +32,11 @@ Loading Models
    
    # Uses device_map="auto" by default
    print(model.device)
-   # Access the model's hidden size and number of attention heads (if available)
+   # Access model configuration attributes
+   print(f"number of layers: {model.num_layers}")
    print(f"hidden size: {model.hidden_size}")
    print(f"number of attention heads: {model.num_heads}")
+   print(f"vocabulary size: {model.vocab_size}")
 
 Accessing Module I/O
 --------------------
