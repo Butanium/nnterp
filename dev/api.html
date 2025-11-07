@@ -496,6 +496,26 @@ tracing by setting attn_implementation=”eager”. Defaults to False.</p></li>
 </ul>
 </dd>
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.num_layers">
+<span class="sig-name descname"><span class="pre">num_layers</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.num_layers" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.num_heads">
+<span class="sig-name descname"><span class="pre">num_heads</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.num_heads" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.hidden_size">
+<span class="sig-name descname"><span class="pre">hidden_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.hidden_size" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.vocab_size">
+<span class="sig-name descname"><span class="pre">vocab_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.vocab_size" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.detect_layer_output_type">
 <span class="sig-name descname"><span class="pre">detect_layer_output_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/standardized_transformer.html#StandardizedTransformer.detect_layer_output_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.detect_layer_output_type" title="Link to this definition">#</a></dt>
@@ -654,7 +674,7 @@ Pandas is included in <code class="docutils literal notranslate"><span class="pr
 <span id="nnterp-interventions-module"></span><h2>nnterp.interventions module<a class="headerlink" href="#module-nnterp.interventions" title="Link to this heading">#</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="nnterp.interventions.logit_lens">
-<span class="sig-name descname"><span class="pre">logit_lens</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/interventions.html#logit_lens"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.interventions.logit_lens" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">logit_lens</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_inv_logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/interventions.html#logit_lens"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.interventions.logit_lens" title="Link to this definition">#</a></dt>
 <dd><p>Same as logit_lens but for Llama models directly instead of Transformer_lens models.
 Get the probabilities of the next token for the last token of each prompt at each layer using the logit lens.</p>
 <dl class="field-list simple">
@@ -662,11 +682,16 @@ Get the probabilities of the next token for the last token of each prompt at eac
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>nn_model</strong> (<em>LanguageModel</em>) – NNSight Language Model</p></li>
 <li><p><strong>prompts</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>str</em>) – List of prompts or a single prompt</p></li>
+<li><p><strong>remote</strong> – If True, the function will run on the nndif server. See <cite>nnsight.net/status</cite> to check which models are available.</p></li>
+<li><p><strong>return_inv_logits</strong> – If True, the function will return the logits applied to the negative of the hidden states.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A tensor of shape (num_prompts, num_layers, vocab_size) containing the probabilities
 of the next token for each prompt at each layer. Tensor is on the CPU.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>Tensor</em> | tuple[<em>Tensor</em>, <em>Tensor</em>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -697,7 +722,7 @@ of the next token for each prompt at each layer. Tensor is on the CPU.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nnterp.interventions.repeat_prompt">
-<span class="sig-name descname"><span class="pre">repeat_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">words</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'</span> <span class="pre">'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placeholder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'?'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/interventions.html#repeat_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.interventions.repeat_prompt" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">repeat_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">words</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'</span> <span class="pre">'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placeholder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'?'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_to_patch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/interventions.html#repeat_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.interventions.repeat_prompt" title="Link to this definition">#</a></dt>
 <dd><p>Prompt used in the patchscopes paper to predict the next token.
 <a class="github reference external" href="https://github.com/PAIR-code/interpretability/blob/master/patchscopes/code/next_token_prediction.ipynb">PAIR-code/interpretability</a></p>
 <dl class="field-list simple">
@@ -800,8 +825,8 @@ Returns the probabilities of the next token in patch_prompt for each prompt for 
 :param nn_model: The NNSight TL model
 :param source_prompts: List of prompts or a single prompt to get the hidden states of the last token
 :param target_patch_prompts: TargetPrompt(s) / TargetPromptBatch containing the prompt to patch and the index of the token to patch
-:param layers: List of layers to intervene on. If None, all layers are intervened on.
-:param latents: List of latents to use. If None, the hidden states of the last token of each source prompt at each layer are collected.
+:param layers: Layer / list of layers to intervene on. If None, all layers are intervened on.
+:param latents: Tensor of shape (num_layers, num_sources, hidden_size) If None, the hidden states of the last token of each source prompt at each layer are collected. You cannot provide both source_prompts and latents.
 :param remote: If True, the function will run on the nndif server. See <cite>nnsight.net/status</cite> to check which models are available.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -813,6 +838,8 @@ of the next token for each prompt at each layer. Tensor is on the CPU.</p>
 <li><p><strong>nn_model</strong> (<em>LanguageModel</em>)</p></li>
 <li><p><strong>source_prompts</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>str</em><em> | </em><em>None</em>)</p></li>
 <li><p><strong>target_patch_prompts</strong> (<a class="reference internal" href="#nnterp.interventions.TargetPromptBatch" title="nnterp.interventions.TargetPromptBatch"><em>TargetPromptBatch</em></a><em> | </em><em>list</em><em>[</em><a class="reference internal" href="#nnterp.interventions.TargetPrompt" title="nnterp.interventions.TargetPrompt"><em>TargetPrompt</em></a><em>] </em><em>| </em><a class="reference internal" href="#nnterp.interventions.TargetPrompt" title="nnterp.interventions.TargetPrompt"><em>TargetPrompt</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>layers</strong> (<em>int</em><em> | </em><em>list</em><em>[</em><em>int</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>latents</strong> (<em>Tensor</em><em> | </em><em>None</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -2098,6 +2125,10 @@ Returns None if the tuple status has not been detected yet.</p>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Documentation</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-nnterp.standardized_transformer">nnterp.standardized_transformer module</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.num_layers"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.num_layers</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.num_heads"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.num_heads</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.hidden_size"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.hidden_size</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.vocab_size"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.vocab_size</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.detect_layer_output_type"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.detect_layer_output_type()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.add_prefix_false_tokenizer"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.add_prefix_false_tokenizer</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.attn_probs_available"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.attn_probs_available</span></code></a></li>
