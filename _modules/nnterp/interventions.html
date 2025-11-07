@@ -32,6 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=519ae551" />
   
   <!-- So that users can add custom icons -->
   <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -47,6 +48,7 @@
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/nnterp/interventions';</script>
+    <script src="../../_static/source-link-navbar.js?v=9c7d967d"></script>
     <link rel="canonical" href="https://butanium.github.io/nnterp/_modules/nnterp/interventions.html" />
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -474,7 +476,12 @@
 <div class="viewcode-block" id="logit_lens">
 <a class="viewcode-back" href="../../api.html#nnterp.interventions.logit_lens">[docs]</a>
 <span class="nd">@th</span><span class="o">.</span><span class="n">no_grad</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">logit_lens</span><span class="p">(</span><span class="n">nn_model</span><span class="p">:</span> <span class="n">LanguageModel</span><span class="p">,</span> <span class="n">prompts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">remote</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">logit_lens</span><span class="p">(</span>
+    <span class="n">nn_model</span><span class="p">:</span> <span class="n">LanguageModel</span><span class="p">,</span>
+    <span class="n">prompts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">remote</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">return_inv_logits</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Same as logit_lens but for Llama models directly instead of Transformer_lens models.</span>
 <span class="sd">    Get the probabilities of the next token for the last token of each prompt at each layer using the logit lens.</span>
@@ -482,7 +489,8 @@
 <span class="sd">    Args:</span>
 <span class="sd">        nn_model: NNSight Language Model</span>
 <span class="sd">        prompts: List of prompts or a single prompt</span>
-
+<span class="sd">        remote: If True, the function will run on the nndif server. See `nnsight.net/status` to check which models are available.</span>
+<span class="sd">        return_inv_logits: If True, the function will return the logits applied to the negative of the hidden states.</span>
 <span class="sd">    Returns:</span>
 <span class="sd">        A tensor of shape (num_prompts, num_layers, vocab_size) containing the probabilities</span>
 <span class="sd">        of the next token for each prompt at each layer. Tensor is on the CPU.</span>
@@ -490,12 +498,23 @@
     <span class="k">with</span> <span class="n">nn_model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="n">remote</span><span class="o">=</span><span class="n">remote</span><span class="p">)</span> <span class="k">as</span> <span class="n">tracer</span><span class="p">:</span>
         <span class="n">hiddens_l</span> <span class="o">=</span> <span class="n">get_token_activations</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">prompts</span><span class="p">,</span> <span class="n">tracer</span><span class="o">=</span><span class="n">tracer</span><span class="p">)</span>
         <span class="n">probs_l</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">probs_inv_l</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">hiddens</span> <span class="ow">in</span> <span class="n">hiddens_l</span><span class="p">:</span>
             <span class="n">logits</span> <span class="o">=</span> <span class="n">project_on_vocab</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">hiddens</span><span class="p">)</span>
             <span class="n">probs</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
             <span class="n">probs_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">return_inv_logits</span><span class="p">:</span>
+                <span class="n">inv_normalized</span> <span class="o">=</span> <span class="o">-</span><span class="n">nn_model</span><span class="o">.</span><span class="n">ln_final</span><span class="p">(</span><span class="n">hiddens</span><span class="p">)</span>
+                <span class="n">inv_logits</span> <span class="o">=</span> <span class="n">nn_model</span><span class="o">.</span><span class="n">lm_head</span><span class="p">(</span><span class="n">inv_normalized</span><span class="p">)</span>
+                <span class="n">inv_logits</span> <span class="o">=</span> <span class="n">inv_logits</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+                <span class="n">probs_inv_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inv_logits</span><span class="p">)</span>
         <span class="n">probs</span> <span class="o">=</span> <span class="n">th</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">probs_l</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">probs</span></div>
+        <span class="k">if</span> <span class="n">return_inv_logits</span><span class="p">:</span>
+            <span class="n">inv_logits</span> <span class="o">=</span> <span class="n">th</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">probs_inv_l</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">return_inv_logits</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">probs</span><span class="p">,</span> <span class="n">inv_logits</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">probs</span></div>
 
 
 
@@ -510,7 +529,9 @@
 
 <div class="viewcode-block" id="repeat_prompt">
 <a class="viewcode-back" href="../../api.html#nnterp.interventions.repeat_prompt">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">repeat_prompt</span><span class="p">(</span><span class="n">words</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rel</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TargetPrompt</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">repeat_prompt</span><span class="p">(</span>
+    <span class="n">words</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rel</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span> <span class="n">index_to_patch</span><span class="o">=-</span><span class="mi">1</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TargetPrompt</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Prompt used in the patchscopes paper to predict the next token.</span>
 <span class="sd">    https://github.com/PAIR-code/interpretability/blob/master/patchscopes/code/next_token_prediction.ipynb</span>
@@ -531,7 +552,6 @@
             <span class="s2">&quot;hello&quot;</span><span class="p">,</span>
         <span class="p">]</span>
     <span class="n">prompt</span> <span class="o">=</span> <span class="n">sep</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">w</span> <span class="o">+</span> <span class="n">rel</span> <span class="o">+</span> <span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">])</span> <span class="o">+</span> <span class="n">sep</span> <span class="o">+</span> <span class="n">placeholder</span>
-    <span class="n">index_to_patch</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
     <span class="k">return</span> <span class="n">TargetPrompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">index_to_patch</span><span class="p">)</span></div>
 
 
@@ -691,8 +711,8 @@
     <span class="n">target_patch_prompts</span><span class="p">:</span> <span class="p">(</span>
         <span class="n">TargetPromptBatch</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">TargetPrompt</span><span class="p">]</span> <span class="o">|</span> <span class="n">TargetPrompt</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">latents</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">latents</span><span class="p">:</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">remote</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -702,8 +722,8 @@
 <span class="sd">        nn_model: The NNSight TL model</span>
 <span class="sd">        source_prompts: List of prompts or a single prompt to get the hidden states of the last token</span>
 <span class="sd">        target_patch_prompts: TargetPrompt(s) / TargetPromptBatch containing the prompt to patch and the index of the token to patch</span>
-<span class="sd">        layers: List of layers to intervene on. If None, all layers are intervened on.</span>
-<span class="sd">        latents: List of latents to use. If None, the hidden states of the last token of each source prompt at each layer are collected.</span>
+<span class="sd">        layers: Layer / list of layers to intervene on. If None, all layers are intervened on.</span>
+<span class="sd">        latents: Tensor of shape (num_layers, num_sources, hidden_size) If None, the hidden states of the last token of each source prompt at each layer are collected. You cannot provide both source_prompts and latents.</span>
 <span class="sd">        remote: If True, the function will run on the nndif server. See `nnsight.net/status` to check which models are available.</span>
 
 <span class="sd">    Returns:</span>
@@ -728,14 +748,18 @@
             <span class="sa">f</span><span class="s2">&quot;Number of sources (</span><span class="si">{</span><span class="n">num_sources</span><span class="si">}</span><span class="s2">) does not match number of patch prompts (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">target_patch_prompts</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">latents</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">latents</span> <span class="o">=</span> <span class="n">get_token_activations</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">source_prompts</span><span class="p">,</span> <span class="n">remote</span><span class="o">=</span><span class="n">remote</span><span class="p">)</span>
+        <span class="n">latents</span> <span class="o">=</span> <span class="n">get_token_activations</span><span class="p">(</span>
+            <span class="n">nn_model</span><span class="p">,</span> <span class="n">source_prompts</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="n">layers</span><span class="p">,</span> <span class="n">remote</span><span class="o">=</span><span class="n">remote</span>
+        <span class="p">)</span>
     <span class="k">elif</span> <span class="n">source_prompts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You cannot provide both source_prompts and hiddens&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You cannot provide both source_prompts and latents&quot;</span><span class="p">)</span>
 
     <span class="n">probs_l</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="n">layers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">layers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">get_num_layers</span><span class="p">(</span><span class="n">nn_model</span><span class="p">)))</span>
-    <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">layers</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layers</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">layers</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">layers</span><span class="p">):</span>
         <span class="k">with</span> <span class="n">nn_model</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span>
             <span class="n">target_patch_prompts</span><span class="o">.</span><span class="n">prompts</span><span class="p">,</span>
             <span class="n">remote</span><span class="o">=</span><span class="n">remote</span><span class="p">,</span>
@@ -743,7 +767,7 @@
             <span class="n">device</span> <span class="o">=</span> <span class="n">get_layer_output</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">device</span>
             <span class="n">get_layer_output</span><span class="p">(</span><span class="n">nn_model</span><span class="p">,</span> <span class="n">layer</span><span class="p">)[</span>
                 <span class="n">th</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">num_sources</span><span class="p">),</span> <span class="n">target_patch_prompts</span><span class="o">.</span><span class="n">index_to_patch</span>
-            <span class="p">]</span> <span class="o">=</span> <span class="n">latents</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="n">latents</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
             <span class="n">probs_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_next_token_probs</span><span class="p">(</span><span class="n">nn_model</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">())</span>
     <span class="n">probs</span> <span class="o">=</span> <span class="n">th</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">probs_l</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">probs</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">layers</span><span class="p">),</span> <span class="n">num_sources</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>

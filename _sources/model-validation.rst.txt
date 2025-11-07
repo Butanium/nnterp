@@ -1,6 +1,9 @@
 Model Validation & Testing
 ===========================
 
+.. meta::
+   :llm-description: Automatic testing system that runs on model load. Learn what nnterp guarantees, trade-offs with model dispatch and attention implementation, and manual testing commands.
+
 ``nnterp`` includes automatic validation to prevent silent failures and ensure model correctness. When you load a model, a series of fast tests run automatically to verify the model works as expected.
 
 Automatic Testing System

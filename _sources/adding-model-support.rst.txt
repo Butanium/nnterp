@@ -1,6 +1,9 @@
 Adding Support for Your Model
 ==============================
 
+.. meta::
+   :llm-description: Add custom model support using RenameConfig. Learn path-based renaming, multiple alternative names, and implementing attention probabilities with real GPT-J example.
+
 ``nnterp`` uses a standardized naming convention to provide a unified interface across transformer architectures. When your model doesn't follow the expected naming patterns, you can use ``RenameConfig`` to map your model's modules to the standardized names.
 
 Understanding the Target Structure

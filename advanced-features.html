@@ -7,6 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Advanced features including attention probabilities access, using nnterp's renaming with LanguageModel or NNsight classes (without using StandardizedTransformer) or to access a model's PyTorch modules directly, prompt utilities with target token tracking, and visualization functions for plotting logits and token evolution." name="llm-description" />
 
     <title>Advanced Features &#8212; nnterp</title>
   
@@ -33,6 +34,7 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=519ae551" />
   
   <!-- So that users can add custom icons -->
   <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -48,6 +50,7 @@
     <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'advanced-features';</script>
+    <script src="_static/source-link-navbar.js?v=9c7d967d"></script>
     <link rel="canonical" href="https://butanium.github.io/nnterp/advanced-features.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -471,23 +474,81 @@
 </pre></div>
 </div>
 </section>
+<section id="using-nnterp-s-renaming-with-languagemodel-or-nnsight-classes">
+<h2>Using nnterp’s renaming with <code class="docutils literal notranslate"><span class="pre">LanguageModel</span></code> or <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> classes<a class="headerlink" href="#using-nnterp-s-renaming-with-languagemodel-or-nnsight-classes" title="Link to this heading">#</a></h2>
+<p>Even if it is recommended to use <code class="docutils literal notranslate"><span class="pre">StandardizedTransformer</span></code>, as it abstract some of the quirks of HuggingFace implementations, <code class="docutils literal notranslate"><span class="pre">nnterp</span></code> still provides a low level renaming functionality that allows you to rename <code class="docutils literal notranslate"><span class="pre">LanguageModel</span></code> or <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> classes <strong>and even to have unified access to the model’s PyTorch modules.</strong>.</p>
+<section id="renaming-a-languagemodel-or-nnsight-class">
+<h3>Renaming a <code class="docutils literal notranslate"><span class="pre">LanguageModel</span></code> or <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> class<a class="headerlink" href="#renaming-a-languagemodel-or-nnsight-class" title="Link to this heading">#</a></h3>
+<p><cite>get_rename_dict</cite> combined with the <cite>rename</cite> feature of <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> will allow you to access the modules of the model with the same names as the <code class="docutils literal notranslate"><span class="pre">StandardizedTransformer</span></code> class:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>your_model
+├── embed_tokens
+├── layers
+│   ├── self_attn
+│   └── mlp
+├── ln_final
+└── lm_head
+</pre></div>
+</div>
+<p>For that, you just need to pass the rename dictionary to the <code class="docutils literal notranslate"><span class="pre">LanguageModel</span></code> or <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> class:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_rename_dict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nnsight</span><span class="w"> </span><span class="kn">import</span> <span class="n">LanguageModel</span><span class="p">,</span> <span class="n">NNsight</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
+
+<span class="n">rename_dict</span> <span class="o">=</span> <span class="n">get_rename_dict</span><span class="p">()</span>
+<span class="n">renamed_model</span> <span class="o">=</span> <span class="n">LanguageModel</span><span class="p">(</span><span class="s2">&quot;gpt2&quot;</span><span class="p">,</span> <span class="n">rename</span><span class="o">=</span><span class="n">rename_dict</span><span class="p">)</span>
+<span class="c1"># or</span>
+<span class="n">hf_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;gpt2&quot;</span><span class="p">)</span>
+<span class="n">renamed_model</span> <span class="o">=</span> <span class="n">LanguageModel</span><span class="p">(</span><span class="n">hf_model</span><span class="p">,</span> <span class="n">rename</span><span class="o">=</span><span class="n">rename_dict</span><span class="p">)</span>
+<span class="c1"># or</span>
+<span class="n">renamed_model</span> <span class="o">=</span> <span class="n">NNsight</span><span class="p">(</span><span class="n">hf_model</span><span class="p">,</span> <span class="n">rename</span><span class="o">=</span><span class="n">rename_dict</span><span class="p">)</span> <span class="c1"># NNsight works with any PyTorch model</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">renamed_model</span><span class="o">.</span><span class="n">layers</span><span class="p">,</span> <span class="n">renamed_model</span><span class="o">.</span><span class="n">ln_final</span><span class="p">,</span> <span class="n">renamed_model</span><span class="o">.</span><span class="n">lm_head</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="accessing-the-pytorch-modules-using-renaming">
+<h3>Accessing the PyTorch modules using renaming<a class="headerlink" href="#accessing-the-pytorch-modules-using-renaming" title="Link to this heading">#</a></h3>
+<p>For some reason, you might want a universal way to access the PyTorch modules of your model, without using <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> interventions. For example if you want to attach them a hook, or just want to access the weights.
+If you embed your model using the <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> class with <code class="docutils literal notranslate"><span class="pre">nnterp</span></code>’s renaming, you get universal access to the PyTorch modules with no overhead:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnsight</span><span class="w"> </span><span class="kn">import</span> <span class="n">NNsight</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nnterp</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_rename_dict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+
+<span class="n">hf_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;gpt2&quot;</span><span class="p">)</span>
+<span class="n">renamed_model</span> <span class="o">=</span> <span class="n">NNsight</span><span class="p">(</span><span class="n">hf_model</span><span class="p">,</span> <span class="n">rename</span><span class="o">=</span><span class="n">get_rename_dict</span><span class="p">())</span>
+<span class="n">layers_modules</span> <span class="o">=</span> <span class="n">renamed_model</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">_module</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layers_modules</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>However, the <code class="docutils literal notranslate"><span class="pre">._module</span></code> syntax is not very convenient, so you can use the <code class="docutils literal notranslate"><span class="pre">ModuleAccessor</span></code> class to access the modules directly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModuleAccessor</span>
+<span class="n">module_accessor</span> <span class="o">=</span> <span class="n">ModuleAccessor</span><span class="p">(</span><span class="n">hf_model</span><span class="p">)</span>
+<span class="n">layers_modules</span> <span class="o">=</span> <span class="n">module_accessor</span><span class="o">.</span><span class="n">get_layers</span><span class="p">()</span>
+<span class="c1"># or</span>
+<span class="n">layers_modules</span> <span class="o">=</span> <span class="n">module_accessor</span><span class="o">.</span><span class="n">layers</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layers_modules</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
 <section id="prompt-utilities">
 <h2>Prompt Utilities<a class="headerlink" href="#prompt-utilities" title="Link to this heading">#</a></h2>
 <p>Track probabilities of specific tokens:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp.prompt_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">run_prompts</span>
 
 <span class="c1"># Create prompt with target tokens</span>
-<span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="o">.</span><span class="n">from_strings</span><span class="p">(</span>
-    <span class="s2">&quot;The capital of France (not England or Spain) is&quot;</span><span class="p">,</span>
-    <span class="p">{</span>
-        <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;Paris&quot;</span><span class="p">,</span>
+<span class="n">targets</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;correct_answer&quot;</span><span class="p">:</span> <span class="s2">&quot;Paris&quot;</span><span class="p">,</span>
         <span class="s2">&quot;traps&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;London&quot;</span><span class="p">,</span> <span class="s2">&quot;Madrid&quot;</span><span class="p">],</span>
         <span class="s2">&quot;longstring&quot;</span><span class="p">:</span> <span class="s2">&quot;the country of France&quot;</span><span class="p">,</span>
-    <span class="p">},</span>
+ <span class="p">}</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="o">.</span><span class="n">from_strings</span><span class="p">(</span>
+    <span class="s2">&quot;The capital of France (not England or Spain) is&quot;</span><span class="p">,</span>
+    <span class="n">targets</span><span class="p">,</span>
     <span class="n">model</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># Check what tokens are tracked</span>
+<span class="c1"># Check what tokens are tracked for each target category</span>
 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">tokens</span> <span class="ow">in</span> <span class="n">prompt</span><span class="o">.</span><span class="n">target_tokens</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">convert_ids_to_tokens</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -497,6 +558,7 @@
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Shape: (batch_size,)</span>
 </pre></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">results</span></code> is a dictionary that, for each target category, returns the sum of the probabilities of the first tokens of the target strings <strong>with and without</strong> a space at the beginning. For example for “traps”, depending on the tokenizer, it could return the sum of the probabilities of “_London”, “Lon”, “_Mad” and “Ma”.</p>
 <section id="combined-with-interventions">
 <h3>Combined with Interventions<a class="headerlink" href="#combined-with-interventions" title="Link to this heading">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">nnterp.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">logit_lens</span>
@@ -584,6 +646,11 @@
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attention-probabilities">Attention Probabilities</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-nnterp-s-renaming-with-languagemodel-or-nnsight-classes">Using nnterp’s renaming with <code class="docutils literal notranslate"><span class="pre">LanguageModel</span></code> or <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> classes</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#renaming-a-languagemodel-or-nnsight-class">Renaming a <code class="docutils literal notranslate"><span class="pre">LanguageModel</span></code> or <code class="docutils literal notranslate"><span class="pre">NNsight</span></code> class</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#accessing-the-pytorch-modules-using-renaming">Accessing the PyTorch modules using renaming</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#prompt-utilities">Prompt Utilities</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#combined-with-interventions">Combined with Interventions</a></li>
 </ul>
@@ -595,6 +662,15 @@
 </li>
 </ul>
   </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/advanced-features.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
 
 </div></div>
               

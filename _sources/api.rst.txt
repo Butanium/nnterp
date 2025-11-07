@@ -1,6 +1,9 @@
 Documentation
 =============
 
+.. meta::
+   :llm-description: Auto-generated API reference from docstrings. Complete documentation for standardized_transformer, interventions, prompt_utils, display, nnsight_utils, and internal modules.
+
 nnterp.standardized\_transformer module
 ---------------------------------------
 

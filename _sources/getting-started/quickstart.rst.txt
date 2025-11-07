@@ -1,6 +1,9 @@
 Quick Start
 ===========
 
+.. meta::
+   :llm-description: Get started with nnterp in 5 minutes. Learn installation, model loading with StandardizedTransformer, and basic activation access patterns.
+
 This guide gets you up and running with ``nnterp`` in 5 minutes.
 
 Installation

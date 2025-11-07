@@ -7,6 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Auto-generated API reference from docstrings. Complete documentation for standardized_transformer, interventions, prompt_utils, display, nnsight_utils, and internal modules." name="llm-description" />
 
     <title>Documentation &#8212; nnterp</title>
   
@@ -33,6 +34,7 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=519ae551" />
   
   <!-- So that users can add custom icons -->
   <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -48,6 +50,7 @@
     <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api';</script>
+    <script src="_static/source-link-navbar.js?v=9c7d967d"></script>
     <link rel="canonical" href="https://butanium.github.io/nnterp/api.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -493,6 +496,26 @@ tracing by setting attn_implementation=”eager”. Defaults to False.</p></li>
 </ul>
 </dd>
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.num_layers">
+<span class="sig-name descname"><span class="pre">num_layers</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.num_layers" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.num_heads">
+<span class="sig-name descname"><span class="pre">num_heads</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.num_heads" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.hidden_size">
+<span class="sig-name descname"><span class="pre">hidden_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.hidden_size" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.vocab_size">
+<span class="sig-name descname"><span class="pre">vocab_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.vocab_size" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.detect_layer_output_type">
 <span class="sig-name descname"><span class="pre">detect_layer_output_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/standardized_transformer.html#StandardizedTransformer.detect_layer_output_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.detect_layer_output_type" title="Link to this definition">#</a></dt>
@@ -651,7 +674,7 @@ Pandas is included in <code class="docutils literal notranslate"><span class="pr
 <span id="nnterp-interventions-module"></span><h2>nnterp.interventions module<a class="headerlink" href="#module-nnterp.interventions" title="Link to this heading">#</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="nnterp.interventions.logit_lens">
-<span class="sig-name descname"><span class="pre">logit_lens</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/interventions.html#logit_lens"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.interventions.logit_lens" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">logit_lens</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_inv_logits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/interventions.html#logit_lens"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.interventions.logit_lens" title="Link to this definition">#</a></dt>
 <dd><p>Same as logit_lens but for Llama models directly instead of Transformer_lens models.
 Get the probabilities of the next token for the last token of each prompt at each layer using the logit lens.</p>
 <dl class="field-list simple">
@@ -659,11 +682,16 @@ Get the probabilities of the next token for the last token of each prompt at eac
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>nn_model</strong> (<em>LanguageModel</em>) – NNSight Language Model</p></li>
 <li><p><strong>prompts</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>str</em>) – List of prompts or a single prompt</p></li>
+<li><p><strong>remote</strong> – If True, the function will run on the nndif server. See <cite>nnsight.net/status</cite> to check which models are available.</p></li>
+<li><p><strong>return_inv_logits</strong> – If True, the function will return the logits applied to the negative of the hidden states.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A tensor of shape (num_prompts, num_layers, vocab_size) containing the probabilities
 of the next token for each prompt at each layer. Tensor is on the CPU.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>Tensor</em> | tuple[<em>Tensor</em>, <em>Tensor</em>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -694,7 +722,7 @@ of the next token for each prompt at each layer. Tensor is on the CPU.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nnterp.interventions.repeat_prompt">
-<span class="sig-name descname"><span class="pre">repeat_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">words</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'</span> <span class="pre">'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placeholder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'?'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/interventions.html#repeat_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.interventions.repeat_prompt" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">repeat_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">words</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'</span> <span class="pre">'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placeholder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'?'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_to_patch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/interventions.html#repeat_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.interventions.repeat_prompt" title="Link to this definition">#</a></dt>
 <dd><p>Prompt used in the patchscopes paper to predict the next token.
 <a class="github reference external" href="https://github.com/PAIR-code/interpretability/blob/master/patchscopes/code/next_token_prediction.ipynb">PAIR-code/interpretability</a></p>
 <dl class="field-list simple">
@@ -797,8 +825,8 @@ Returns the probabilities of the next token in patch_prompt for each prompt for 
 :param nn_model: The NNSight TL model
 :param source_prompts: List of prompts or a single prompt to get the hidden states of the last token
 :param target_patch_prompts: TargetPrompt(s) / TargetPromptBatch containing the prompt to patch and the index of the token to patch
-:param layers: List of layers to intervene on. If None, all layers are intervened on.
-:param latents: List of latents to use. If None, the hidden states of the last token of each source prompt at each layer are collected.
+:param layers: Layer / list of layers to intervene on. If None, all layers are intervened on.
+:param latents: Tensor of shape (num_layers, num_sources, hidden_size) If None, the hidden states of the last token of each source prompt at each layer are collected. You cannot provide both source_prompts and latents.
 :param remote: If True, the function will run on the nndif server. See <cite>nnsight.net/status</cite> to check which models are available.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -810,6 +838,8 @@ of the next token for each prompt at each layer. Tensor is on the CPU.</p>
 <li><p><strong>nn_model</strong> (<em>LanguageModel</em>)</p></li>
 <li><p><strong>source_prompts</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>str</em><em> | </em><em>None</em>)</p></li>
 <li><p><strong>target_patch_prompts</strong> (<a class="reference internal" href="#nnterp.interventions.TargetPromptBatch" title="nnterp.interventions.TargetPromptBatch"><em>TargetPromptBatch</em></a><em> | </em><em>list</em><em>[</em><a class="reference internal" href="#nnterp.interventions.TargetPrompt" title="nnterp.interventions.TargetPrompt"><em>TargetPrompt</em></a><em>] </em><em>| </em><a class="reference internal" href="#nnterp.interventions.TargetPrompt" title="nnterp.interventions.TargetPrompt"><em>TargetPrompt</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>layers</strong> (<em>int</em><em> | </em><em>list</em><em>[</em><em>int</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>latents</strong> (<em>Tensor</em><em> | </em><em>None</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1082,6 +1112,20 @@ While hacky, it is still guaranteed to work correctly or raise an error.</p></li
 <section id="module-nnterp.nnsight_utils">
 <span id="nnterp-nnsight-utils-module"></span><h2>nnterp.nnsight_utils module<a class="headerlink" href="#module-nnterp.nnsight_utils" title="Link to this heading">#</a></h2>
 <dl class="py function">
+<dt class="sig sig-object py" id="nnterp.nnsight_utils.get_embed_tokens">
+<span class="sig-name descname"><span class="pre">get_embed_tokens</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#get_embed_tokens"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.get_embed_tokens" title="Link to this definition">#</a></dt>
+<dd><p>Get the token embedding layer of the model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> (<em>LanguageModel</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Module</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="nnterp.nnsight_utils.get_layers">
 <span class="sig-name descname"><span class="pre">get_layers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#get_layers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.get_layers" title="Link to this definition">#</a></dt>
 <dd><p>Get the layers of the model</p>
@@ -1223,7 +1267,7 @@ While hacky, it is still guaranteed to work correctly or raise an error.</p></li
 <dl class="py function">
 <dt class="sig sig-object py" id="nnterp.nnsight_utils.get_mlp">
 <span class="sig-name descname"><span class="pre">get_mlp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nn_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#get_mlp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.get_mlp" title="Link to this definition">#</a></dt>
-<dd><p>Get the MLP of a layer</p>
+<dd><p>Get the MLP module of a layer</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1364,6 +1408,97 @@ While hacky, it is still guaranteed to work correctly or raise an error.</p></li
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="nnterp.nnsight_utils.ModuleAccessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModuleAccessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rename_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#ModuleAccessor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.ModuleAccessor" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Module that allows to use the NNsight and nnterp renaming utilities on huggingface models, to get the pytorch nn.Module objects with the same standardized names as the StandardizedTransformer class:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>ModuleAccessor
+├── embed_tokens
+├── layers
+│   ├── self_attn
+│   └── mlp
+├── ln_final
+└── lm_head
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>PreTrainedModel</em>) – The huggingface model to access</p></li>
+<li><p><strong>rename_config</strong> (<a class="reference internal" href="#nnterp.rename_utils.RenameConfig" title="nnterp.rename_utils.RenameConfig"><em>RenameConfig</em></a><em> | </em><em>None</em>) – An optional nnterp RenameConfig if your model has custom module names</p></li>
+<li><p><strong>rename</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>] </em><em>| </em><em>None</em>) – An optional dictionary to allow you to have your own custom renaming operations</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="nnterp.nnsight_utils.ModuleAccessor.get_embed_tokens">
+<span class="sig-name descname"><span class="pre">get_embed_tokens</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#ModuleAccessor.get_embed_tokens"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.ModuleAccessor.get_embed_tokens" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>Module</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnterp.nnsight_utils.ModuleAccessor.get_layers">
+<span class="sig-name descname"><span class="pre">get_layers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#ModuleAccessor.get_layers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.ModuleAccessor.get_layers" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>ModuleList</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnterp.nnsight_utils.ModuleAccessor.get_mlp">
+<span class="sig-name descname"><span class="pre">get_mlp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#ModuleAccessor.get_mlp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.ModuleAccessor.get_mlp" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>layer</strong> (<em>int</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Module</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnterp.nnsight_utils.ModuleAccessor.get_attention">
+<span class="sig-name descname"><span class="pre">get_attention</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#ModuleAccessor.get_attention"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.ModuleAccessor.get_attention" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>layer</strong> (<em>int</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Module</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnterp.nnsight_utils.ModuleAccessor.get_unembed_norm">
+<span class="sig-name descname"><span class="pre">get_unembed_norm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#ModuleAccessor.get_unembed_norm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.ModuleAccessor.get_unembed_norm" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>Module</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nnterp.nnsight_utils.ModuleAccessor.get_unembed">
+<span class="sig-name descname"><span class="pre">get_unembed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/nnsight_utils.html#ModuleAccessor.get_unembed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.nnsight_utils.ModuleAccessor.get_unembed" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>Module</em></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -1990,6 +2125,10 @@ Returns None if the tuple status has not been detected yet.</p>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Documentation</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-nnterp.standardized_transformer">nnterp.standardized_transformer module</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.num_layers"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.num_layers</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.num_heads"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.num_heads</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.hidden_size"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.hidden_size</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.vocab_size"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.vocab_size</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.detect_layer_output_type"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.detect_layer_output_type()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.add_prefix_false_tokenizer"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.add_prefix_false_tokenizer</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.standardized_transformer.StandardizedTransformer.attn_probs_available"><code class="docutils literal notranslate"><span class="pre">StandardizedTransformer.attn_probs_available</span></code></a></li>
@@ -2055,6 +2194,7 @@ Returns None if the tuple status has not been detected yet.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-nnterp.nnsight_utils">nnterp.nnsight_utils module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_embed_tokens"><code class="docutils literal notranslate"><span class="pre">get_embed_tokens()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_layers"><code class="docutils literal notranslate"><span class="pre">get_layers()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_num_layers"><code class="docutils literal notranslate"><span class="pre">get_num_layers()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_layer"><code class="docutils literal notranslate"><span class="pre">get_layer()</span></code></a></li>
@@ -2070,6 +2210,15 @@ Returns None if the tuple status has not been detected yet.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.project_on_vocab"><code class="docutils literal notranslate"><span class="pre">project_on_vocab()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_next_token_probs"><code class="docutils literal notranslate"><span class="pre">get_next_token_probs()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.set_layer_output"><code class="docutils literal notranslate"><span class="pre">set_layer_output()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.ModuleAccessor"><code class="docutils literal notranslate"><span class="pre">ModuleAccessor</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.ModuleAccessor.get_embed_tokens"><code class="docutils literal notranslate"><span class="pre">ModuleAccessor.get_embed_tokens()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.ModuleAccessor.get_layers"><code class="docutils literal notranslate"><span class="pre">ModuleAccessor.get_layers()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.ModuleAccessor.get_mlp"><code class="docutils literal notranslate"><span class="pre">ModuleAccessor.get_mlp()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.ModuleAccessor.get_attention"><code class="docutils literal notranslate"><span class="pre">ModuleAccessor.get_attention()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.ModuleAccessor.get_unembed_norm"><code class="docutils literal notranslate"><span class="pre">ModuleAccessor.get_unembed_norm()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.ModuleAccessor.get_unembed"><code class="docutils literal notranslate"><span class="pre">ModuleAccessor.get_unembed()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.get_token_activations"><code class="docutils literal notranslate"><span class="pre">get_token_activations()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.collect_last_token_activations_session"><code class="docutils literal notranslate"><span class="pre">collect_last_token_activations_session()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nnterp.nnsight_utils.collect_token_activations_batched"><code class="docutils literal notranslate"><span class="pre">collect_token_activations_batched()</span></code></a></li>
@@ -2153,6 +2302,15 @@ Returns None if the tuple status has not been detected yet.</p>
 </ul>
 
   </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/api.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
 
 </div></div>
               

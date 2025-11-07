@@ -1,6 +1,9 @@
 Basic Usage
 ===========
 
+.. meta::
+   :llm-description: Learn the standardized interface for transformer models. Covers model loading, accessing layer inputs/outputs, skip layers functionality, and built-in methods like project_on_vocab and steer.
+
 Standardized Interface
 ----------------------
 

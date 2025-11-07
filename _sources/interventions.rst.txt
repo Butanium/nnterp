@@ -1,6 +1,9 @@
 Interventions
 =============
 
+.. meta::
+   :llm-description: Common intervention methods for transformer analysis. Includes logit lens for layer-wise predictions and patchscope for cross-context activation replacement.
+
 Analysis Methods
 ----------------
 

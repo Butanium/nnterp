@@ -1,6 +1,9 @@
 NNsight Utils
 =============
 
+.. meta::
+   :llm-description: Standalone utility functions for regular nnsight models with llama/gemma naming conventions. Includes layer access helpers, projection utilities, and activation collection functions. StandardizedTransformer recommended for robustness.
+
 ``nnsight_utils`` provides some utility functions to collect activations along with some of the ``StandardizedTransformer`` utility functions usable with regular nnsight models, as long as they use llama or gemma naming conventions. However, for using those ``StandardizedTransformer`` functions, we recommend using ``StandardizedTransformer`` directly, as it is much more robust.
 
 Setup
@@ -35,7 +38,7 @@ Layer Access
        mlp_out = get_mlp_output(model, 3)
 
 Projection and Utilities
------------------------
+------------------------
 
 .. code-block:: python
 
@@ -45,7 +48,7 @@ Projection and Utilities
 
 
 Activation Collection
---------------------
+---------------------
 
 .. code-block:: python
 
@@ -66,7 +69,7 @@ Activation Collection
    )
 
 Requirements
------------
+------------
 
 These functions work with NNsight models that have been renamed to use llama/gemma conventions:
 
