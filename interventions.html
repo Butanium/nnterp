@@ -461,6 +461,12 @@
 <span class="c1"># Shape: (batch, layers, vocab)</span>
 </pre></div>
 </div>
+<p>Return inverse logits (projection on negated normalized hidden states), computed as softmax(lm_head(-ln_final(hidden_states))):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">probs</span><span class="p">,</span> <span class="n">inv_probs</span> <span class="o">=</span> <span class="n">logit_lens</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">prompts</span><span class="p">,</span> <span class="n">return_inv_logits</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># Both tensors shape: (batch, layers, vocab)</span>
+<span class="c1"># inv_probs computed as softmax(lm_head(-ln_final(hidden_states)))</span>
+</pre></div>
+</div>
 </section>
 <section id="patchscope">
 <h3>Patchscope<a class="headerlink" href="#patchscope" title="Link to this heading">#</a></h3>
@@ -470,11 +476,38 @@
 <span class="n">source_prompts</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Paris is beautiful&quot;</span><span class="p">,</span> <span class="s2">&quot;London is foggy&quot;</span><span class="p">]</span>
 <span class="n">target_prompt</span> <span class="o">=</span> <span class="n">TargetPrompt</span><span class="p">(</span><span class="s2">&quot;city: Paris</span><span class="se">\\</span><span class="s2">nfood: croissant</span><span class="se">\\</span><span class="s2">n?&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="c1"># Or use repeat prompt</span>
+<span class="c1"># Or use repeat_prompt with custom index_to_patch</span>
 <span class="n">target_prompt</span> <span class="o">=</span> <span class="n">repeat_prompt</span><span class="p">(</span><span class="n">words</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;car&quot;</span><span class="p">,</span> <span class="s2">&quot;cross&quot;</span><span class="p">,</span> <span class="s2">&quot;azdrfa&quot;</span><span class="p">])</span>
 
 <span class="n">patchscope_probs</span> <span class="o">=</span> <span class="n">patchscope_lens</span><span class="p">(</span>
     <span class="n">model</span><span class="p">,</span> <span class="n">source_prompts</span><span class="o">=</span><span class="n">source_prompts</span><span class="p">,</span> <span class="n">target_patch_prompts</span><span class="o">=</span><span class="n">target_prompt</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Intervene on specific layers (single layer or list):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Single layer</span>
+<span class="n">probs</span> <span class="o">=</span> <span class="n">patchscope_lens</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">source_prompts</span><span class="o">=</span><span class="n">source_prompts</span><span class="p">,</span>
+    <span class="n">target_patch_prompts</span><span class="o">=</span><span class="n">target_prompt</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="mi">5</span>
+<span class="p">)</span>
+
+<span class="c1"># Multiple layers</span>
+<span class="n">probs</span> <span class="o">=</span> <span class="n">patchscope_lens</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">source_prompts</span><span class="o">=</span><span class="n">source_prompts</span><span class="p">,</span>
+    <span class="n">target_patch_prompts</span><span class="o">=</span><span class="n">target_prompt</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Use pre-computed latents instead of source prompts:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="c1"># Pre-compute activations</span>
+<span class="n">latents</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">768</span><span class="p">)</span>  <span class="c1"># (num_layers, num_sources, hidden_size)</span>
+
+<span class="c1"># Use latents directly (cannot provide source_prompts when using latents)</span>
+<span class="n">probs</span> <span class="o">=</span> <span class="n">patchscope_lens</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">latents</span><span class="o">=</span><span class="n">latents</span><span class="p">,</span>
+    <span class="n">target_patch_prompts</span><span class="o">=</span><span class="n">target_prompt</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">]</span>
 <span class="p">)</span>
 </pre></div>
 </div>

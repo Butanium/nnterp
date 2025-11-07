@@ -471,9 +471,11 @@
 
 <span class="c1"># Uses device_map=&quot;auto&quot; by default</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
-<span class="c1"># Access the model&#39;s hidden size and number of attention heads (if available)</span>
+<span class="c1"># Access model configuration attributes</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;number of layers: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">num_layers</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;hidden size: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">hidden_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;number of attention heads: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">num_heads</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;vocabulary size: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">vocab_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
