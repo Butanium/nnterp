@@ -270,6 +270,10 @@ def patchscope_lens(
             source_prompts = [source_prompts]
         num_sources = len(source_prompts)
     target_patch_prompts = TargetPromptBatch.auto(target_patch_prompts, num_sources)
+    if layers is None:
+        layers = list(range(get_num_layers(nn_model)))
+    elif isinstance(layers, int):
+        layers = [layers]
     if len(target_patch_prompts) != num_sources:
         raise ValueError(
             f"Number of sources ({num_sources}) does not match number of patch prompts ({len(target_patch_prompts)})"
@@ -282,10 +286,7 @@ def patchscope_lens(
         raise ValueError("You cannot provide both source_prompts and latents")
 
     probs_l = []
-    if layers is None:
-        layers = list(range(get_num_layers(nn_model)))
-    elif isinstance(layers, int):
-        layers = [layers]
+
     for idx, layer in enumerate(layers):
         with nn_model.trace(
             target_patch_prompts.prompts,
