@@ -10,7 +10,7 @@ repos:
     hooks:
       - id: update-llms-txt
         name: Update llms.txt
-        entry: bash -c 'uv run scripts/update_llms_txt.py && git add docs/llms.txt'
+        entry: bash -c 'uv run scripts/update_llms_txt.py'
         language: system
         files: ^docs/.*\.rst$|^docs/llms_header\.txt$
         pass_filenames: false
