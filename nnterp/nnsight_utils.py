@@ -2,15 +2,26 @@ from __future__ import annotations
 
 from typing import Union, Callable
 import torch as th
+import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from nnsight import LanguageModel
+from nnsight import LanguageModel, NNsight
 from nnsight.intervention.envoy import Envoy
 from nnsight.intervention.tracing.globals import Object
-from .utils import TraceTensor, DummyCache, unpack_tuple
+from transformers import PreTrainedModel
+
+from .utils import TraceTensor, unpack_tuple
 from .standardized_transformer import StandardizedTransformer
+from .rename_utils import get_rename_dict, RenameConfig
 
 GetModuleOutput = Callable[[LanguageModel, int], TraceTensor]
+
+
+def get_embed_tokens(model: LanguageModel) -> nn.Module:
+    """
+    Get the token embedding layer of the model
+    """
+    return model.embed_tokens
 
 
 def get_layers(model: LanguageModel) -> list[Envoy]:
@@ -96,7 +107,7 @@ def get_attention_output(nn_model: LanguageModel, layer: int) -> TraceTensor:
 
 def get_mlp(nn_model: LanguageModel, layer: int) -> Envoy:
     """
-    Get the MLP of a layer
+    Get the MLP module of a layer
     """
     return get_layer(nn_model, layer).mlp
 
@@ -184,6 +195,62 @@ def set_layer_output(nn_model: LanguageModel, layer: int, tensor: TraceTensor):
         get_layer(nn_model, layer).output = tensor
 
 
+class ModuleAccessor:
+    """
+    Module that allows to use the NNsight and nnterp renaming utilities on huggingface models, to get the pytorch nn.Module objects with the same standardized names as the StandardizedTransformer class::
+
+        ModuleAccessor
+        ├── embed_tokens
+        ├── layers
+        │   ├── self_attn
+        │   └── mlp
+        ├── ln_final
+        └── lm_head
+
+    Args:
+        model: The huggingface model to access
+        rename_config: An optional nnterp RenameConfig if your model has custom module names
+        rename: An optional dictionary to allow you to have your own custom renaming operations
+
+    """
+
+    def __init__(
+        self,
+        model: PreTrainedModel,
+        rename_config: RenameConfig | None = None,
+        rename: dict[str, str] | None = None,
+    ):
+        full_rename = get_rename_dict(rename_config=rename_config)
+        if rename is not None:
+            full_rename.update(rename)
+        self.nn_model = NNsight(model, rename=full_rename)
+
+    def __getattr__(self, name: str) -> nn.Module:
+        attr = getattr(self.nn_model, name)
+        if hasattr(attr, "_module"):
+            return attr._module
+        else:
+            raise AttributeError(f"Attribute {name} is not a module")
+
+    def get_embed_tokens(self) -> nn.Module:
+        return self.nn_model.embed_tokens._module
+
+    def get_layers(self) -> nn.ModuleList:
+        return self.nn_model.layers._module
+
+    def get_mlp(self, layer: int) -> nn.Module:
+        return self.nn_model.layers[layer].mlp._module
+
+    def get_attention(self, layer: int) -> nn.Module:
+        return self.nn_model.layers[layer].self_attn._module
+
+    def get_unembed_norm(self) -> nn.Module:
+        return self.nn_model.ln_final._module
+
+    def get_unembed(self) -> nn.Module:
+        return self.nn_model.lm_head._module
+
+
 @th.no_grad
 def get_token_activations(
     nn_model: LanguageModel,
@@ -217,9 +284,13 @@ def get_token_activations(
     if idx is None:
         idx = -1
     if idx < 0 and nn_model.tokenizer.padding_side != "left":
-        raise ValueError(f"negative index is currently only supported with left padding, not {nn_model.tokenizer.padding_side}")
+        raise ValueError(
+            f"negative index is currently only supported with left padding, not {nn_model.tokenizer.padding_side}"
+        )
     if idx > 0 and nn_model.tokenizer.padding_side != "right":
-        raise ValueError(f"positive index is currently only supported with right padding, not {nn_model.tokenizer.padding_side}")
+        raise ValueError(
+            f"positive index is currently only supported with right padding, not {nn_model.tokenizer.padding_side}"
+        )
     if layers is None:
         layers = list(range(get_num_layers(nn_model)))
     last_layer = max(layers)

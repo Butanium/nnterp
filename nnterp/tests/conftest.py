@@ -82,7 +82,7 @@ def pytest_generate_tests(metafunc):
                 all_models = get_available_models(model_names)
             if class_names is not None:
                 all_models += get_all_test_models(class_names)
-            
+
             # Deduplicate and sort for deterministic test collection with pytest-xdist
             all_models = sorted(set(all_models))
 
@@ -115,12 +115,12 @@ def pytest_generate_tests(metafunc):
 def pytest_configure(config):
     """Initialise per-session flags on the config object."""
     # Warn if pytest-xdist is being used (not fully supported)
-    
+
     config.stash[has_deselected_key] = False
     config.stash[errors_key] = defaultdict(dict)
     config.stash[skips_key] = defaultdict(dict)
     config.stash[tested_models_key] = defaultdict(list)
-    
+
     # Initialize lock for thread-safe operations
     config.stash[stash_lock_key] = threading.Lock()
 
@@ -153,7 +153,7 @@ def _extract_model_name(item):
         model_name = item.callspec.params.get("model_name")
         if model_name:
             return model_name
-    
+
     # Fallback: parse from item name (e.g., "test_foo[model-name]")
     if "[" in item.name and "]" in item.name:
         try:
@@ -163,13 +163,13 @@ def _extract_model_name(item):
             return item.name[start + 1 : end]
         except (ValueError, IndexError):
             pass
-    
+
     return None
 
 
 def _categorize_test_failure(test_file_name, model_name, arch, config):
     """Categorize test failure based on test file and update appropriate config list.
-    
+
     Thread-safe: Uses lock to prevent race conditions in parallel execution.
     Falls back to "failed_test_models" if test file not in any specific category.
     """
@@ -250,24 +250,30 @@ def pytest_deselected(items):
 @pytest.hookimpl(tryfirst=True)
 def pytest_testnodedown(node, error):
     """Hook called when a pytest-xdist worker node finishes.
-    
+
     Aggregates test results from worker nodes into the master process.
     This runs on the master node when a worker finishes.
     """
-    if not hasattr(node, 'workeroutput'):
+    if not hasattr(node, "workeroutput"):
         # If worker crashed (error != None), workeroutput won't exist - that's expected
         # pytest-xdist already handles the crash, so we just skip merging
-        worker_id = getattr(node, 'gateway', {}).id if hasattr(node, 'gateway') else 'unknown'
+        worker_id = (
+            getattr(node, "gateway", {}).id if hasattr(node, "gateway") else "unknown"
+        )
         if error is not None:
-            logger.error(f"Worker {worker_id} crashed (error should be reported by pytest-xdist):\n{error}")
+            logger.error(
+                f"Worker {worker_id} crashed (error should be reported by pytest-xdist):\n{error}"
+            )
             return
         # If no error but workeroutput missing, that's unexpected - fail loud
-        raise RuntimeError(f"Worker {worker_id} finished without error but workeroutput is missing")
-    
+        raise RuntimeError(
+            f"Worker {worker_id} finished without error but workeroutput is missing"
+        )
+
     config = node.config
     # Get the lock to safely merge worker data
     lock = config.stash[stash_lock_key]
-    
+
     with lock:
         # Merge tested_models
         worker_tested = node.workeroutput.get("tested_models", {})
@@ -278,7 +284,7 @@ def pytest_testnodedown(node, error):
             for model in models:
                 if model not in master_tested[arch]:
                     master_tested[arch].append(model)
-        
+
         # Merge failure_categories
         worker_failures = node.workeroutput.get("failure_categories", {})
         master_failures = config.stash[failure_categories_key]
@@ -289,7 +295,7 @@ def pytest_testnodedown(node, error):
                 for model in models:
                     if model not in master_failures[cat_name][arch]:
                         master_failures[cat_name][arch].append(model)
-        
+
         # Merge errors
         worker_errors = node.workeroutput.get("errors", {})
         master_errors = config.stash[errors_key]
@@ -297,7 +303,7 @@ def pytest_testnodedown(node, error):
             if arch not in master_errors:
                 master_errors[arch] = []
             master_errors[arch].extend(errors)
-        
+
         # Merge skips
         worker_skips = node.workeroutput.get("skips", {})
         master_skips = config.stash[skips_key]
@@ -344,7 +350,9 @@ def pytest_sessionfinish(session, exitstatus):
         log_folder.mkdir(exist_ok=True, parents=True)
 
         status_file = log_folder / "latest_status.json"
-        versioned_status_file = log_folder / f"{TRANSFORMERS_VERSION}_{NNSIGHT_VERSION}_status.json"
+        versioned_status_file = (
+            log_folder / f"{TRANSFORMERS_VERSION}_{NNSIGHT_VERSION}_status.json"
+        )
 
         if status_file.exists():
             try:
@@ -421,7 +429,7 @@ def _update_status(prev_status: dict, config):
         "nnsight_unavailable_models": nnsight_unavailable_models,
         "ran_tests_on": tested_models,
     }
-    
+
     # Initialize availability keys for all specific categories dynamically
     for middle_part in TEST_FILE_CATEGORIES.keys():
         availability_key = f"no_{middle_part}_available_models"
@@ -457,7 +465,7 @@ def _update_status(prev_status: dict, config):
         for middle_part in TEST_FILE_CATEGORIES.keys():
             category_name = f"failed_{middle_part}_models"
             availability_key = f"no_{middle_part}_available_models"
-            
+
             available_models = (
                 set(cleaned_categories[category_name].get(model_class, []))
                 - all_general_fails
@@ -497,7 +505,7 @@ def llama_like_model_name(request):
 @pytest.fixture
 def model(model_name, failed_model_cache, request):
     """Fixture providing StandardizedTransformer instances.
-    
+
     If a model fails to load, it is cached and subsequent tests
     for that model are skipped.
     """
@@ -506,30 +514,30 @@ def model(model_name, failed_model_cache, request):
     with lock:
         if model_name in failed_model_cache:
             pytest.skip(f"Model {model_name} previously failed to load")
-    
+
     try:
         return StandardizedTransformer(model_name)
     except Exception as e:
         # Update cache under lock to ensure thread safety
         with lock:
             failed_model_cache.add(model_name)
-        
+
         # Thread-safe: Add to failed_test_models immediately
         config = request.session.config
         arch = get_arch(model_name)
         failure_categories = config.stash[failure_categories_key]
-        
+
         with lock:
             if model_name not in failure_categories["failed_test_models"][arch]:
                 failure_categories["failed_test_models"][arch].append(model_name)
-        
+
         pytest.skip(f"Failed to load model {model_name}: {e}")
 
 
 @pytest.fixture
 def raw_model(model_name, failed_model_cache, request):
     """Fixture providing raw LanguageModel instances.
-    
+
     If a model fails to load, it is cached and subsequent tests
     for that model are skipped.
     """
@@ -538,21 +546,21 @@ def raw_model(model_name, failed_model_cache, request):
     with lock:
         if model_name in failed_model_cache:
             pytest.skip(f"Model {model_name} previously failed to load")
-    
+
     try:
         return LanguageModel(model_name, device_map="auto")
     except Exception as e:
         # Update cache under lock to ensure thread safety
         with lock:
             failed_model_cache.add(model_name)
-        
+
         # Thread-safe: Add to failed_test_models immediately
         config = request.session.config
         arch = get_arch(model_name)
         failure_categories = config.stash[failure_categories_key]
-        
+
         with lock:
             if model_name not in failure_categories["failed_test_models"][arch]:
                 failure_categories["failed_test_models"][arch].append(model_name)
-        
+
         pytest.skip(f"Failed to load model {model_name}: {e}")

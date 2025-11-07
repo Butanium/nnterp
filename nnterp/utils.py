@@ -64,8 +64,6 @@ except ImportError:
     Qwen2ForCausalLM = ArchitectureNotFound
 
 
-
-
 def is_notebook():
     """Detect the current Python environment"""
     try:

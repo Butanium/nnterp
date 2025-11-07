@@ -11,7 +11,7 @@ nnterp/data/test_logs/*_status.json
 # general
 .junk/**
 junk**
-.claude
+.claude/settings.local.json
 *.log
 build/
 dist/
@@ -36,3 +36,4 @@ site/
 docs/api/
 docs/generated/
 docs/_autosummary/
+docs/llms.txt

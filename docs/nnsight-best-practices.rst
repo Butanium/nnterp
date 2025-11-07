@@ -1,6 +1,9 @@
 NNsight Best Practices
 ======================
 
+.. meta::
+   :llm-description: Critical NNsight patterns for nnterp usage. Covers execution order requirements (forward pass order), gradient computation with backward passes, and performance optimization with tracer.stop() and caching.
+
 This guide covers essential NNsight patterns and best practices for efficient and correct usage with nnterp. Understanding these patterns will help you avoid common pitfalls and write more performant code.
 
 Execution Order Requirements
