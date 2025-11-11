@@ -151,20 +151,14 @@ class StandardizedTransformer(LanguageModel):
             rename_config=rename_config,
             initialized_with_enable=enable_attention_probs,
         )
-        if check_renaming:
-            if enable_attention_probs:
-                self.attention_probabilities.check_source(
-                    allow_dispatch=allow_dispatch,
-                    use_trace=check_attn_probs_with_trace,
-                )
-            else:
-                try:
-                    self.attention_probabilities.check_source(
-                        allow_dispatch=allow_dispatch,
-                        use_trace=check_attn_probs_with_trace,
-                    )
-                except Exception:
-                    self.attention_probabilities.disable()
+        if check_renaming and enable_attention_probs:
+            self.attention_probabilities.check_source(
+                allow_dispatch=allow_dispatch,
+                use_trace=check_attn_probs_with_trace,
+            )
+        else:
+            # Disable attention probabilities as we can't check them without dispatching the model or not validating the sum to 1 and causal effect of modifying them
+            self.attention_probabilities.disable()
         self._add_prefix_false_tokenizer = None
 
     def detect_layer_output_type(self):

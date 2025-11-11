@@ -464,6 +464,22 @@ class AttentionProbabilitiesAccessor:
     def check_source(
         self, layer: int = 0, allow_dispatch: bool = True, use_trace: bool = True
     ):
+        """
+        Check that the attention probabilities source is correctly configured.
+
+        This method validates that:
+        1. The attention probabilities have the expected shape (batch_size, num_heads, seq_len, seq_len)
+        2. The probabilities sum to 1 along the last dimension
+        3. Modifying the probabilities affects the model's output logits
+
+        Args:
+            layer (int, optional): The layer index to check. Defaults to 0.
+            allow_dispatch (bool, optional): If True, allows dispatching the model when scan fails.
+            use_trace (bool, optional): If False, uses scan() to validate the attention probabilities, which means attention probabilities summing to 1 and causal effect of modifying them won't be tested. Defaults to True.
+
+        Raises:
+            RenamingError: If the attention probabilities are not properly configured or if the number of attention heads is not available.
+        """
         if self.model.num_heads is None:
             raise RenamingError(
                 f"Can't check the shapes of the model internals because the number of attention heads is not available in {self.model.repo_id} architecture."
