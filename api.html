@@ -2030,13 +2030,21 @@ Returns None if the tuple status has not been detected yet.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="nnterp.rename_utils.AttentionProbabilitiesAccessor.check_source">
 <span class="sig-name descname"><span class="pre">check_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_dispatch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_trace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/rename_utils.html#AttentionProbabilitiesAccessor.check_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.rename_utils.AttentionProbabilitiesAccessor.check_source" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Check that the attention probabilities source is correctly configured.</p>
+<p>This method validates that:
+1. The attention probabilities have the expected shape (batch_size, num_heads, seq_len, seq_len)
+2. The probabilities sum to 1 along the last dimension
+3. Modifying the probabilities affects the model’s output logits</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>layer</strong> (<em>int</em>)</p></li>
-<li><p><strong>allow_dispatch</strong> (<em>bool</em>)</p></li>
-<li><p><strong>use_trace</strong> (<em>bool</em>)</p></li>
+<li><p><strong>layer</strong> (<em>int</em><em>, </em><em>optional</em>) – The layer index to check. Defaults to 0.</p></li>
+<li><p><strong>allow_dispatch</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, allows dispatching the model when scan fails.</p></li>
+<li><p><strong>use_trace</strong> (<em>bool</em><em>, </em><em>optional</em>) – If False, uses scan() to validate the attention probabilities, which means attention probabilities summing to 1 and causal effect of modifying them won’t be tested. Defaults to True.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#nnterp.rename_utils.RenamingError" title="nnterp.rename_utils.RenamingError"><strong>RenamingError</strong></a> – If the attention probabilities are not properly configured or if the number of attention heads is not available.</p>
 </dd>
 </dl>
 </dd></dl>

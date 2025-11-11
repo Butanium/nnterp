@@ -600,20 +600,14 @@
             <span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span><span class="p">,</span>
             <span class="n">initialized_with_enable</span><span class="o">=</span><span class="n">enable_attention_probs</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="n">check_renaming</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">enable_attention_probs</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">check_source</span><span class="p">(</span>
-                    <span class="n">allow_dispatch</span><span class="o">=</span><span class="n">allow_dispatch</span><span class="p">,</span>
-                    <span class="n">use_trace</span><span class="o">=</span><span class="n">check_attn_probs_with_trace</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">check_source</span><span class="p">(</span>
-                        <span class="n">allow_dispatch</span><span class="o">=</span><span class="n">allow_dispatch</span><span class="p">,</span>
-                        <span class="n">use_trace</span><span class="o">=</span><span class="n">check_attn_probs_with_trace</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">check_renaming</span> <span class="ow">and</span> <span class="n">enable_attention_probs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">check_source</span><span class="p">(</span>
+                <span class="n">allow_dispatch</span><span class="o">=</span><span class="n">allow_dispatch</span><span class="p">,</span>
+                <span class="n">use_trace</span><span class="o">=</span><span class="n">check_attn_probs_with_trace</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Disable attention probabilities as we can&#39;t check them without dispatching the model or not validating the sum to 1 and causal effect of modifying them</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_prefix_false_tokenizer</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="StandardizedTransformer.detect_layer_output_type">
