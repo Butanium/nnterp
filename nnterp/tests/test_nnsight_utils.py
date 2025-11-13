@@ -167,9 +167,6 @@ def test_grad_from_mlp(llama_like_model_name):
 
 def test_cache_with_renamed_modules(llama_like_model_name):
     """Test that nnsight cache supports renamed module access"""
-    pytest.skip(
-        "Cache is not supported yet due to a nnsight renaming issue."
-    )  # TODO: Update once nnsight is fixed
     with th.no_grad():
         model = LanguageModel(llama_like_model_name, device_map="auto")
         prompt = "Hello, world!"

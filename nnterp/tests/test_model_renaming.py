@@ -459,9 +459,6 @@ def test_standardized_transformer_properties(model_name):
 
 def test_standardized_transformer_cache(model_name):
     """Test that StandardizedTransformer works with nnsight cache using renamed names"""
-    pytest.skip(
-        "Cache is not supported yet due to a nnsight renaming issue."
-    )  # TODO: Update once nnsight is fixed
     with th.no_grad():
         model = StandardizedTransformer(model_name)
         prompt = "Hello, world!"
