@@ -474,8 +474,6 @@
     <span class="n">get_vocab_size</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">GetLayerObject</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">],</span> <span class="n">TraceTensor</span><span class="p">]</span>
-
 
 <div class="viewcode-block" id="StandardizedTransformer">
 <a class="viewcode-back" href="../../api.html#nnterp.standardized_transformer.StandardizedTransformer">[docs]</a>
@@ -600,20 +598,14 @@
             <span class="n">rename_config</span><span class="o">=</span><span class="n">rename_config</span><span class="p">,</span>
             <span class="n">initialized_with_enable</span><span class="o">=</span><span class="n">enable_attention_probs</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="n">check_renaming</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">enable_attention_probs</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">check_source</span><span class="p">(</span>
-                    <span class="n">allow_dispatch</span><span class="o">=</span><span class="n">allow_dispatch</span><span class="p">,</span>
-                    <span class="n">use_trace</span><span class="o">=</span><span class="n">check_attn_probs_with_trace</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">check_source</span><span class="p">(</span>
-                        <span class="n">allow_dispatch</span><span class="o">=</span><span class="n">allow_dispatch</span><span class="p">,</span>
-                        <span class="n">use_trace</span><span class="o">=</span><span class="n">check_attn_probs_with_trace</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">check_renaming</span> <span class="ow">and</span> <span class="n">enable_attention_probs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">check_source</span><span class="p">(</span>
+                <span class="n">allow_dispatch</span><span class="o">=</span><span class="n">allow_dispatch</span><span class="p">,</span>
+                <span class="n">use_trace</span><span class="o">=</span><span class="n">check_attn_probs_with_trace</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Disable attention probabilities as we can&#39;t check them without dispatching the model or not validating the sum to 1 and causal effect of modifying them</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attention_probabilities</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_prefix_false_tokenizer</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="StandardizedTransformer.detect_layer_output_type">
@@ -740,7 +732,6 @@
         <span class="n">steering_vector</span><span class="p">:</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
         <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">positions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="n">th</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">get_layer_object_to_steer</span><span class="p">:</span> <span class="n">GetLayerObject</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Steer the hidden states of a layer using a steering vector.</span>
@@ -750,17 +741,16 @@
 <span class="sd">            steering_vector: The steering vector to apply</span>
 <span class="sd">            factor: The factor to multiply the steering vector by</span>
 <span class="sd">            positions: The position to steer. If None, all positions are steered.</span>
-<span class="sd">            get_layer_object_to_steer: Function that given a layer index, returns the object to steer in the model&#39;s. Default to model.layers_output[layer]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">get_layer_object_to_steer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">get_layer_object_to_steer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers_output</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layers</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
             <span class="n">layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">layers</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">layers</span><span class="p">:</span>
-            <span class="n">layer_device</span> <span class="o">=</span> <span class="n">get_layer_object_to_steer</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span><span class="o">.</span><span class="n">device</span>
-            <span class="n">get_layer_object_to_steer</span><span class="p">(</span><span class="n">layer</span><span class="p">)[</span>
-                <span class="p">:,</span> <span class="n">positions</span>
-            <span class="p">]</span> <span class="o">+=</span> <span class="n">factor</span> <span class="o">*</span> <span class="n">steering_vector</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">layer_device</span><span class="p">)</span></div>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">layers</span><span class="p">):</span>  <span class="c1"># sort to ensure execution order</span>
+            <span class="n">layer_device</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">device</span>
+            <span class="n">steering_with</span> <span class="o">=</span> <span class="n">factor</span> <span class="o">*</span> <span class="n">steering_vector</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">layer_device</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">positions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span> <span class="o">+=</span> <span class="n">steering_with</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layers_output</span><span class="p">[</span><span class="n">layer</span><span class="p">][:,</span> <span class="n">positions</span><span class="p">]</span> <span class="o">+=</span> <span class="n">steering_with</span></div>
 
 
 <div class="viewcode-block" id="StandardizedTransformer.project_on_vocab">
