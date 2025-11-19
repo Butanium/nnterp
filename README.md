@@ -28,10 +28,10 @@ from nnterp import StandardizedTransformer
 model = StandardizedTransformer("gpt2")  # or "meta-llama/Llama-2-7b-hf", etc.
 
 with model.trace("The Eiffel Tower is in the city of"):
-    # Unified interface across all models
-    layer_5_output = model.layers_output[5]
+    # Unified interface across all models (must follow forward pass order!)
     attention_output = model.attentions_output[3]
     mlp_output = model.mlps_output[3]
+    layer_5_output = model.layers_output[5]
 
     # Built-in utilities
     logits = model.logits.save()
@@ -45,12 +45,12 @@ All models use the same naming convention:
 
 ```python
 with model.trace("Hello world"):
-    # Layer I/O - works for GPT-2, LLaMA, Gemma, etc.
-    layer_output = model.layers_output[5]
-
-    # Attention and MLP components
+    # Attention and MLP components (access in forward pass order!)
     attn_out = model.attentions_output[3]
     mlp_out = model.mlps_output[3]
+
+    # Layer I/O - works for GPT-2, LLaMA, Gemma, etc.
+    layer_output = model.layers_output[5]
 
     # Direct interventions
     model.layers_output[10] = layer_output  # Skip layers 6-10
