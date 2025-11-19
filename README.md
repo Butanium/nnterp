@@ -48,12 +48,13 @@ with model.trace("Hello world"):
     # Attention and MLP components (access in forward pass order!)
     attn_out = model.attentions_output[3]
     mlp_out = model.mlps_output[3]
+    layer_3_output = model.layers_output[3]
 
     # Layer I/O - works for GPT-2, LLaMA, Gemma, etc.
-    layer_output = model.layers_output[5]
+    layer_5_output = model.layers_output[5]
 
-    # Direct interventions
-    model.layers_output[10] = layer_output  # Skip layers 6-10
+    # Direct interventions - add residual from layer 3 to layer 10
+    model.layers_output[10] = model.layers_output[10] + layer_3_output
 ```
 
 ---
