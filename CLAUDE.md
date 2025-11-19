@@ -80,7 +80,7 @@ nnterp is a mechanistic interpretability library built on top of nnsight, provid
 
 **Key Methods**:
 - `skip_layer(layer_idx)` / `skip_layers(layer_indices)` - Skip layer computation
-- `steer(layers, steering_vector, positions)` - Apply activation steering
+- `steer(layers, steering_vector, positions=None, factor=1)` - Apply activation steering to `layers_output`
 - `project_on_vocab(hidden_state)` - Project to vocabulary space
 - `get_topk_closest_tokens(hidden_state, k)` - Get k closest tokens
 
@@ -92,7 +92,6 @@ nnterp is a mechanistic interpretability library built on top of nnsight, provid
 - `patchscope_lens(model, target_prompts, source_prompts, layer_to_patch)` - Replace hidden states and observe output
   - Uses `TargetPrompt(prompt, index_to_patch)` to specify patching location
 - `patchscope_generate(model, target_prompt, source_prompt, layer_to_patch, max_new_tokens)` - Generate with patched states
-- `steer(model, layers, steering_vector, positions=None)` - Apply steering vectors to activations
 - `patch_object_attn_lens(model, prompts, object_token_idx, attention_layer)` - Attention-based patching
 
 **Helper Functions**:
@@ -242,7 +241,7 @@ These files are used for test result tracking and cross-version compatibility mo
 
 **Exported from `nnterp` package** (`__init__.py`): `StandardizedTransformer`
 
-All other functions/classes must be imported from their respective modules (e.g., `from nnterp.interventions import steer`).
+All other functions/classes must be imported from their respective modules (e.g., `from nnterp.interventions import logit_lens`).
 
 ### Dependencies
 
@@ -264,7 +263,7 @@ with model.trace(prompts) as tracer:
     # Access activations via standardized names
     activations = model.layers_output[layer_idx].save()
     # Apply interventions
-    steer(model, layers=layer_idx, steering_vector=vector)
+    model.steer(layers=layer_idx, steering_vector=vector)
 ```
 
 **Target Token Tracking**:

@@ -10,7 +10,6 @@ from .nnsight_utils import (
     get_attention,
     get_num_layers,
     LanguageModel,
-    GetModuleOutput,
     project_on_vocab,
 )
 
@@ -21,7 +20,6 @@ __all__ = [
     "TargetPromptBatch",
     "patchscope_lens",
     "patchscope_generate",
-    "steer",
     "patch_object_attn_lens",
 ]
 
@@ -354,31 +352,6 @@ def patchscope_generate(
     for k, v in generations.items():
         generations[k] = v.cpu()
     return generations
-
-
-def steer(
-    nn_model: LanguageModel,
-    layers: int | list[int],
-    steering_vector: th.Tensor,
-    factor: float = 1,
-    position: int = -1,
-    get_module: GetModuleOutput = get_layer_output,
-):
-    """
-    Steer the hidden states of a layer using a steering vector
-    Args:
-        nn_model: The NNSight model
-        layers: The layer(s) to steer
-        steering_vector: The steering vector to apply
-        factor: The factor to multiply the steering vector by
-    """
-    if isinstance(layers, int):
-        layers = [layers]
-    for layer in layers:
-        layer_device = get_layer_output(nn_model, layer).device
-        get_module(nn_model, layer)[:, position] += factor * steering_vector.to(
-            layer_device
-        )
 
 
 def patch_object_attn_lens(
