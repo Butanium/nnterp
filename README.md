@@ -83,7 +83,7 @@ patchscope_probs = patchscope_lens(
 # Activation steering
 import torch
 with model.trace("Hello, how are you?"):
-    steering_vector = torch.randn(model.config.hidden_size)
+    steering_vector = torch.randn(model.hidden_size)
     model.steer(layers=[5, 10], steering_vector=steering_vector, factor=1.5)
 ```
 
@@ -130,12 +130,13 @@ Before opening an issue, make sure you have a minimal working example (MWE) that
 If you use `nnterp` in your research, you can cite it as:
 
 ```bibtex
-@inproceedings{
-dumas2025nnterp,
-title={nnterp: A Standardized Interface for Mechanistic Interpretability of Transformers},
-author={Cl{\'e}ment Dumas},
-booktitle={Mechanistic Interpretability Workshop at NeurIPS 2025},
-year={2025},
-url={https://openreview.net/forum?id=ACic3VDIHp}
+@misc{dumas2025nnterps,
+      title={nnterp: A Standardized Interface for Mechanistic Interpretability of Transformers},
+      author={Clément Dumas},
+      year={2025},
+      eprint={2511.14465},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2511.14465},
 }
 ```
