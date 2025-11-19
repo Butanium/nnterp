@@ -27,8 +27,6 @@ from .rename_utils import (
     get_vocab_size,
 )
 
-GetLayerObject = Callable[[int], TraceTensor]
-
 
 class StandardizedTransformer(LanguageModel):
     """
@@ -274,7 +272,6 @@ class StandardizedTransformer(LanguageModel):
         steering_vector: th.Tensor,
         factor: float = 1,
         positions: int | list[int] | th.Tensor | None = None,
-        get_layer_object_to_steer: GetLayerObject | None = None,
     ):
         """
         Steer the hidden states of a layer using a steering vector.
@@ -284,17 +281,16 @@ class StandardizedTransformer(LanguageModel):
             steering_vector: The steering vector to apply
             factor: The factor to multiply the steering vector by
             positions: The position to steer. If None, all positions are steered.
-            get_layer_object_to_steer: Function that given a layer index, returns the object to steer in the model's. Default to model.layers_output[layer]
         """
-        if get_layer_object_to_steer is None:
-            get_layer_object_to_steer = self.layers_output
         if isinstance(layers, int):
             layers = [layers]
-        for layer in layers:
-            layer_device = get_layer_object_to_steer(layer).device
-            get_layer_object_to_steer(layer)[
-                :, positions
-            ] += factor * steering_vector.to(layer_device)
+        for layer in sorted(layers):  # sort to ensure execution order
+            layer_device = self.layers_output[layer].device
+            steering_with = factor * steering_vector.to(layer_device)
+            if positions is None:
+                self.layers_output[layer] += steering_with
+            else:
+                self.layers_output[layer][:, positions] += steering_with
 
     def project_on_vocab(self, hidden_state: TraceTensor) -> TraceTensor:
         hidden_state = self.ln_final(hidden_state)

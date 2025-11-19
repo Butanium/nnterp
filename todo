@@ -1,4 +1,5 @@
-[ ] revert the fake .8 entry in test_loading_status.py
 [ ] Finish glossary
 [ ] check if model was tested before class was tested
-[ ] doc for the test stuff (and the renaming stuff? check)
+[ ] doc for the test stuff
+[ ] make the doc of main build in latest, and when pushing to pypi update the doc as stable. maybe even expose different versions of the doc?
+[ ] test gradient stuff with model.steer(positions=all_positions) and positions=None
