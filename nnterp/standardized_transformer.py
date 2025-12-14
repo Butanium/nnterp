@@ -1,32 +1,31 @@
 from __future__ import annotations
+
 from typing import Callable
-from loguru import logger
+
 import torch as th
-from torch.nn import Module
-from torch import Size
+from loguru import logger
 from nnsight import LanguageModel
+from torch import Size
+from torch.nn import Module
 from transformers import AutoTokenizer
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
-from .utils import (
-    TraceTensor,
-    DummyCache,
-    warn_about_status,
-    try_with_scan,
-)
 from .rename_utils import (
+    AttentionProbabilitiesAccessor,
     IOType,
     LayerAccessor,
-    AttentionProbabilitiesAccessor,
     RenameConfig,
-    get_rename_dict,
-    get_ignores,
-    check_model_renaming,
-    get_num_attention_heads,
-    get_hidden_size,
     RenamingError,
+    RouterProbabilitiesAccessor,
+    check_model_renaming,
+    check_router_structure,
+    get_hidden_size,
+    get_ignores,
+    get_num_attention_heads,
+    get_rename_dict,
     get_vocab_size,
 )
+from .utils import DummyCache, TraceTensor, try_with_scan, warn_about_status
 
 GetLayerObject = Callable[[int], TraceTensor]
 
@@ -212,7 +211,7 @@ class StandardizedTransformer(LanguageModel):
         """Return list of layer indices that have routers (MoE models only)."""
         if not self.routers_available:
             return []
-        
+
         layers_with_routers = []
         for i in range(len(self.layers)):
             try:
@@ -222,7 +221,7 @@ class StandardizedTransformer(LanguageModel):
                     layers_with_routers.append(i)
             except (AttributeError, KeyError):
                 continue
-        
+
         return layers_with_routers
 
     @property
@@ -329,9 +328,9 @@ class StandardizedTransformer(LanguageModel):
             layers = [layers]
         for layer in layers:
             layer_device = get_layer_object_to_steer(layer).device
-            get_layer_object_to_steer(layer)[
-                :, positions
-            ] += factor * steering_vector.to(layer_device)
+            get_layer_object_to_steer(layer)[:, positions] += (
+                factor * steering_vector.to(layer_device)
+            )
 
     def project_on_vocab(self, hidden_state: TraceTensor) -> TraceTensor:
         hidden_state = self.ln_final(hidden_state)
