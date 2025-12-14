@@ -1,7 +1,10 @@
 # project specific
 data/test_log* 
 data/*.old.json
-nnterp/data/test_loading_status.json
+nnterp/data/test_loading_status.*
+nnterp/data/toy_models_cache.*
+.coverage
+.idea
 
 # general
 .junk/**

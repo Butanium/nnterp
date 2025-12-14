@@ -1,32 +1,30 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
+from typing import Literal
 
 import torch as th
 from loguru import logger
 from nnsight import Envoy
-from packaging import version
 
 from .nnsight_utils import TraceTensor
 from .utils import (
-    TRANSFORMERS_VERSION,
     BloomForCausalLM,
-    DbrxForCausalLM,
     GPT2LMHeadModel,
     GPTJForCausalLM,
     GptOssForCausalLM,
     LlamaForCausalLM,
-    MixtralForCausalLM,
     OlmoeForCausalLM,
     OPTForCausalLM,
     Qwen2ForCausalLM,
-    Qwen2MoeForCausalLM,
     Qwen3ForCausalLM,
     display_markdown,
     dummy_inputs,
     is_notebook,
     try_with_scan,
 )
+
+IgnoreType = Literal["mlp", "attention"]
 
 
 class RenamingError(Exception):
@@ -76,14 +74,6 @@ class RenameConfig:
     layers_name : str or list of str, optional
         Name(s) of the transformer layers container to rename to 'layers'.
 
-    mlp_returns_tuple : bool, optional
-        Whether the MLP module returns a tuple instead of a single tensor.
-        Some architectures (e.g., Mixtral, Qwen2MoE, DBRX) return tuples from MLP.
-
-    layer_returns_tuple : bool, optional
-        Whether the layer module returns a tuple instead of a single tensor.
-        Since transformers 4.54, Llama layers don't return a tuple anymore.
-
     attn_prob_source : AttnProbFunction, optional
         Custom function for accessing attention probabilities.
         Should be an instance of AttnProbFunction that defines how to extract
@@ -107,14 +97,18 @@ class RenameConfig:
         or the hidden size directly. Defaults to standard keys:
         ['hidden_size', 'd_model', 'n_embd'].
 
+    vocab_size_config_key : str, list of str, or int, optional
+        Custom key name for vocab size in model config,
+        or the vocab size directly. Defaults to standard keys:
+        ['vocab_size', 'n_vocab', 'text_config.vocab_size'].
+
     Example
     -------
-    Custom configuration for a non-standard architecture::
+    Custom configuration for a non-standard architecture:
 
         config = RenameConfig(
             attn_name="custom_attention",
-            mlp_name=["feed_forward", "ffn"],
-            mlp_returns_tuple=True
+            mlp_name=["feed_forward", "ffn"]
         )
 
     """
@@ -125,29 +119,44 @@ class RenameConfig:
     lm_head_name: str | list[str] | None = None
     model_name: str | list[str] | None = None
     layers_name: str | list[str] | None = None
-    mlp_returns_tuple: bool | None = None
-    layer_returns_tuple: bool | None = None
     attn_prob_source: AttnProbFunction | None = None
     ignore_mlp: bool | None = None
     ignore_attn: bool | None = None
     attn_head_config_key: str | list[str] | int | None = None
     hidden_size_config_key: str | list[str] | int | None = None
+    vocab_size_config_key: str | list[str] | int | None = None
     router_name: str | list[str] | None = None
     ignore_router: bool | None = None
 
 
-# Configuration keys for getting the number of attention heads and hidden size
-ATTN_HEAD_CONFIG_KEYS = ["n_heads", "num_attention_heads", "n_head", "num_heads"]
-HIDDEN_SIZE_CONFIG_KEYS = ["hidden_size", "d_model", "n_embd"]
+MODEL_NAMES = ["transformer", "gpt_neox", "decoder", "language_model"]
 
-# Models that return a tuple for the mlp output
-MLP_RETURNS_TUPLE_MODELS = (
-    MixtralForCausalLM,
-    Qwen2MoeForCausalLM,
-    DbrxForCausalLM,
-    OlmoeForCausalLM,
-    GptOssForCausalLM,
-)
+
+def expand_path_with_model(paths: list[str]) -> list[str]:
+    all_paths = [
+        [
+            (path.replace("model.", f"model.{model_path}."))
+            for path in paths
+            if path.startswith("model.")
+        ]
+        for model_path in MODEL_NAMES
+    ]
+    return paths + sum(all_paths, [])
+
+
+# Configuration keys for getting the number of attention heads and hidden size
+def default_attn_head_config_keys():
+    return ["n_heads", "num_attention_heads", "n_head", "num_heads"]
+
+
+def default_hidden_size_config_keys():
+    return ["hidden_size", "d_model", "n_embd"]
+
+
+def default_vocab_size_config_keys():
+    return ["vocab_size", "n_vocab"]
+
+
 # Models with no mlp module
 IGNORE_MLP_MODELS = (OPTForCausalLM,)
 # Models who may squeeze their layer outputs
@@ -162,27 +171,34 @@ LAYER_RETURNS_TENSOR_AFTER_454_MODELS = (
 
 # Alternative names for LLM layers
 ATTENTION_NAMES = ["attn", "self_attention", "attention", "norm_attn_norm"]
-MODEL_NAMES = ["transformer", "gpt_neox", ".model.decoder"]
-LAYER_NAMES = [
-    "h",
-    "blocks",
-    ".decoder.layers",
-    ".model.layers",
-    ".language_model.layers",
-]
-LN_NAMES = [
-    "final_layer_norm",
-    "ln_f",
-    "norm_f",
-    "norm",
-    ".decoder.ln_final",
-    ".model.ln_final",
-    ".language_model.ln_final",
-]
+LAYER_NAMES = expand_path_with_model(
+    [
+        "h",
+        "blocks",
+        "model.layers",
+    ]
+)
+LN_NAMES = expand_path_with_model(
+    [
+        "final_layer_norm",
+        "ln_f",
+        "norm_f",
+        "norm",
+        "embedding_norm",
+        "model.ln_final",
+    ]
+)
 LM_HEAD_NAMES = ["embed_out"]
 MLP_NAMES = ["block_sparse_moe", "ffn"]
 ROUTER_NAMES = ["router", "gate"]
-EMBED_TOKENS_NAMES = ["wte", "embed_in", ".model.embed_tokens"]
+EMBED_TOKENS_NAMES = expand_path_with_model(
+    [
+        "wte",
+        "embed_in",
+        "word_embeddings",
+        "model.embed_tokens",
+    ]
+)
 
 
 def get_rename_dict(
@@ -215,6 +231,7 @@ def get_rename_dict(
         | {name: "ln_final" for name in LN_NAMES}
         | {name: "lm_head" for name in LM_HEAD_NAMES}
         | {name: "router" for name in ROUTER_NAMES}
+        | {name: "embed_tokens" for name in EMBED_TOKENS_NAMES}
     )
     return rename_dict
 
@@ -230,7 +247,7 @@ def get_num_attention_heads(
     model, raise_error: bool = True, rename_config: RenameConfig | None = None
 ) -> int | None:
     cfg = text_config(model)
-    attn_cfg_keys = ATTN_HEAD_CONFIG_KEYS
+    attn_cfg_keys = default_attn_head_config_keys()
     if rename_config is not None and rename_config.attn_head_config_key is not None:
         if isinstance(rename_config.attn_head_config_key, str):
             attn_cfg_keys.append(rename_config.attn_head_config_key)
@@ -254,7 +271,7 @@ def get_hidden_size(
     model, raise_error: bool = True, rename_config: RenameConfig | None = None
 ) -> int | None:
     cfg = text_config(model)
-    hidden_size_keys = HIDDEN_SIZE_CONFIG_KEYS
+    hidden_size_keys = default_hidden_size_config_keys()
     if rename_config is not None and rename_config.hidden_size_config_key is not None:
         if isinstance(rename_config.hidden_size_config_key, str):
             hidden_size_keys.append(rename_config.hidden_size_config_key)
@@ -279,6 +296,27 @@ def get_hidden_size(
     return None
 
 
+def get_vocab_size(
+    model, raise_error: bool = True, rename_config: RenameConfig | None = None
+) -> int | None:
+    cfg = text_config(model)
+    vocab_size_keys = default_vocab_size_config_keys()
+    if rename_config is not None and rename_config.vocab_size_config_key is not None:
+        if isinstance(rename_config.vocab_size_config_key, str):
+            vocab_size_keys.append(rename_config.vocab_size_config_key)
+        elif isinstance(rename_config.vocab_size_config_key, list):
+            vocab_size_keys.extend(rename_config.vocab_size_config_key)
+        elif isinstance(rename_config.vocab_size_config_key, int):
+            return rename_config.vocab_size_config_key
+    for vocab_size_key in vocab_size_keys:
+        if vocab_size_key in cfg:
+            return getattr(cfg, vocab_size_key)
+    if raise_error:
+        raise ValueError(f"No vocab size config key found in {model}")
+    else:
+        return None
+
+
 class IOType(Enum):
     """Enum to specify input or output access"""
 
@@ -294,18 +332,16 @@ class LayerAccessor:
         model,
         attr_name: str | None,
         io_type: IOType | None,
-        returns_tuple: bool = False,
     ):
         self.model = model
         self.attr_name = attr_name
         self.io_type = io_type
-        self.returns_tuple = returns_tuple
+        self._detected_is_tuple: bool | None = None
 
     def get_module(self, layer: int) -> Envoy:
         module = self.model.layers[layer]
         if self.attr_name is not None:
-            for attr in self.attr_name.split("."):
-                module = getattr(module, attr)
+            module = getattr(module, self.attr_name)
         return module
 
     def __getitem__(self, layer: int) -> TraceTensor | Envoy:
@@ -318,7 +354,19 @@ class LayerAccessor:
             target = module.output
         else:
             raise ValueError(f"Invalid io_type: {self.io_type}")
-        if self.returns_tuple:
+
+        # Detect tuple status on first access
+        if self._detected_is_tuple is None:
+            self._detected_is_tuple = isinstance(target, tuple)
+        else:
+            # Validate consistency
+            if isinstance(target, tuple) != self._detected_is_tuple:
+                raise RenamingError(
+                    f"Inconsistent tuple types detected: layer {layer} has {'tuple' if isinstance(target, tuple) else 'non-tuple'} "
+                    f"but expected {'tuple' if self._detected_is_tuple else 'non-tuple'}"
+                )
+
+        if self._detected_is_tuple:
             return target[0]
         else:
             return target
@@ -332,24 +380,26 @@ class LayerAccessor:
         module = self.get_module(layer)
 
         if self.io_type.value == "input":
-            if self.returns_tuple:
-                if len(module.input) > 1:
-                    module.input = (value, *module.input[1:])
-                else:
-                    module.input = (value,)
+            if self._detected_is_tuple:
+                module.input = (value, *module.input[1:])
             else:
                 module.input = value
         else:
-            if self.returns_tuple:
-                if len(module.output) > 1:
-                    module.output = (value, *module.output[1:])
-                else:
-                    module.output = (value,)
+            if self._detected_is_tuple:
+                module.output = (value, *module.output[1:])
             else:
                 module.output = value
 
     def __call__(self, layer: int) -> TraceTensor | Envoy:
         return self[layer]
+
+    @property
+    def returns_tuple(self) -> bool | None:
+        """
+        Returns whether the layer output is a tuple.
+        Returns None if the tuple status has not been detected yet.
+        """
+        return self._detected_is_tuple
 
 
 def bloom_attention_prob_source(attention_module, return_module_source: bool = False):
@@ -360,6 +410,7 @@ def bloom_attention_prob_source(attention_module, return_module_source: bool = F
 
 
 def olmoe_attention_prob_source(attention_module, return_module_source: bool = False):
+    """Attention probability source for OlmoeForCausalLM models."""
     if return_module_source:
         return attention_module.source
     else:
@@ -524,52 +575,75 @@ class AttentionProbabilitiesAccessor:
 
 
 def detect_router_attr_name(
-    model, rename_config: RenameConfig | None = None
-) -> str | None:
+    model, layer: int = 0, router_names: list[str] | None = None
+) -> str:
     """
-    Detect the router attribute name for MoE models by scanning multiple layers.
+    Detect the router attribute name for MoE models.
 
-    Handles different naming conventions:
-    - "router" (e.g., Llama4: model.layers[0].feed_forward.router)
-    - "gate" (e.g., OLMoE: model.layers[0].feed_forward.gate)
+    Args:
+        model: The model to inspect
+        layer: Layer index to check (default: 0)
+        router_names: List of possible router names to check
 
-    Returns the router attribute name if found, None otherwise.
+    Returns:
+        str: The detected router attribute name
+
+    Raises:
+        RenamingError: If no router attribute is found
+    """
+    if router_names is None:
+        router_names = ROUTER_NAMES
+
+    layer_module = model.model.layers[layer]
+
+    # Check if this is an MLP with router
+    if hasattr(layer_module, "mlp"):
+        mlp_module = layer_module.mlp
+        for router_name in router_names:
+            if hasattr(mlp_module, router_name):
+                return router_name
+
+    # Check if router is directly on the layer
+    for router_name in router_names:
+        if hasattr(layer_module, router_name):
+            return router_name
+
+    raise RenamingError(
+        f"Could not find router attribute in layer {layer}. Checked: {router_names}"
+    )
+
+
+def check_router_structure(model, layer: int = 0) -> None:
+    """
+    Check the router structure for MoE models and log information.
+
+    Args:
+        model: The model to check
+        layer: Layer index to check (default: 0)
     """
     try:
-        # Check if router is explicitly ignored
-        if rename_config and rename_config.ignore_router:
-            logger.debug("Router access is explicitly ignored in configuration")
-            return None
+        router_attr = detect_router_attr_name(model, layer)
+        layer_module = model.model.layers[layer]
 
-        # Try different router naming conventions
-        router_names = ROUTER_NAMES.copy()
-        if rename_config and rename_config.router_name:
-            if isinstance(rename_config.router_name, str):
-                router_names.insert(0, rename_config.router_name)
-            else:
-                router_names = list(rename_config.router_name) + router_names
+        if hasattr(layer_module, "mlp"):
+            router_module = getattr(layer_module.mlp, router_attr)
+        else:
+            router_module = getattr(layer_module, router_attr)
 
-        # Check multiple layers since some models (like Llama4) have mixed dense/MoE layers
-        for layer_idx in range(len(model.layers)):
-            layer = model.layers[layer_idx]
-            if not hasattr(layer, "mlp"):
-                continue
+        logger.info(f"Found router '{router_attr}' in layer {layer}")
+        logger.info(f"Router module type: {type(router_module)}")
 
-            mlp = layer.mlp
+        # Check for common router attributes
+        if hasattr(router_module, "weight"):
+            logger.info(f"Router weight shape: {router_module.weight.shape}")
+        if hasattr(router_module, "top_k"):
+            logger.info(f"Router top_k: {router_module.top_k}")
 
-            for router_name in router_names:
-                if hasattr(mlp, router_name):
-                    return router_name
-
-        # No router found in any layer - this is not a MoE model
-        logger.debug("No router component found in any layer - not a MoE model")
-        return None
-
-    except Exception as e:
-        logger.warning(f"Failed to detect router structure: {e}")
-        return None
+    except RenamingError as e:
+        logger.warning(f"Router structure check failed: {e}")
 
 
+# Router probability computation functions
 def compute_router_probabilities(
     router_logits: th.Tensor, top_k: int, norm_topk_prob: bool = True
 ) -> th.Tensor:
@@ -655,8 +729,11 @@ def get_router_probability_function(model):
         if isinstance(model._model, model_class):
             return prob_function
 
-    # Default fallback for unmatched models
-    return compute_default_router_probabilities
+    # Raise error for unsupported models to prevent incorrect router probability computation
+    raise ValueError(
+        f"No router probability function defined for model type {type(model._model).__name__}. "
+        f"Supported models: {', '.join(cls.__name__ for cls in ROUTER_PROBABILITY_FUNCTIONS.keys())}"
+    )
 
 
 class RouterProbabilitiesAccessor:
@@ -774,69 +851,6 @@ class RouterProbabilitiesAccessor:
         raise RenamingError("Could not find top_k parameter for router")
 
 
-def check_router_structure(model, layer: int = 0) -> None:
-    """
-    Validate router structure and shapes for a model.
-
-    Args:
-        model: The StandardizedTransformer model
-        layer: Starting layer to check (default: 0)
-
-    Raises:
-        RenamingError: If router structure is invalid
-    """
-    # Find a layer with a router for validation
-    router = None
-    actual_layer = None
-
-    for check_layer in range(layer, len(model.layers)):
-        try:
-            layer_module = model.layers[check_layer]
-            if hasattr(layer_module, "mlp"):
-                mlp = layer_module.mlp
-                if hasattr(mlp, "router"):
-                    router = mlp.router
-                    actual_layer = check_layer
-                    break
-        except Exception:
-            continue
-
-    if router is None:
-        raise RenamingError(
-            f"Could not find any router component starting from layer {layer}"
-        )
-
-    # Basic structure validation
-    if not hasattr(router, "weight"):
-        raise RenamingError(
-            f"Router at layer {actual_layer} does not have weight attribute"
-        )
-
-    # Check if router has expected methods/attributes
-    weight = router.weight
-    if not isinstance(weight, th.Tensor):
-        raise RenamingError(f"Router weight at layer {actual_layer} is not a tensor")
-
-    # Try different attribute names for top_k
-    top_k_attrs = ["top_k", "topk", "num_experts_per_tok", "k"]
-    top_k = None
-    for attr in top_k_attrs:
-        if hasattr(router, attr):
-            top_k = getattr(router, attr)
-            break
-
-    # Check if it's in the model config
-    if top_k is None:
-        config = model.config
-        if hasattr(config, "num_experts_per_tok"):
-            top_k = config.num_experts_per_tok
-        elif hasattr(config, "top_k"):
-            top_k = config.top_k
-
-    if top_k is None:
-        raise RenamingError("Could not find top_k parameter for router")
-
-
 def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:
     ignores = []
     if isinstance(model, IGNORE_MLP_MODELS):
@@ -855,24 +869,7 @@ def get_ignores(model, rename_config: RenameConfig | None = None) -> list[str]:
     return ignores
 
 
-def mlp_returns_tuple(model, rename_config: RenameConfig | None = None) -> bool:
-    if rename_config is not None and rename_config.mlp_returns_tuple is not None:
-        return rename_config.mlp_returns_tuple
-    return isinstance(model, MLP_RETURNS_TUPLE_MODELS)
-
-
-def layer_returns_tuple(model, rename_config: RenameConfig | None = None) -> bool:
-    if rename_config is not None and rename_config.layer_returns_tuple is not None:
-        return rename_config.layer_returns_tuple
-    if version.parse(TRANSFORMERS_VERSION) >= version.parse("4.54") and isinstance(
-        model, LAYER_RETURNS_TENSOR_AFTER_454_MODELS
-    ):
-        return False
-    else:
-        return True
-
-
-def check_io(std_model, model_name: str, ignores: list[str]):
+def check_io(std_model, model_name: str, ignores: list[IgnoreType]):
     batch_size, seq_len = std_model.input_size
     hidden_size = std_model.hidden_size
     if hidden_size is None:
@@ -945,29 +942,53 @@ def check_io(std_model, model_name: str, ignores: list[str]):
         raise ValueError(
             f"layers_output[0] is not a tensor in {model_name} architecture. Found type {type(layer_output)}. This means it's not properly initialized."
         )
-
-    bad_layer_output_shape_error = ValueError(
-        f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, std_model.config.hidden_size)} in {model_name} architecture. This means it's not properly initialized."
-    )
-
     if layer_output.shape != (batch_size, seq_len, hidden_size):
+        bad_layer_output_shape_error = ValueError(
+            f"layers_output[0] has shape {layer_output.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
+        )
         if isinstance(std_model._model, SQUEEZE_LAYER_OUTPUT_MODELS):
             # in this case, it may not be a failure because the model could
             # simply be squeezing a tensor of shape (1, seq_len, hidden_size)
             # into a tensor of shape (seq_len, hidden_size)
             if batch_size != 1:
                 raise bad_layer_output_shape_error
-
             if layer_output.shape != (seq_len, hidden_size):
                 raise bad_layer_output_shape_error
         else:
             raise bad_layer_output_shape_error
+    ln_final_out = std_model.ln_final.output
+    if not isinstance(ln_final_out, th.Tensor):
+        raise ValueError(
+            f"ln_final.output is not a tensor in {model_name} architecture. Found type {type(ln_final_out)}. This means it's not properly initialized."
+        )
+    if ln_final_out.shape != (batch_size, seq_len, hidden_size):
+        raise ValueError(
+            f"ln_final.output has shape {ln_final_out.shape} != {(batch_size, seq_len, hidden_size)} in {model_name} architecture. This means it's not properly initialized."
+        )
+    lm_head_out = std_model.lm_head.output
+    if not isinstance(lm_head_out, th.Tensor):
+        raise ValueError(
+            f"lm_head.output is not a tensor in {model_name} architecture. Found type {type(lm_head_out)}. This means it's not properly initialized."
+        )
+    if std_model.vocab_size is None:
+        logger.warning(
+            f"Couldn't find vocab_size in {model_name} config. Couldn't properly test the shape of lm_head.output."
+        )
+        if lm_head_out.dim() != 3 or lm_head_out.shape[:-1] != (batch_size, seq_len):
+            raise ValueError(
+                f"lm_head.output has shape {lm_head_out.shape} != ({batch_size}, {seq_len}, <vocab_size>) in {model_name} architecture. This means it's not properly initialized."
+            )
+    else:
+        if lm_head_out.shape != (batch_size, seq_len, std_model.vocab_size):
+            raise ValueError(
+                f"lm_head.output has shape {lm_head_out.shape} != {(batch_size, seq_len, std_model.vocab_size)} in {model_name} architecture. This means it's not properly initialized."
+            )
 
 
 def check_model_renaming(
     std_model,
     model_name: str,
-    ignores: list[str],
+    ignores: list[IgnoreType],
     allow_dispatch: bool,
 ):
     if not hasattr(std_model, "layers"):

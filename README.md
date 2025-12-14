@@ -24,8 +24,8 @@ and include built-in properties like `model.logits` and `model.next_token_probs`
 Unlike other libraries that reimplement transformers, `nnterp` uses `NNsight`'s renaming feature to work with the original HuggingFace implementations, ensuring perfect compatibility and preventing subtle bugs.
 
 ## Installation
-- `pip install "nnterp>0.4.9" --pre` - Basic installation
-- `pip install "nnterp[display]>0.4.9" --pre` - Includes visualization dependencies
+- `pip install nnterp` - Basic installation
+- `pip install nnterp[display]` - Includes visualization dependencies
 <!-- - `pip install nnterp[vllm]` - Includes vLLM support for efficient inference (NOT supported yet) -->
 
 ## Key Features
@@ -300,3 +300,18 @@ You might encounter the error `with block not found at line xyz` when running th
 - Build with `python -m build`
 - Publish with e.g. `twine upload dist/*x.y.z*`
 - test with `pytest --cache-clear`. **cache-clear is mandatory for now otherwise `NNsight`'s source can break.** It might not be sufficient, in which case you can do `make clean` to remove Python cache.
+
+
+# Citation
+If you use `nnterp` in your research, you can cite it as:
+
+```bibtex
+@inproceedings{
+dumas2025nnterp,
+title={nnterp: A Standardized Interface for Mechanistic Interpretability of Transformers},
+author={Cl{\'e}ment Dumas},
+booktitle={Mechanistic Interpretability Workshop at NeurIPS 2025},
+year={2025},
+url={https://openreview.net/forum?id=ACic3VDIHp}
+}
+```
