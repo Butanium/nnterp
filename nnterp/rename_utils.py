@@ -157,6 +157,7 @@ LAYER_RETURNS_TENSOR_AFTER_454_MODELS = (
     LlamaForCausalLM,
     Qwen2ForCausalLM,
     Qwen3ForCausalLM,
+    GptOssForCausalLM,
 )
 
 # Alternative names for LLM layers
