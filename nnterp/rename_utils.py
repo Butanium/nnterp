@@ -711,6 +711,7 @@ def compute_unnormalized_router_probabilities(
 # Model-specific router probability computation functions
 ROUTER_PROBABILITY_FUNCTIONS = {
     OlmoeForCausalLM: compute_unnormalized_router_probabilities,
+    GptOssForCausalLM: compute_default_router_probabilities,
     # LlamaForCausalLM: compute_sigmoid_router_probabilities,  # future work
 }
 
