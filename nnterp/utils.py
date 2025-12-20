@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import importlib.resources
 import json
 import sys
-from loguru import logger
 from typing import Union
-import torch as th
-from nnsight.intervention.tracing.globals import Object
-import transformers
+
 import nnsight
-import importlib.resources
+import torch as th
+import transformers
+from loguru import logger
+from nnsight.intervention.tracing.globals import Object
 from packaging import version
 
 TraceTensor = Union[th.Tensor, Object]
@@ -60,6 +61,11 @@ try:
     from transformers import Qwen3ForCausalLM
 except ImportError:
     Qwen3ForCausalLM = ArchitectureNotFound
+
+try:
+    from transformers import Qwen3MoeForCausalLM
+except ImportError:
+    Qwen3MoeForCausalLM = ArchitectureNotFound
 
 try:
     from transformers import Qwen2ForCausalLM
@@ -211,7 +217,7 @@ def is_notebook():
 
 
 def display_markdown(text: str):
-    from IPython.display import display, Markdown
+    from IPython.display import Markdown, display
 
     display(Markdown(text))
 
