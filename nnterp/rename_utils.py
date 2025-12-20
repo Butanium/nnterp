@@ -17,7 +17,7 @@ from .utils import (
     OlmoeForCausalLM,
     OPTForCausalLM,
     Qwen2ForCausalLM,
-    Qwen3ForCausalLM,
+    Qwen3MoeForCausalLM,
     display_markdown,
     dummy_inputs,
     is_notebook,
@@ -165,7 +165,7 @@ SQUEEZE_LAYER_OUTPUT_MODELS = (GptOssForCausalLM,)
 LAYER_RETURNS_TENSOR_AFTER_454_MODELS = (
     LlamaForCausalLM,
     Qwen2ForCausalLM,
-    Qwen3ForCausalLM,
+    Qwen3MoeForCausalLM,
     GptOssForCausalLM,
 )
 
@@ -712,6 +712,7 @@ def compute_unnormalized_router_probabilities(
 ROUTER_PROBABILITY_FUNCTIONS = {
     OlmoeForCausalLM: compute_unnormalized_router_probabilities,
     GptOssForCausalLM: compute_default_router_probabilities,
+    Qwen3MoeForCausalLM: compute_default_router_probabilities,
     # LlamaForCausalLM: compute_sigmoid_router_probabilities,  # future work
 }
 
