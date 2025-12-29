@@ -274,7 +274,7 @@ class StandardizedTransformer(LanguageModel):
         positions: int | list[int] | th.Tensor | None = None,
     ):
         """
-        Steer the hidden states of a layer using a steering vector.
+        Steer the hidden states of a layer using a steering vector by doing layer_output += factor * steering_vector.
 
         Args:
             layers: The layer(s) to steer
