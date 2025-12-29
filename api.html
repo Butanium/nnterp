@@ -600,7 +600,7 @@ Assumes padding_side is “left”.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="nnterp.standardized_transformer.StandardizedTransformer.steer">
 <span class="sig-name descname"><span class="pre">steer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steering_vector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nnterp/standardized_transformer.html#StandardizedTransformer.steer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nnterp.standardized_transformer.StandardizedTransformer.steer" title="Link to this definition">#</a></dt>
-<dd><p>Steer the hidden states of a layer using a steering vector.</p>
+<dd><p>Steer the hidden states of a layer using a steering vector by doing layer_output += factor * steering_vector.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
