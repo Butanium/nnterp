@@ -125,13 +125,13 @@ class StandardizationMixin:
         rename_config: RenameConfig | None = None,
         user_rename: dict[str, str] | None = None,
     ):
-        user_rename = get_rename_dict(rename_config=rename_config)
+        rename = get_rename_dict(rename_config=rename_config)
         if user_rename is not None:
             logger.info(
                 f"Updating default rename with user-provided rename: {user_rename}"
             )
-            user_rename.update(user_rename)
-        return user_rename
+            rename.update(user_rename)
+        return rename
 
     def detect_layer_output_type(self):
         if self.layers_output.returns_tuple is None:
