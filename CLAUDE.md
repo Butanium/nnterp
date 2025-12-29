@@ -80,7 +80,6 @@ nnterp is a mechanistic interpretability library built on top of nnsight, provid
 
 **Key Methods**:
 - `skip_layer(layer_idx)` / `skip_layers(layer_indices)` - Skip layer computation
-- `steer(layers, steering_vector, positions=None, factor=1)` - Apply activation steering to `layers_output`
 - `project_on_vocab(hidden_state)` - Project to vocabulary space
 - `get_topk_closest_tokens(hidden_state, k)` - Get k closest tokens
 

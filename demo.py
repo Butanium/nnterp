@@ -296,7 +296,6 @@ from nnterp.interventions import (
     patchscope_lens,
     TargetPrompt,
     repeat_prompt,
-    steer,
 )
 
 # Logit Lens: See predictions at each layer
@@ -320,11 +319,6 @@ patchscope_probs = patchscope_lens(
     nnterp_gpt2, source_prompts=source_prompts, target_patch_prompts=target_prompt
 )
 print(f"patchscope_probs: {patchscope_probs.shape}")
-
-# Steering with intervention function
-with nnterp_gpt2.trace("The weather is"):
-    steer(nnterp_gpt2, layers=[5, 10], steering_vector=steering_vector)
-
 # %% [markdown]
 # You can use a combination of run_prompts and interventions to get the probabilities of certain tokens according to your custom intervention.
 # %%

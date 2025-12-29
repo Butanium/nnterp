@@ -7,7 +7,6 @@ from nnterp.interventions import (
     TargetPromptBatch,
     patchscope_lens,
     patchscope_generate,
-    steer,
     repeat_prompt,
     it_repeat_prompt,
     patch_object_attn_lens,
@@ -75,21 +74,6 @@ def test_patchscope_lens_custom_target(model):
 
         expected_shape = (1, get_num_layers(model), model.vocab_size)
         assert result.shape == expected_shape
-
-
-def test_steer(model):
-    """Test steering intervention doesn't crash."""
-    with th.no_grad():
-        prompt = "Hello world"
-        steering_vector = th.randn(model.hidden_size)
-
-        # Test that we can run steering without errors
-        with model.trace(prompt):
-            steer(model, layers=0, steering_vector=steering_vector, factor=1.0)
-            output = model.lm_head.output.save()
-
-        # Just check it returns something reasonable
-        assert output.shape[-1] == model.vocab_size
 
 
 def test_interventions_with_multiple_layers(model):
